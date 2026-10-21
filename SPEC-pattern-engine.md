@@ -37,11 +37,13 @@ reference/prototype.html ──(script d'extraction)──► src/lib/pattern-en
                      Pages Motif / Illustration (zone centrale) + panneau Éditeur (réglages)
 ```
 
-1. **Extraction.** Le script `scripts/extract-engine.mjs` copie le bloc moteur du prototype dans `prototype-engine.js`. Il repère le bloc par ses commentaires de début et de fin, pas par des numéros de ligne. Le fichier porte la mention « généré, ne pas modifier ».
+1. **Extraction.** Le script `scripts/extract-engine.mjs` copie le bloc moteur du prototype dans `prototype-engine.js`, entre deux marqueurs. Il repère le bloc par ses commentaires de début et de fin, pas par des numéros de ligne. Le fichier porte la mention « généré, ne pas modifier ».
 2. **Preuve d'identité.** Un test régénère le bloc depuis le prototype et vérifie qu'il est **identique octet pour octet** au fichier du projet. Une empreinte (SHA-256) est notée dans ce fichier.
+   - Bloc actuel : lignes 852 à 2616 du prototype, SHA-256 `72457c2f2f502d888e2cbbab06f6ed6993bc69d66d3c7494d00f784662f66715`.
+   - Noms reçus de la couche d'adaptation (8) : `THREE`, `toast`, `syncers`, `onLibraryChanged`, `recState`, et `DL`, `dlApplyView`, `libreTick` (Design libre, sans effet tant que l'outil n'est pas en mode libre).
 3. **Exécution sans changement de comportement.**
-   - Le prototype tournait en JavaScript « classique » (non strict). Le bloc est donc chargé comme texte et exécuté de la même façon, dans une fonction : le mode strict des modules modernes n'est pas appliqué.
-   - Conséquence pour la mise en ligne : la politique de sécurité devra autoriser cette exécution (`unsafe-eval`). C'est noté pour `/ship`.
+   - Le prototype s'exécute en mode strict (`"use strict"` en tête de son script). Le bloc est donc placé tel quel dans un **module JavaScript**, qui est lui aussi strict, à l'intérieur d'une fonction générée `runPrototypeEngine(env)`. Seules l'en-tête et la fin de cette fonction sont générées : elles reçoivent ce que le bloc attend et renvoient l'API. Le bloc entre les deux est identique au prototype.
+   - Pas d'`eval` ni de `new Function` : aucune exception de sécurité à prévoir pour la mise en ligne. *(Corrigé le 21/10/2026 lors de la tâche 1 : la spec supposait à tort un mode non strict.)*
 4. **Couche d'adaptation** (`createEngine.ts`), le seul code nouveau autour du moteur :
    - fournit tout ce que le bloc attend : `THREE` (paquet `three@0.128.0`, la même version r128), le canvas, `#labels`, les éléments que le bloc touche (`#panel`, `#openPanel`, cachés), `toast` (relié aux notifications de l'appli) et `syncers` (relié au panneau Éditeur) ;
    - la liste exacte des noms attendus est établie par une analyse automatique du bloc, et vérifiée par un test ;

@@ -5,18 +5,18 @@
 
 ## Phase 1 : le moteur à l'identique
 
-- [ ] **Tâche 1 : extraire le bloc moteur et prouver qu'il est identique**
+- [x] **Tâche 1 : extraire le bloc moteur et prouver qu'il est identique**
   - Description : `scripts/extract-engine.mjs` copie les lignes du moteur (de « Palette et associations » jusqu'à la fin de `renderLayerTo`) dans `src/lib/pattern-engine/prototype-engine.js`, avec un en-tête « généré, ne pas modifier ». Le script liste aussi les noms que le bloc utilise sans les définir (analyse avec le compilateur TypeScript).
   - Acceptation :
-    - [ ] Le test d'identité passe et échoue si on change un seul caractère du fichier généré
-    - [ ] L'empreinte SHA-256 du bloc est notée dans `SPEC-pattern-engine.md`
-    - [ ] La liste des noms à fournir est enregistrée (`src/lib/pattern-engine/required-globals.json`)
+    - [x] Le test d'identité passe et échoue si on change un seul caractère du fichier généré
+    - [x] L'empreinte SHA-256 du bloc est notée dans `SPEC-pattern-engine.md`
+    - [x] La liste des noms à fournir est enregistrée (`src/lib/pattern-engine/required-globals.json`)
   - Vérification : `npm run engine:extract && npm test`
   - Fichiers : `scripts/extract-engine.mjs`, `src/lib/pattern-engine/prototype-engine.js`, `src/lib/pattern-engine/required-globals.json`, `tests/engine-identity.test.ts`, `package.json`
   - Taille : S
 
 - [ ] **Tâche 2 : couche d'adaptation, le motif s'affiche dans Motif**
-  - Description : ajouter `three@0.128.0`. `createEngine.ts` fournit les noms attendus (THREE, canvas, `#labels`, éléments cachés, `toast`, `syncers`, `requestAnimationFrame` contrôlé), exécute le bloc en mode non strict, lance l'initialisation du prototype et expose l'API. `EngineStage` affiche le canvas dans la zone centrale de Motif. Le moteur est chargé à la demande.
+  - Description : ajouter `three@0.128.0`. `createEngine.ts` fournit les noms attendus (THREE, canvas, `#labels`, éléments cachés, `toast`, `syncers`, `requestAnimationFrame` contrôlé), exécute le bloc (module strict, comme le prototype), lance l'initialisation du prototype et expose l'API. `EngineStage` affiche le canvas dans la zone centrale de Motif. Le moteur est chargé à la demande.
   - Acceptation :
     - [ ] `/outils/motif` affiche le motif d'ouverture du prototype, animé, sans erreur dans la console
     - [ ] Rotation (glisser), zoom (molette), double-clic et survol fonctionnent

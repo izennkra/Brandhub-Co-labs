@@ -11,7 +11,7 @@
 
 - **Bloc moteur** : il est extrait du prototype par un script, repéré par ses commentaires de début (« Palette et associations ») et de fin (fin de `renderLayerTo`, juste avant « Interface »). Il n'est jamais modifié à la main.
 - **Analyse des noms attendus par le bloc** : faite avec le compilateur TypeScript, déjà installé, pour éviter une nouvelle dépendance. Elle produit la liste de ce que la couche d'adaptation doit fournir.
-- **Exécution** : le bloc est importé comme texte (`?raw`) et exécuté par `new Function` en mode non strict, comme dans le prototype. Three.js r128 vient du paquet `three@0.128.0`.
+- **Exécution** : le prototype est en mode strict. Le script génère donc un module dont la fonction `runPrototypeEngine(env)` contient le bloc tel quel, entre une en-tête (les noms fournis par `env`) et une fin (l'API renvoyée), sans `eval`. Three.js r128 vient du paquet `three@0.128.0`.
 - **Pilotage de la boucle** : la couche fournit son propre `requestAnimationFrame`, qui ne programme l'image suivante que lorsque la scène est affichée.
 - **Chargement à la demande** : `createEngine` est importé dynamiquement par les pages Tool. Three.js et le moteur forment un paquet séparé.
 - **Un seul canvas**, créé une fois, puis déplacé dans la zone centrale de la page Motif ou Illustration affichée.
@@ -63,7 +63,6 @@
 | Le bloc attend des noms définis plus loin dans le prototype (interface) | Élevé | Liste automatique des noms manquants (tâche 1). Un test vérifie que la couche les fournit tous (tâche 2) |
 | Effets de bord du bloc sur la page : écoute du défilement de la fenêtre, éléments ajoutés au `body` | Moyen | Repérés en tâche 2. Neutralisés **dans la couche** (éléments fournis), jamais dans le bloc |
 | Rendu légèrement différent (GPU, densité de pixels, version de Three.js) | Moyen | Même version r128, densité de pixels fixée dans le test, seuil de 0,1 %. Tout écart est montré avant d'être accepté |
-| Exécution non stricte (`new Function`) refusée par la sécurité en ligne | Faible | Noté pour `/ship` (autorisation `unsafe-eval`) |
 | Poids : Three.js ≈ 600 ko | Faible | Chargé seulement sur les pages Tool |
 | La section Couleurs n'a pas de maquette | Faible | Maquette montrée et validée avant le code (tâche 7) |
 
