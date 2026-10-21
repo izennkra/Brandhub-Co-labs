@@ -1,198 +1,318 @@
-import { useState } from 'react';
-import { DeleteButton } from '../../components/resources/DeleteButton';
-import { DropZone } from '../../components/resources/DropZone';
+import { useEffect, useState } from 'react';
 import styles from '../../components/resources/resources.module.css';
-import { Empty } from '../../components/resources/Section';
+import { Empty, Section } from '../../components/resources/Section';
 import { normalizeHex } from '../../lib/resources/colors';
-import { copyToClipboard, downloadBlob, slug } from '../../lib/resources/download';
-import { useDownloadAll } from '../../lib/resources/downloadAll';
-import { useEditor } from '../../lib/resources/editor';
+import { copyToClipboard } from '../../lib/resources/download';
 import { notify } from '../../lib/resources/events';
-import { readAsText } from '../../lib/resources/files';
-import { sizedSvg } from '../../lib/resources/svg';
+import {
+  agentInstructions,
+  CORNERS,
+  ICON_API,
+  ICON_SIZES,
+  iconSvgUrl,
+  searchIcons,
+  STROKES,
+  variantId,
+  type IconOptions,
+  type IconResult,
+} from '../../lib/resources/icons';
 import { useCollection } from '../../lib/resources/useCollection';
 import page from './IconographyPage.module.css';
 
-// Page Iconographie (Figma « Ressource / Iconographie ») : filtres à gauche (recherche, taille,
-// couleur), grille des icônes de la marque à droite. Un clic copie le SVG à la taille et à la couleur choisies.
-type IconItem = { name: string; svg: string };
+// Page Iconographie (Figma « Ressource / Iconographie ») : toute la bibliothèque Central, comme
+// l'explorateur de visual.systems. Filtres à gauche (recherche, style, arrondi, trait, couleur, taille),
+// grille à droite ; un clic copie l'icône. En bas : le lien d'intégration pour les développeurs.
 type BrandColor = { name: string; hex: string };
+type CopyFormat = 'svg' | 'jsx' | 'url';
 
-const ICON_SIZES = [16, 20, 24, 32, 40];
+const COPY_FORMATS: { id: CopyFormat; label: string }[] = [
+  { id: 'svg', label: 'SVG' },
+  { id: 'jsx', label: 'JSX' },
+  { id: 'url', label: 'lien' },
+];
 
-const svgUrl = (svg: string) => `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
-
-function agentInstructions(icons: IconItem[], size: number) {
-  return [
-    '# Icônes de la marque Co-labs',
-    '',
-    `Utilise uniquement ces icônes (${icons.length}), en SVG en ligne, sans autre bibliothèque.`,
-    `- Taille par défaut : ${size} px ; garder les proportions.`,
-    '- Couleur : « currentColor », héritée du texte autour.',
-    '- Bouton avec icône seule : un aria-label ; icône décorative : aria-hidden="true".',
-    '',
-    '## Liste',
-    ...icons.map((icon) => `- ${icon.name}`),
-  ].join('\n');
+function Choice<T extends string | number>({
+  label,
+  options,
+  value,
+  onChange,
+  format = String,
+}: {
+  label: string;
+  options: readonly T[];
+  value: T;
+  onChange: (value: T) => void;
+  format?: (value: T) => string;
+}) {
+  return (
+    <div className={page.filter}>
+      <span className={page.filterTitle} id={`icons-${label}`}>
+        {label}
+      </span>
+      <div className={page.segmented} role="group" aria-labelledby={`icons-${label}`}>
+        {options.map((option) => (
+          <button key={option} type="button" aria-pressed={option === value} onClick={() => onChange(option)}>
+            {format(option)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
+type Results = { icons: IconResult[]; total: number; next: number | null };
+
 export function IconographyPage() {
-  const { unlocked } = useEditor();
-  const icons = useCollection<IconItem>('res-icons');
   const colors = useCollection<BrandColor>('res-colors');
   const [query, setQuery] = useState('');
-  const [size, setSize] = useState(24);
+  const [debounced, setDebounced] = useState('');
+  const [options, setOptions] = useState<IconOptions>({
+    style: 'outlined',
+    corner: 2,
+    stroke: 1.5,
+    size: 24,
+  });
   const [color, setColor] = useState('');
+  const [format, setFormat] = useState<CopyFormat>('svg');
+  const [results, setResults] = useState<Results | null>(null);
+  const [error, setError] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const hex = normalizeHex(color);
-  const shown = icons.items.filter((icon) => icon.name.toLowerCase().includes(query.trim().toLowerCase()));
+  const variant = variantId(options);
   const brand = colors.items.filter((c) => normalizeHex(c.hex));
+  const set = <K extends keyof IconOptions>(key: K, value: IconOptions[K]) =>
+    setOptions((current) => ({ ...current, [key]: value }));
 
-  useDownloadAll(
-    'Télécharger toutes les icônes (SVG)',
-    icons.items.length
-      ? async () => {
-          for (const icon of icons.items)
-            downloadBlob(
-              new Blob([sizedSvg(icon.svg, size, hex)], { type: 'image/svg+xml' }),
-              `${slug(icon.name)}.svg`,
-            );
-        }
-      : null,
-  );
+  // recherche 250 ms après la dernière frappe
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(query.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
 
-  const addIcons = async (files: File[]) => {
-    for (const file of files) {
-      const svg = await readAsText(file);
-      if (!/<svg[\s>]/i.test(svg)) {
-        notify(`« ${file.name} » n’est pas un SVG.`);
-        continue;
-      }
-      await icons.add({ name: file.name.replace(/\.svg$/i, ''), svg });
+  useEffect(() => {
+    let cancelled = false;
+    searchIcons(debounced, variant, 0)
+      .then((found) => {
+        if (cancelled) return;
+        setResults({ icons: found.icons, total: found.total, next: found.nextOffset });
+        setError(false);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debounced, variant]);
+
+  const loadMore = async () => {
+    if (!results?.next) return;
+    setLoadingMore(true);
+    try {
+      const more = await searchIcons(debounced, variant, results.next);
+      setResults({ icons: [...results.icons, ...more.icons], total: more.total, next: more.nextOffset });
+    } catch {
+      notify('La bibliothèque d’icônes ne répond pas.');
     }
-    notify(files.length > 1 ? `${files.length} icônes ajoutées.` : 'Icône ajoutée.');
+    setLoadingMore(false);
   };
 
-  const copyIcon = async (icon: IconItem) =>
+  const copyIcon = async (icon: IconResult) => {
+    const url = iconSvgUrl(icon.name, variant, options.size, hex);
+    let text = url;
+    if (format !== 'url') {
+      try {
+        const source = format === 'svg' ? url : `${ICON_API}/central/${icon.name}.jsx?variant=${variant}`;
+        const response = await fetch(source);
+        if (!response.ok) throw new Error('icône introuvable');
+        text = await response.text();
+      } catch {
+        notify('La bibliothèque d’icônes ne répond pas.');
+        return;
+      }
+    }
     notify(
-      (await copyToClipboard(sizedSvg(icon.svg, size, hex)))
-        ? `SVG copié : ${icon.name}`
+      (await copyToClipboard(text))
+        ? `${icon.name} copiée (${format === 'url' ? 'lien' : format.toUpperCase()})`
         : 'La copie n’a pas été autorisée.',
     );
+  };
 
-  if (!icons.loaded) return null;
+  const integrationUrl = iconSvgUrl('NOM', variant, options.size, hex).replace('/NOM.svg', '/{nom}.svg');
 
   return (
-    <div className={page.layout}>
-      <div className={page.filters}>
-        <label className={page.filter}>
-          <span className={page.filterTitle}>Recherche</span>
-          <input
-            type="search"
-            className={styles.field}
-            placeholder="Chercher une icône"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-        <div className={page.filter}>
-          <span className={page.filterTitle} id="icon-size">
-            Taille
-          </span>
-          <div className={page.segmented} role="group" aria-labelledby="icon-size">
-            {ICON_SIZES.map((s) => (
-              <button key={s} type="button" aria-pressed={s === size} onClick={() => setSize(s)}>
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className={page.filter}>
-          <label className={page.filterTitle} htmlFor="icon-color">
-            Couleur
+    <>
+      <div className={page.layout}>
+        <div className={page.filters}>
+          <label className={page.filter}>
+            <span className={page.filterTitle}>Recherche</span>
+            <input
+              type="search"
+              className={styles.field}
+              placeholder="En anglais : arrow, trash, user…"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
           </label>
-          <input
-            id="icon-color"
-            type="text"
-            className={styles.field}
-            placeholder="Code HEX, vide = couleur du texte"
-            value={color}
-            onChange={(event) => setColor(event.target.value)}
+          <Choice
+            label="Style"
+            options={['outlined', 'filled'] as const}
+            value={options.style}
+            onChange={(v) => set('style', v)}
+            format={(v) => (v === 'outlined' ? 'Trait' : 'Plein')}
           />
-          {brand.length > 0 && (
-            <div className={page.swatches} role="group" aria-label="Couleurs de la marque">
-              {brand.map((c) => (
+          <Choice
+            label="Arrondi"
+            options={CORNERS}
+            value={options.corner}
+            onChange={(v) => set('corner', v)}
+            format={(v) => `${v} px`}
+          />
+          <Choice
+            label="Épaisseur"
+            options={STROKES}
+            value={options.stroke}
+            onChange={(v) => set('stroke', v)}
+            format={(v) => `${String(v).replace('.', ',')} px`}
+          />
+          <div className={page.filter}>
+            <label className={page.filterTitle} htmlFor="icon-color">
+              Couleur
+            </label>
+            <input
+              id="icon-color"
+              type="text"
+              className={styles.field}
+              placeholder="Code HEX, vide = couleur du texte"
+              value={color}
+              onChange={(event) => setColor(event.target.value)}
+            />
+            {brand.length > 0 && (
+              <div className={page.swatches} role="group" aria-label="Couleurs de la marque">
+                {brand.map((c) => {
+                  const value = normalizeHex(c.hex)!;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className={page.swatch}
+                      style={{ background: value }}
+                      aria-label={c.name}
+                      aria-pressed={hex === value}
+                      title={c.name}
+                      onClick={() => setColor(hex === value ? '' : value)}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <Choice label="Taille" options={ICON_SIZES} value={options.size} onChange={(v) => set('size', v)} />
+          <button
+            type="button"
+            className={styles.button}
+            onClick={async () =>
+              notify(
+                (await copyToClipboard(agentInstructions(variant, options.size)))
+                  ? 'Instructions copiées.'
+                  : 'La copie n’a pas été autorisée.',
+              )
+            }
+          >
+            Copier les instructions pour agent
+          </button>
+        </div>
+
+        <div className={page.results}>
+          <div className={page.resultsHead}>
+            <p className={page.count}>
+              Central · {options.style === 'outlined' ? 'Trait' : 'Plein'}
+              {results ? ` · ${results.total} icône${results.total > 1 ? 's' : ''}` : ''}
+            </p>
+            <div className={page.segmented} role="group" aria-label="Format de copie">
+              {COPY_FORMATS.map((f) => (
                 <button
-                  key={c.id}
+                  key={f.id}
                   type="button"
-                  className={page.swatch}
-                  style={{ background: normalizeHex(c.hex)! }}
-                  aria-label={c.name}
-                  aria-pressed={hex === normalizeHex(c.hex)}
-                  title={c.name}
-                  onClick={() => setColor(normalizeHex(c.hex)!)}
-                />
+                  aria-pressed={f.id === format}
+                  onClick={() => setFormat(f.id)}
+                >
+                  Copier en {f.label}
+                </button>
               ))}
             </div>
+          </div>
+          {error ? (
+            <Empty>La bibliothèque d’icônes ne répond pas. Réessaie dans un instant.</Empty>
+          ) : !results ? (
+            <Empty>Chargement des icônes…</Empty>
+          ) : results.icons.length === 0 ? (
+            <Empty>Aucune icône ne correspond. Essaie un mot en anglais.</Empty>
+          ) : (
+            <>
+              <ul className={page.grid} aria-label="Icônes">
+                {results.icons.map((icon) => (
+                  <li key={icon.name} className={page.cell}>
+                    <button
+                      type="button"
+                      className={page.icon}
+                      aria-label={`Copier ${icon.name}`}
+                      title={`Copier ${icon.name}`}
+                      onClick={() => void copyIcon(icon)}
+                    >
+                      <img
+                        src={iconSvgUrl(icon.name, variant, options.size, hex)}
+                        alt=""
+                        width={options.size}
+                        height={options.size}
+                        loading="lazy"
+                      />
+                      <span className={page.iconName}>{icon.name}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {results.next !== null && (
+                <button
+                  type="button"
+                  className={styles.button}
+                  disabled={loadingMore}
+                  onClick={() => void loadMore()}
+                >
+                  {loadingMore
+                    ? 'Chargement…'
+                    : `Voir plus (${results.total - results.icons.length} restantes)`}
+                </button>
+              )}
+            </>
           )}
         </div>
+      </div>
+
+      <Section title="Intégration pour les développeurs">
+        <p className={page.hint}>
+          Chaque icône s’obtient par un lien : remplace {'{nom}'} par le nom affiché sous l’icône. Les
+          réglages choisis ci-dessus (style, arrondi, épaisseur, taille, couleur) sont déjà dans le lien.
+        </p>
         <button
           type="button"
-          className={styles.button}
-          disabled={!icons.items.length}
+          className={page.code}
+          aria-label="Copier le lien d’intégration"
           onClick={async () =>
             notify(
-              (await copyToClipboard(agentInstructions(icons.items, size)))
-                ? 'Instructions copiées.'
-                : 'La copie n’a pas été autorisée.',
+              (await copyToClipboard(integrationUrl)) ? 'Lien copié.' : 'La copie n’a pas été autorisée.',
             )
           }
         >
-          Copier les instructions pour agent
+          <code>{integrationUrl}</code>
         </button>
-      </div>
-
-      <div className={page.results}>
-        <p className={page.count}>
-          {shown.length} icône{shown.length > 1 ? 's' : ''} · un clic copie le SVG
+        <p className={page.hint}>
+          Guide complet pour les développeurs et les agents :{' '}
+          <a href="https://visual.systems/modules/icon/llms.txt" target="_blank" rel="noreferrer">
+            visual.systems/modules/icon/llms.txt
+          </a>
         </p>
-        {unlocked && (
-          <DropZone
-            accept=".svg,image/svg+xml"
-            label="Dépose tes icônes SVG ici"
-            onFiles={(f) => void addIcons(f)}
-          />
-        )}
-        {shown.length === 0 ? (
-          <Empty>{icons.items.length ? 'Aucune icône ne correspond.' : 'Aucune icône pour l’instant.'}</Empty>
-        ) : (
-          <ul className={page.grid} aria-label="Icônes">
-            {shown.map((icon) => (
-              <li key={icon.id} className={page.cell}>
-                <button
-                  type="button"
-                  className={page.icon}
-                  aria-label={`Copier le SVG de ${icon.name}`}
-                  onClick={() => void copyIcon(icon)}
-                >
-                  <span
-                    className={page.glyph}
-                    aria-hidden="true"
-                    style={{
-                      width: size,
-                      height: size,
-                      maskImage: svgUrl(icon.svg),
-                      WebkitMaskImage: svgUrl(icon.svg),
-                      ...(hex ? { background: hex } : {}),
-                    }}
-                  />
-                  <span className={page.iconName}>{icon.name}</span>
-                </button>
-                {unlocked && <DeleteButton name={icon.name} onDelete={() => icons.remove(icon.id)} />}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+      </Section>
+    </>
   );
 }

@@ -12,7 +12,7 @@ import {
   shadeScale,
 } from '../src/lib/resources/colors';
 import { lockEditor } from '../src/lib/resources/editor';
-import { sizedSvg } from '../src/lib/resources/svg';
+import { iconSvgUrl, variantId } from '../src/lib/resources/icons';
 import { LOCAL_EDITOR_CODE } from '../src/lib/store/store';
 
 const LOGO =
@@ -77,12 +77,14 @@ describe('neutres et nuances', () => {
   });
 });
 
-describe('icônes', () => {
-  it('copie le SVG à la taille et à la couleur choisies', () => {
-    const out = sizedSvg(LOGO, 32, '#EC5F14');
-    expect(out).toContain('width="32"');
-    expect(out).toContain('height="32"');
-    expect(out).toContain('color="#EC5F14"');
+describe('icônes (bibliothèque Central)', () => {
+  it('compose la variante et le lien à la taille et à la couleur choisies', () => {
+    const variant = variantId({ style: 'filled', corner: 3, stroke: 2 });
+    expect(variant).toBe('round-filled-radius-3-stroke-2');
+    expect(iconSvgUrl('trash-can', variant, 32, '#EC5F14')).toBe(
+      'https://visual.systems/api/modules/icon/central/trash-can.svg?variant=round-filled-radius-3-stroke-2&size=32&color=%23EC5F14',
+    );
+    expect(iconSvgUrl('trash-can', variant, 24, null)).not.toContain('color=');
   });
 });
 

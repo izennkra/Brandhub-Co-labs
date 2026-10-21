@@ -114,8 +114,8 @@ export const RESOURCE_PAGES: ResourcePageDef[] = [
     icon: 'shapes-plus-x-square-circle',
     description: 'Les icônes de la marque, à rechercher et à copier.',
     editTips: [
-      'Dépose tes icônes en SVG dans la zone d’ajout.',
-      'Pour qu’une icône prenne la couleur choisie, son SVG doit utiliser « currentColor ».',
+      'Les icônes viennent de la bibliothèque Central : il n’y a rien à déposer.',
+      'Les couleurs de la page Couleur apparaissent en raccourci dans le filtre Couleur.',
     ],
   },
   {
