@@ -13,6 +13,7 @@ import {
 } from '../src/lib/resources/colors';
 import { lockEditor } from '../src/lib/resources/editor';
 import { iconSvgUrl, variantId } from '../src/lib/resources/icons';
+import { logoVariants, recolorSvg, sanitizeSvg } from '../src/lib/resources/logo';
 import { LOCAL_EDITOR_CODE } from '../src/lib/store/store';
 
 const LOGO =
@@ -88,6 +89,44 @@ describe('icônes (bibliothèque Central)', () => {
   });
 });
 
+describe('déclinaisons des logos', () => {
+  const SOURCE =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><style>.a{fill:red}</style>' +
+    '<path class="a" d="M0 0h5v5z"/><path fill="blue" stroke="none" d="M5 5h5v5z"/>' +
+    '<path style="fill: green; stroke: black" d="M0 5h5v5z"/><path fill="none" d="M0 0"/></svg>';
+
+  it('recolore chaque remplissage et contour, garde les « none »', () => {
+    const out = recolorSvg(SOURCE, '#EC5F14');
+    expect(out).toContain('.a{fill:#EC5F14}');
+    expect(out).toContain('fill="#EC5F14" stroke="none"');
+    expect(out).toContain('fill:#EC5F14; stroke:#EC5F14');
+    expect(out).toContain('fill="none"');
+    expect(out).not.toMatch(/red|blue|green|black/);
+  });
+
+  it('donne l’original puis une version par couleur, sur fond foncé pour les couleurs claires', () => {
+    const variants = logoVariants(SOURCE, [
+      { name: 'Orange', hex: '#EC5F14' },
+      { name: 'Lin', hex: '#F1E2DA' },
+      { name: 'Doublon', hex: '#ec5f14' },
+      { name: 'Vide', hex: '' },
+    ]);
+    expect(variants.map((v) => [v.name, v.dark])).toEqual([
+      ['Original', false],
+      ['Orange', false],
+      ['Lin', true],
+    ]);
+  });
+
+  it('retire les scripts et les attributs « on… » d’un SVG déposé', () => {
+    const clean = sanitizeSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><script>alert(2)</script><a href="javascript:alert(3)"><rect/></a></svg>',
+    )!;
+    expect(clean).not.toMatch(/onload|script|javascript/);
+    expect(sanitizeSvg('<html></html>')).toBeNull();
+  });
+});
+
 describe('mode édition des Ressources', () => {
   it('refuse un mauvais code, accepte le bon, puis se verrouille', async () => {
     renderAt('/ressources/couleur');
@@ -130,32 +169,39 @@ describe('mode édition des Ressources', () => {
     );
   });
 
-  it('Logo : crée un groupe, dépose un SVG, le renomme et le supprime en deux temps', async () => {
+  it('Logo : un seul SVG par section, décliné dans chaque couleur de la marque', async () => {
+    localStorage.setItem(
+      'bhc.store.res-colors',
+      JSON.stringify({
+        a: { group: 'principale', name: 'Orange', hex: '#EC5F14', order: 0 },
+        b: { group: 'secondaire', name: 'Lin', hex: '#F1E2DA', order: 1 },
+      }),
+    );
     renderAt('/ressources/logo');
     expect(await screen.findByText('Aucun logo pour l’instant.')).toBeInTheDocument();
     const user = await unlock();
-    await user.click(screen.getByRole('button', { name: /Nouveau groupe/ }));
-    const input = (await screen.findByLabelText(/Dépose tes logos SVG/)) as HTMLInputElement;
-    await user.upload(input, new File([LOGO], 'logo-noir.svg', { type: 'image/svg+xml' }));
-    const name = await screen.findByRole('textbox', { name: 'Nom du logo Logo noir' });
-    await user.clear(name);
-    await user.type(name, 'Logo principal{Enter}');
-    await screen.findByRole('button', { name: 'Télécharger Logo principal en SVG' });
-
-    await user.click(screen.getByRole('button', { name: 'Supprimer Logo principal' }));
-    await user.click(screen.getByRole('button', { name: 'Confirmer la suppression de Logo principal' }));
-    await waitFor(() =>
+    // sections proposées d'office
+    expect(
+      screen.getAllByRole('textbox', { name: 'Nom de la section' }).map((t) => (t as HTMLInputElement).value),
+    ).toEqual(['Logo principal', 'Symbole']);
+    const input = (await screen.findByLabelText(/Dépose le SVG de « Logo principal »/)) as HTMLInputElement;
+    await user.upload(input, new File([LOGO], 'logo.svg', { type: 'image/svg+xml' }));
+    const list = await screen.findByRole('list', { name: 'Logo principal' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(3); // original, orange, lin
+    for (const format of ['SVG', 'PNG', 'PDF'])
       expect(
-        screen.queryByRole('button', { name: 'Télécharger Logo principal en SVG' }),
-      ).not.toBeInTheDocument(),
-    );
+        within(list).getByRole('button', { name: `Télécharger Logo principal Orange en ${format}` }),
+      ).toBeInTheDocument();
+    expect(screen.getByLabelText(/Remplacer le SVG de « Logo principal »/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Ajouter une section/ }));
+    expect(await screen.findByDisplayValue('Nouvelle section')).toBeInTheDocument();
   });
 
   it('Logo : un fichier qui n’est pas un SVG est refusé', async () => {
     renderAt('/ressources/logo');
-    const user = await unlock();
-    await user.click(await screen.findByRole('button', { name: /Nouveau groupe/ }));
-    const input = (await screen.findByLabelText(/Dépose tes logos SVG/)) as HTMLInputElement;
+    await unlock();
+    const input = (await screen.findByLabelText(/Dépose le SVG de « Symbole »/)) as HTMLInputElement;
     await userEvent.setup({ applyAccept: false }).upload(input, new File(['bonjour'], 'notes.svg'));
     expect(await screen.findByText('« notes.svg » n’est pas un SVG.')).toBeInTheDocument();
   });

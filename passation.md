@@ -193,7 +193,12 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 - **Fichiers** : `/api/files` (Vercel Blob, `BLOB_READ_WRITE_TOKEN`) ; sans Blob, les images sont réduites et gardées dans les données.
 - Bouton orange « Tout télécharger » : logos (SVG), palette (CSS), polices, images, icônes.
 - Code commun : `src/lib/resources/` (collections, code, fichiers, couleurs, téléchargements), `src/components/resources/`.
-- Pas encore fait : réordonner les images ; ajout d'icônes depuis la bibliothèque Central (licence à vérifier avant de l'exposer aux visiteurs).
+- **Retours du porteur appliqués (22/10/2026, nuit)** :
+  - Couleur : **Palette principale**, **Palette secondaire** (couleurs d'accent), **Neutres** construits à partir de 2 couleurs opposées (11 paliers 50→950, mélange OKLab), **Nuances** de chaque couleur (50→950, 500 = la couleur). Collections `res-colors`, `res-neutrals`.
+  - Typographie : les 18 variantes statiques de Geist en **TTF** (à installer) + versions variables + WOFF2, famille en **.zip** (`public/fonts/geist/`, licence OFL jointe).
+  - Iconographie : **toute la bibliothèque Central** depuis le service visual.systems (recherche en anglais avec synonymes, style trait/plein, arrondi, épaisseur, taille, couleur), copie en SVG / JSX / lien, **lien d'intégration** pour les développeurs. ⚠️ Licence Central commerciale : vérifier qu'on peut la montrer au client et aux visiteurs avant la mise en ligne.
+  - Logo : sections « Logo principal » et « Symbole » (+ sections ajoutables), **un seul SVG par section**, décliné automatiquement dans chaque couleur de la marque (palettes + neutres extrêmes), export **SVG, PNG, PDF** (jsPDF + svg2pdf, vectoriel) et .zip par section.
+- Pas encore fait : réordonner les images.
 
 ## 10. Prochaines étapes
 

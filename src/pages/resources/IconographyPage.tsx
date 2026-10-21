@@ -28,7 +28,7 @@ type CopyFormat = 'svg' | 'jsx' | 'url';
 const COPY_FORMATS: { id: CopyFormat; label: string }[] = [
   { id: 'svg', label: 'SVG' },
   { id: 'jsx', label: 'JSX' },
-  { id: 'url', label: 'lien' },
+  { id: 'url', label: 'Lien' },
 ];
 
 function Choice<T extends string | number>({
@@ -229,17 +229,20 @@ export function IconographyPage() {
               Central · {options.style === 'outlined' ? 'Trait' : 'Plein'}
               {results ? ` · ${results.total} icône${results.total > 1 ? 's' : ''}` : ''}
             </p>
-            <div className={page.segmented} role="group" aria-label="Format de copie">
-              {COPY_FORMATS.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  aria-pressed={f.id === format}
-                  onClick={() => setFormat(f.id)}
-                >
-                  Copier en {f.label}
-                </button>
-              ))}
+            <div className={page.copyAs}>
+              <span id="icons-copy-as">Copier en</span>
+              <div className={page.segmented} role="group" aria-labelledby="icons-copy-as">
+                {COPY_FORMATS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    aria-pressed={f.id === format}
+                    onClick={() => setFormat(f.id)}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           {error ? (

@@ -78,6 +78,12 @@ export function useCollection<T extends object>(col: string) {
         const order = items.length ? Math.max(...items.map((i) => i.order)) + 1 : 0;
         await getStore().put(col, newId(), { ...data, order });
       }, message),
+    /** Crée ou remplace un élément à identifiant fixe (ex. les sections par défaut des logos). */
+    set: (id: string, data: T, message?: string) =>
+      write(async () => {
+        const order = items.find((i) => i.id === id)?.order ?? items.length;
+        await getStore().put(col, id, { ...data, order });
+      }, message),
     update: (id: string, patch: Partial<T>, message?: string) =>
       write(async () => {
         const current = items.find((i) => i.id === id);

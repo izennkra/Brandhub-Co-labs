@@ -81,9 +81,9 @@ export const RESOURCE_PAGES: ResourcePageDef[] = [
     icon: 'vector-logo',
     description: 'Les logos de la marque, prêts à télécharger.',
     editTips: [
-      'Crée un groupe (ex. « Logo », « Logo symbole »), puis dépose tes logos en SVG dans sa zone.',
-      'Clique sur un nom pour le renommer ; le PNG est fabriqué tout seul au téléchargement.',
-      'Glisse une carte pour changer l’ordre ; « Fond foncé » pour un logo clair.',
+      'Dépose chaque logo une seule fois, en SVG, dans sa section (Logo principal, Symbole…).',
+      'Il est décliné tout seul dans chaque couleur de la page Couleur, et s’exporte en SVG, PNG et PDF.',
+      '« Ajouter une section » pour une autre déclinaison ; clique sur un titre pour le renommer.',
     ],
   },
   {
@@ -103,9 +103,9 @@ export const RESOURCE_PAGES: ResourcePageDef[] = [
     icon: 'color-palette',
     description: 'La palette de la marque et ses valeurs à copier.',
     editTips: [
-      'Ajoute une couleur, donne-lui un nom et colle son code HEX : RVB et TSL sont calculés.',
-      'CMJN et Pantone sont facultatifs.',
-      'Glisse une carte pour changer l’ordre.',
+      'Palette principale, puis palette secondaire pour les couleurs d’accent : un nom et un code HEX suffisent.',
+      'Neutres : saisis la couleur la plus claire et la plus foncée, les paliers se construisent seuls.',
+      'Les nuances de chaque couleur sont calculées automatiquement.',
     ],
   },
   {
