@@ -84,8 +84,60 @@ function registerGeistFamily() {
   return face.load().catch(() => undefined);
 }
 
+// Préréglages de structure, recopiés de l'interface du prototype (STRUCT_PRESETS, ligne 2948) :
+// 1 = Membrane (MEMBRANE_BASE, défini dans le moteur), 2 = Ligne.
+const LINE_PRESET = {
+  fill: 0,
+  fusion: 0.9,
+  tubeR: 2.2,
+  qCount: 40000,
+  swirl: 0.12,
+  twinkle: 0.1,
+  jitter: 0.06,
+  pinches: 0,
+  bulge: 0,
+  relief: 1.0,
+  fov: 35,
+  depthThin: 0,
+  autoRotate: false,
+  lobes: 4,
+};
+
+export type Structure = 1 | 2; // Membrane, Ligne
+export type Shape = 0 | 1 | 2 | 3; // Nœud, Ample, Simple, Hasard
+
+// Actions de l'interface du prototype, reprises à l'identique pour la partie moteur
+// (la mise à jour des boutons du prototype, elle, est remplacée par le panneau Éditeur).
+function createActions(core: PrototypeEngine, syncAll: () => void) {
+  const newSeed = () => {
+    core.rng = core.mulberry32((Math.random() * 1e9) | 0);
+  };
+  return {
+    // Bouton « Membrane / Ligne » (prototype ligne 2954).
+    setStructure(structure: Structure) {
+      core.S.qStruct = structure;
+      Object.assign(core.S, structure === 1 ? core.MEMBRANE_BASE : LINE_PRESET);
+      syncAll();
+      core.regenerate();
+      core.resetView();
+    },
+    // Boutons « Nœud / Ample / Simple / Hasard » (prototype ligne 2923).
+    setShape(shape: Shape) {
+      core.S.shapeMode = shape;
+      newSeed();
+      core.regenerate();
+      core.resetView();
+    },
+  };
+}
+
+// Points d'accroche réservés aux tests navigateur (rendu identique au prototype) : sans effet sinon.
+type EngineTestHooks = { beforeStart?: () => void; onReady?: (engine: Engine) => void };
+const testHooks = () => (window as Window & { __engineTestHooks?: EngineTestHooks }).__engineTestHooks;
+
 export type Engine = {
   core: PrototypeEngine;
+  actions: ReturnType<typeof createActions>;
   canvas: HTMLCanvasElement;
   /** Affiche la scène dans `host` (zone centrale) et relance l'animation. */
   attach: (host: HTMLElement) => void;
@@ -97,17 +149,22 @@ async function createEngine(): Promise<Engine> {
   const { parking, canvas, labels } = createEngineElements();
   await registerGeistFamily();
   const gate = createAnimationGate((callback) => window.requestAnimationFrame(callback));
-  const core = runPrototypeEngine(buildEnv(gate));
+  const env = buildEnv(gate);
+  testHooks()?.beforeStart?.();
+  const core = runPrototypeEngine(env);
 
-  // Démarrage repris de la fin du prototype, pour la partie moteur :
-  // refreshColors() ; regenerate() ; resetView() ; resize() ; requestAnimationFrame(frame).
+  // Démarrage repris de la fin du prototype (lignes 4405-4414), pour la partie moteur et dans le
+  // même ordre : refreshColors() ; regenerate() ; resetView() ; loadLibrary() ;
+  // requestAnimationFrame(frame). resize() est appelé quand la scène est placée dans la page.
   core.refreshColors();
   core.regenerate();
   core.resetView();
+  void core.loadLibrary();
   gate.requestAnimationFrame(core.frame);
 
-  return {
+  const ready: Engine = {
     core,
+    actions: createActions(core, () => env.syncers.forEach((sync) => sync())),
     canvas,
     attach(host) {
       host.append(canvas);
@@ -121,6 +178,8 @@ async function createEngine(): Promise<Engine> {
       if (canvas.parentElement === host) parking.append(canvas);
     },
   };
+  testHooks()?.onReady?.(ready);
+  return ready;
 }
 
 let engine: Promise<Engine> | null = null;

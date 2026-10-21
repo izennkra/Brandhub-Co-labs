@@ -25,6 +25,10 @@ export type PrototypeEngine = {
   readonly resetView: () => void;
   readonly resize: () => void;
   readonly frame: FrameRequestCallback;
+  readonly MEMBRANE_BASE: EngineSettings;
+  readonly mulberry32: (seed: number) => () => number;
+  readonly loadLibrary: () => Promise<void>;
+  rng: () => number;
 };
 
 export function runPrototypeEngine(env: EngineEnv): PrototypeEngine;

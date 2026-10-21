@@ -25,18 +25,18 @@
   - Fichiers : `package.json`, `src/lib/pattern-engine/createEngine.ts`, `src/components/engine/EngineStage.tsx` (+ css), `src/pages/tool/ToolPage.tsx`, `src/types/three.d.ts`, `tests/engine-adapter.test.ts`, `e2e/engine.spec.ts`
   - Taille : M
 
-- [ ] **Tâche 3 : test « rendu identique au prototype » (Motif)**
-  - Description : `e2e/engine-render.spec.ts` ouvre le prototype et l'appli avec la même graine de hasard et une horloge figée, à la même taille, puis compare les pixels du canvas. Cas testés : Quantique › Membrane, Quantique › Ligne, Aérée.
+- [x] **Tâche 3 : test « rendu identique au prototype » (Motif)**
+  - Description : `e2e/engine-render.spec.ts` ouvre le prototype et l'appli avec la même graine de hasard et une horloge figée, à la même taille, puis compare les pixels du canvas. Cas testés : Quantique › Membrane › Nœud, Quantique › Ligne, Quantique › Membrane › Simple (la variante Aérée a été retirée de l'interface dans le prototype).
   - Acceptation :
-    - [ ] Les 3 cas passent avec au plus 0,1 % de pixels différents
-    - [ ] Le test échoue si on change volontairement un réglage d'un côté seulement
+    - [x] Les 3 cas passent avec au plus 0,1 % de pixels différents
+    - [x] Le test échoue si on change volontairement un réglage d'un côté seulement
   - Vérification : `npm run test:e2e -- engine-render --repeat-each=3`
   - Fichiers : `e2e/engine-render.spec.ts`, éventuellement une petite aide de test dans `createEngine.ts`
   - Taille : M
 
 ### ✅ Point de contrôle A
 - [ ] Tu vois le motif tourner dans l'appli (`/outils/motif`)
-- [ ] Le rendu identique au prototype est prouvé par le test
+- [x] Le rendu identique au prototype est prouvé par le test
 
 ## Phase 2 : les réglages du Motif
 

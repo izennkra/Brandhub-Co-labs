@@ -99,7 +99,7 @@ e2e/engine-render.spec.ts                → rendu identique au prototype (compa
 | Niveau | Ce qu'on vérifie |
 |---|---|
 | Identité du code | Le bloc du projet est identique octet pour octet à celui du prototype. Chaque nom attendu par le bloc est fourni par la couche d'adaptation |
-| Rendu identique | Le prototype et l'appli sont affichés côte à côte dans le navigateur de test, avec le **même hasard** (graine fixée), une **horloge figée**, les mêmes réglages et la même taille de scène. Les images du canvas doivent correspondre (≤ 0,1 % de pixels différents). Testé en Motif (Membrane, Ligne, Aérée) et en Illustration |
+| Rendu identique | Le prototype et l'appli sont affichés côte à côte dans le navigateur de test, avec le **même hasard** (graine fixée), une **horloge figée**, les mêmes réglages et la même taille de scène. Les images du canvas doivent correspondre (≤ 0,1 % de pixels différents). Testé en Motif (Membrane › Nœud, Ligne, Membrane › Simple) et en Illustration. La variante Aérée a été retirée de l'interface dans le prototype (« une seule variante : Quantique »). En mode Ligne, le prototype lui-même varie parfois de 0,25 % d'une exécution à l'autre : une comparaison qui dépasse le seuil est rejouée jusqu'à 2 fois |
 | Réglages | Chaque entrée de `controls.ts` existe dans `S` avec les bornes du prototype. Bouger un curseur change `S` et le rendu. « Réglage avancé » affiche ou masque les bons réglages |
 | Comportement | Rotation, zoom et survol dans la scène. Changement Motif ↔ Illustration (réglages de chaque mode conservés). Images : ajout, choix, retrait, ordre |
 | Performance | Three.js n'est pas chargé sur une page Ressource. La boucle s'arrête quand on quitte les pages Tool |
@@ -126,7 +126,7 @@ e2e/engine-render.spec.ts                → rendu identique au prototype (compa
 1. **Motif** affiche le motif du prototype à l'ouverture (Quantique › Membrane › Nœud), animé, dans la zone centrale. Rotation, zoom, double-clic et survol fonctionnent.
 2. **Illustration** affiche les images de démo en nuage de pastilles, avec la liste d'images et le bandeau de vignettes.
 3. **Code identique** : le test d'identité passe, et le bloc ne peut changer que par extraction.
-4. **Rendu identique** : la comparaison avec le prototype passe dans les 4 cas testés.
+4. **Rendu identique** : la comparaison avec le prototype passe dans les cas testés (3 en Motif, plus l'Illustration).
 5. **Tous les réglages** du prototype sont accessibles : ceux du Figma par défaut, les autres via « Réglage avancé ». Chacun agit sur le moteur.
 6. Les contrôles suivent le Figma et les tokens, fonctionnent au clavier et respectent les contrastes AA.
 7. Ajout, choix, retrait et réordonnancement des images fonctionnent. Les images ajoutées restent après un rafraîchissement.

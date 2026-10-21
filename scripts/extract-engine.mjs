@@ -12,7 +12,23 @@ const PROTOTYPE = join(ROOT, 'reference', 'prototype.html');
 const OUT_DIR = join(ROOT, 'src', 'lib', 'pattern-engine');
 
 // Ce que la couche d'adaptation lit dans le moteur. Ajouter un nom ici, puis relancer le script.
-const EXPORTS = ['S', 'canvas', 'renderer', 'regenerate', 'refreshColors', 'resetView', 'resize', 'frame'];
+const EXPORTS = [
+  'S',
+  'canvas',
+  'renderer',
+  'regenerate',
+  'refreshColors',
+  'resetView',
+  'resize',
+  'frame',
+  'MEMBRANE_BASE',
+  'mulberry32',
+  'loadLibrary',
+];
+
+// Variables du bloc que la couche d'adaptation doit pouvoir réaffecter, comme le faisait
+// l'interface du prototype (ex. « rng = mulberry32(…) » avant une nouvelle forme).
+const SETTERS = ['rng'];
 
 // Fonctions du navigateur que la couche d'adaptation remplace pour le bloc (sans toucher au bloc) :
 // requestAnimationFrame permet de mettre la boucle en pause hors des pages Tool.
@@ -69,7 +85,7 @@ function generate() {
   const block = findBlock(lines);
   const sha = createHash('sha256').update(block.text, 'utf8').digest('hex');
   const names = [...new Set([...findFreeNames(block.text), ...SHADOWED])].sort();
-  for (const name of EXPORTS) {
+  for (const name of [...EXPORTS, ...SETTERS]) {
     if (!new RegExp(`(?:const|let|function)\\s+${name}\\b`).test(block.text)) {
       throw new Error(`« ${name} » n'est pas défini dans le bloc moteur`);
     }
@@ -87,7 +103,10 @@ function generate() {
     BEGIN,
     block.text,
     END,
-    `  return { ${EXPORTS.map((name) => `get ${name}() { return ${name}; }`).join(', ')} };`,
+    `  return { ${[
+      ...EXPORTS.map((name) => `get ${name}() { return ${name}; }`),
+      ...SETTERS.map((name) => `set ${name}(value) { ${name} = value; }`),
+    ].join(', ')} };`,
     '}',
     '',
   ].join('\n');
