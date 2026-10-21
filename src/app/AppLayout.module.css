@@ -1,0 +1,39 @@
+.layout {
+  display: flex;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-2);
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+/* Petit écran : bouton « menu » posé en haut à gauche de la page. */
+.menuButton {
+  position: fixed;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: var(--z-menu-button);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-icon-button);
+  height: var(--size-icon-button);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-control);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-backdrop);
+  background: var(--color-backdrop);
+}
