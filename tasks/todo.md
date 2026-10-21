@@ -16,12 +16,12 @@
   - Fichiers : `package.json`, `vite.config.ts`, `tsconfig.json`, `eslint.config.js`, `src/main.tsx`, `e2e/smoke.spec.ts`
   - Taille : M
 
-- [ ] **Tâche 2 : relevé et harmonisation des valeurs du Figma**
+- [x] **Tâche 2 : relevé et harmonisation des valeurs du Figma**
   - Description : avec le MCP Figma, relever espacements, tailles de texte, interlignages, graisses, polices, arrondis, couleurs et tailles d'icônes des 8 écrans. Les ramener aux échelles de la spec et vérifier les contrastes. **Aucun code d'interface.**
   - Acceptation :
-    - [ ] `docs/design-tokens.md` contient le tableau « valeur Figma → valeur retenue » pour chaque famille
-    - [ ] Chaque couleur de texte a son ratio de contraste ; ceux sous WCAG AA sont signalés avec une proposition
-    - [ ] Les polices sont identifiées, avec leur source et leur licence d'usage web
+    - [x] `docs/design-tokens.md` contient le tableau « valeur Figma → valeur retenue » pour chaque famille
+    - [x] Chaque couleur de texte a son ratio de contraste ; ceux sous WCAG AA sont signalés avec une proposition
+    - [x] Les polices sont identifiées, avec leur source et leur licence d'usage web
   - Vérification : relecture par toi
   - Dépend de : 1
   - Fichiers : `docs/design-tokens.md`
