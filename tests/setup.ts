@@ -29,6 +29,12 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
   const fakeEngine = {
     core: { S, PALETTE },
     actions: {
+      images: () => [],
+      pickImage: () => {},
+      moveImage: () => {},
+      deleteImage: async () => {},
+      toggleLoop: () => {},
+      addImages: async () => {},
       setApp: (mode: string) => {
         S.app = mode;
       },

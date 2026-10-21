@@ -90,11 +90,11 @@
   - Fichiers : `src/lib/pattern-engine/createEngine.ts`, `src/pages/tool/ToolPage.tsx`, `e2e/engine-render.spec.ts`
   - Taille : M
 
-- [ ] **Tâche 9 : images de l'Illustration**
+- [x] **Tâche 9 : images de l'Illustration**
   - Description : section « Images » (liste, glisser pour réordonner, croix pour retirer, image choisie encadrée) et bandeau de vignettes sous la scène, avec « + » pour ajouter. Les images ajoutées sont conservées dans le navigateur.
   - Acceptation :
-    - [ ] Ajout, choix, retrait et ordre fonctionnent, à la souris et au clavier
-    - [ ] Les images ajoutées restent après un rafraîchissement
+    - [x] Ajout, choix, retrait et ordre fonctionnent, à la souris et au clavier
+    - [x] Les images ajoutées restent après un rafraîchissement
   - Vérification : `npm test && npm run test:e2e`
   - Fichiers : `src/components/engine/ImageList.tsx`, `ImageStrip.tsx` (+ css), `tests/images.test.tsx`, `e2e/illustration.spec.ts`
   - Taille : M

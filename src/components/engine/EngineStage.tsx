@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ToolPageDef } from '../../app/navigation';
 import type { Engine } from '../../lib/pattern-engine/createEngine';
+import { useEngine } from '../EditorPanel/useEngine';
 import styles from './EngineStage.module.css';
+import { ImageStrip } from './ImageStrip';
 
 type Status = 'loading' | 'ready' | 'error';
 
@@ -10,6 +12,7 @@ type Status = 'loading' | 'ready' | 'error';
 export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']> }) {
   const host = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>('loading');
+  const illustration = useEngine(mode === 'illustration');
 
   useEffect(() => {
     const element = host.current;
@@ -44,6 +47,17 @@ export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']>
         <p className={styles.message} role="alert">
           Le moteur n’a pas pu démarrer. Recharge la page ; si le problème continue, préviens l’équipe.
         </p>
+      )}
+      {illustration && status === 'ready' && (
+        <ImageStrip
+          images={illustration.actions.images()}
+          loop={Boolean(illustration.core.S.imgLoop)}
+          onPick={illustration.actions.pickImage}
+          onMove={illustration.actions.moveImage}
+          onDelete={(index) => void illustration.actions.deleteImage(index)}
+          onToggleLoop={illustration.actions.toggleLoop}
+          onAdd={(files) => void illustration.actions.addImages(files)}
+        />
       )}
     </div>
   );

@@ -4,7 +4,12 @@
 import geistLatinUrl from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
 import * as THREE from 'three';
 import type { ControlEffect } from './controls';
-import { runPrototypeEngine, type EngineEnv, type PrototypeEngine } from './prototype-engine.js';
+import {
+  runPrototypeEngine,
+  type EngineEnv,
+  type EngineImage,
+  type PrototypeEngine,
+} from './prototype-engine.js';
 
 // Messages du moteur (toast), réglages modifiés (settings), bibliothèque d'images (library).
 export const engineEvents = new EventTarget();
@@ -171,6 +176,89 @@ function createActions(core: PrototypeEngine, syncAll: () => void, toast: (messa
       // syncApp (ligne 3132) : images de démo si la bibliothèque est vide.
       if (mode === 'image' && !core.imgList.length) core.imgList = core.demoImages();
     },
+    // ---------- Images de l'Illustration (interface du prototype, lignes 2800 à 2890) ----------
+    /** Liste à afficher : nom, vignette, boucle, image choisie. */
+    images() {
+      return core.imgList.map((image, index) => ({
+        name: image.name,
+        thumb: thumbnail(image),
+        inLoop: image.inLoop !== false,
+        selected: index === core.selImg,
+      }));
+    },
+    // loadTone (ligne 2802) : les curseurs de tons montrent ceux de l'image choisie.
+    loadTone(index: number) {
+      const image = core.imgList[index];
+      if (!image) return;
+      core.selImg = index;
+      image.tone = Object.assign(core.toneFromS(), image.tone || {});
+      core.TONE_KEYS.forEach((key) => (core.S[key] = image.tone![key]));
+      syncAll();
+    },
+    // toneChanged (ligne 2809).
+    saveTone() {
+      const image = core.imgList[core.selImg];
+      if (!image) return;
+      image.tone = core.toneFromS();
+      core.imgDirty = true;
+      core.saveImageMeta(image);
+    },
+    // pick (ligne 2861).
+    pickImage(index: number) {
+      core.showImage(index);
+      actions.loadTone(index);
+    },
+    // moveImage (ligne 2836).
+    moveImage(from: number, to: number) {
+      const list = core.imgList;
+      if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return;
+      const current = list[core.curImg];
+      const selected = list[core.selImg];
+      const [moved] = list.splice(from, 1);
+      list.splice(to, 0, moved);
+      const base = Date.now();
+      list.forEach((image, i) => {
+        image.t = base + i;
+        core.saveImageMeta(image);
+      });
+      core.curImg = Math.max(0, list.indexOf(current));
+      core.selImg = Math.max(0, list.indexOf(selected));
+      core.imgTr = null;
+      core.imgDirty = true;
+      syncAll();
+    },
+    // deleteImage (ligne 2845) ; la double confirmation est gérée par le panneau.
+    async deleteImage(index: number) {
+      const image = core.imgList[index];
+      if (!image) return;
+      if (image.id) {
+        try {
+          await core.Store.del('images', image.id);
+          await core.Store.del('imagesrc', image.id);
+        } catch {
+          // comme le prototype : l'image est retirée de la liste même si le stockage échoue
+        }
+      }
+      core.imgList.splice(index, 1);
+      if (!core.imgList.length) core.imgList = core.demoImages();
+      core.curImg = Math.min(core.curImg, core.imgList.length - 1);
+      core.selImg = Math.min(core.selImg, core.imgList.length - 1);
+      core.imgTr = null;
+      core.imgDirty = true;
+      actions.loadTone(core.selImg);
+    },
+    // Coche « Inclure dans la boucle » de la bande d'images (ligne 2876).
+    toggleLoop(index: number) {
+      const image = core.imgList[index];
+      if (!image) return;
+      image.inLoop = !(image.inLoop !== false);
+      core.saveImageMeta(image);
+      syncAll();
+    },
+    /** Ajout d'images (fichiers choisis ou déposés) : le moteur les lit, les enregistre et affiche la dernière. */
+    addImages(files: FileList | File[]) {
+      return core.addImages(files);
+    },
     // Pastilles carrées « Fond » (prototype ligne 3530).
     setBackground(id: string) {
       core.S.bg = id;
@@ -200,11 +288,31 @@ function createActions(core: PrototypeEngine, syncAll: () => void, toast: (messa
       }
       // Longueur et ondulation de la ligne (ligne 3057).
       if (effect === 'buildLine' && core.isLine()) core.buildLine(true);
-      // toneChanged, dirtyImg, restartLoop : propres à l'Illustration, branchés avec elle (tâche 10).
+      // Tons de l'image choisie (toneChanged, ligne 2809) et trame (dirtyImg, ligne 2825).
+      if (effect === 'toneChanged') actions.saveTone();
+      if (effect === 'dirtyImg') core.imgDirty = true;
+      // « Boucle entre les images » (ligne 2789).
+      if (effect === 'restartLoop') {
+        core.imgTime = 0;
+        core.imgTr = null;
+      }
       syncAll();
     },
   };
   return actions;
+}
+
+// Vignette d'une image (renderThumbs, ligne 2869) : 140 px au plus, calculée une fois.
+function thumbnail(image: EngineImage) {
+  if (!image.thumb) {
+    const thumb = document.createElement('canvas');
+    const scale = 140 / Math.max(image.canvas.width, image.canvas.height);
+    thumb.width = Math.max(1, Math.round(image.canvas.width * scale));
+    thumb.height = Math.max(1, Math.round(image.canvas.height * scale));
+    thumb.getContext('2d')?.drawImage(image.canvas, 0, 0, thumb.width, thumb.height);
+    image.thumb = thumb.toDataURL('image/png');
+  }
+  return image.thumb;
 }
 
 // Points d'accroche réservés aux tests navigateur (rendu identique au prototype) : sans effet sinon.
@@ -241,9 +349,15 @@ async function createEngine(): Promise<Engine> {
   // Chaque mise à jour des réglages (par le moteur ou par le panneau) prévient l'appli.
   env.syncers.push(() => engineEvents.dispatchEvent(new Event('settings')));
 
+  const actions = createActions(core, () => env.syncers.forEach((sync) => sync()), env.toast);
+  // onLibraryChanged (ligne 2888) : bibliothèque d'images chargée ou modifiée par le moteur.
+  engineEvents.addEventListener('library', () =>
+    actions.loadTone(Math.min(core.selImg, core.imgList.length - 1)),
+  );
+
   const ready: Engine = {
     core,
-    actions: createActions(core, () => env.syncers.forEach((sync) => sync()), env.toast),
+    actions,
     canvas,
     attach(host) {
       host.append(canvas);

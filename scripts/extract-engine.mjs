@@ -34,11 +34,31 @@ const EXPORTS = [
   'worldR',
   'imgList',
   'demoImages',
+  'addImages',
+  'showImage',
+  'saveImageMeta',
+  'Store',
+  'TONE_KEYS',
+  'toneFromS',
+  'curImg',
+  'selImg',
 ];
 
 // Variables du bloc que la couche d'adaptation doit pouvoir réaffecter, comme le faisait
 // l'interface du prototype (ex. « rng = mulberry32(…) » avant une nouvelle forme).
-const SETTERS = ['rng', 'lineLobes', 'motifStash', 'imageStash', 'worldR', 'imgTime', 'imgDirty', 'imgList'];
+const SETTERS = [
+  'rng',
+  'lineLobes',
+  'motifStash',
+  'imageStash',
+  'worldR',
+  'imgTime',
+  'imgDirty',
+  'imgList',
+  'curImg',
+  'selImg',
+  'imgTr',
+];
 
 // Fonctions du navigateur que la couche d'adaptation remplace pour le bloc (sans toucher au bloc) :
 // requestAnimationFrame permet de mettre la boucle en pause hors des pages Tool.

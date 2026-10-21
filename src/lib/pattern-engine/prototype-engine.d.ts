@@ -16,6 +16,17 @@ export type EngineEnv = {
   libreTick: undefined;
 };
 
+// Image de l'Illustration (bibliothèque du moteur).
+export type EngineImage = {
+  name: string;
+  canvas: HTMLCanvasElement;
+  id?: string;
+  t?: number;
+  inLoop?: boolean;
+  tone?: EngineSettings;
+  thumb?: string;
+};
+
 export type PrototypeEngine = {
   readonly S: EngineSettings;
   readonly canvas: HTMLCanvasElement;
@@ -33,11 +44,20 @@ export type PrototypeEngine = {
   readonly PALETTE: ReadonlyArray<{ id: string; name: string; hex: string }>;
   readonly IMG_KEYS: readonly string[];
   readonly IMAGE_DEFAULTS: EngineSettings;
-  readonly demoImages: () => unknown[];
+  readonly demoImages: () => EngineImage[];
+  readonly addImages: (files: FileList | File[]) => Promise<void>;
+  readonly showImage: (index: number) => void;
+  readonly saveImageMeta: (image: EngineImage) => void;
+  readonly Store: { del: (collection: string, id: string) => Promise<void> };
+  readonly TONE_KEYS: readonly string[];
+  readonly toneFromS: () => EngineSettings;
+  curImg: number;
+  selImg: number;
+  imgTr: unknown;
   motifStash: (EngineSettings & { _wr?: number }) | null;
   imageStash: EngineSettings | null;
   worldR: number;
-  imgList: unknown[];
+  imgList: EngineImage[];
   rng: () => number;
   lineLobes: unknown[];
   imgTime: number;

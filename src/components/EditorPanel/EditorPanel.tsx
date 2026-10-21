@@ -2,6 +2,7 @@ import { useState, type Ref } from 'react';
 import type { EditorSection, ToolPageDef } from '../../app/navigation';
 import { CONTROLS, isVisible, type Control } from '../../lib/pattern-engine/controls';
 import { ColorPicker } from '../engine/ColorPicker';
+import { ImageList } from '../engine/ImageList';
 import { Toggle } from '../engine/Toggle';
 import { Icon } from '../Icon';
 import styles from './EditorPanel.module.css';
@@ -32,6 +33,8 @@ function storeAdvanced(on: boolean) {
 const PENDING_SECTIONS = new Set(['Préréglages partagés']);
 // Section Couleurs : choix du fond et des pastilles, puis « Répartition » (table des réglages).
 const COLORS_SECTION = 'Couleurs';
+// Section Images de l'Illustration : liste des images (choisir, retirer, réordonner).
+const IMAGES_SECTION = 'Images';
 
 // Panneau droit des pages Tool (Figma « Tool / … ») : en-tête repliable, sections, bouton Export.
 export function EditorPanel({
@@ -60,9 +63,10 @@ export function EditorPanel({
       : modeControls.filter((c) => c.section === section.title);
     const visible = controls.filter(shown);
     const colors = engineMode !== undefined && section.title === COLORS_SECTION;
+    const images = engineMode === 'illustration' && section.title === IMAGES_SECTION;
     // Section entièrement masquée dans l'état actuel (ex. Réseau en mode Ligne) : comme le prototype.
     if (!colors && controls.length > 0 && visible.length === 0) return [];
-    return [{ section, controls: visible, colors }];
+    return [{ section, controls: visible, colors, images }];
   });
 
   return (
@@ -92,14 +96,22 @@ export function EditorPanel({
       )}
 
       <div className={styles.sections}>
-        {visibleSections.map(({ section, controls, colors }) => (
+        {visibleSections.map(({ section, controls, colors, images }) => (
           <PanelSection key={`${pageKey}-${section.title}`} title={section.title} defaultOpen={section.open}>
-            {!colors && controls.length === 0 ? (
+            {!colors && !images && controls.length === 0 ? (
               <p>Réglages à venir.</p>
             ) : !engine ? (
               <p>Chargement des réglages…</p>
             ) : (
               <>
+                {images && (
+                  <ImageList
+                    images={engine.actions.images()}
+                    onPick={engine.actions.pickImage}
+                    onMove={engine.actions.moveImage}
+                    onDelete={(index) => void engine.actions.deleteImage(index)}
+                  />
+                )}
                 {colors && (
                   <ColorPicker
                     palette={engine.core.PALETTE}
