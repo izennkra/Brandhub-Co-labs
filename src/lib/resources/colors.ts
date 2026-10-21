@@ -44,14 +44,17 @@ export const formatHsl = (hex: string) => {
 };
 
 /** Couleur claire ? (pour écrire en foncé par-dessus) — luminance relative WCAG. */
-export function isLight(hex: string) {
+export function isLight(hex: string, threshold = 0.4) {
   const lin = (c: number) => {
     const v = c / 255;
     return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
   };
   const { r, g, b } = hexToRgb(hex);
-  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) > 0.4;
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) > threshold;
 }
+
+/** Petit texte sur cette couleur : foncé ou clair, celui qui contraste le mieux (seuil de luminance 0,2). */
+export const wantsDarkText = (hex: string) => isLight(hex, 0.2);
 
 // ---------- Neutres et nuances ----------
 // Les mélanges se font dans l'espace OKLab : les paliers paraissent réguliers à l'œil.
@@ -108,19 +111,43 @@ export function neutralScale(light: string, dark: string) {
 
 const WHITE = oklabToHex([1, 0, 0]);
 const BLACK = oklabToHex([0, 0, 0]);
-// part de blanc (au-dessus de 500) ou de noir (en dessous) mêlée à la couleur
-const TINT: Record<number, number> = { 50: 0.92, 100: 0.84, 200: 0.68, 300: 0.5, 400: 0.26 };
-const SHADE: Record<number, number> = { 600: 0.16, 700: 0.32, 800: 0.48, 900: 0.62, 950: 0.74 };
+// Luminosité visée à chaque palier (OKLab, 1 = blanc) : des écarts réguliers à l'œil.
+const LIGHTNESS: Record<number, number> = {
+  50: 0.97,
+  100: 0.935,
+  200: 0.88,
+  300: 0.8,
+  400: 0.71,
+  500: 0.62,
+  600: 0.54,
+  700: 0.46,
+  800: 0.39,
+  900: 0.32,
+  950: 0.25,
+};
 
-/** Nuances d'une couleur : 500 est la couleur elle-même, plus claire vers 50, plus foncée vers 950. */
-export function shadeScale(hex: string) {
-  return STEPS.map((step) => ({
-    step,
-    hex:
-      step === 500
-        ? normalizeHex(hex)!
-        : step < 500
-          ? mix(hex, WHITE, TINT[step])
-          : mix(hex, BLACK, SHADE[step]),
-  }));
+/**
+ * Nuances d'une couleur, du plus clair (50) au plus foncé (950). La couleur se range d'elle-même au palier
+ * de luminosité le plus proche (« base ») ; les autres paliers l'éclaircissent vers le blanc ou l'assombrissent
+ * vers le noir. Une couleur claire tombe ainsi vers 100, une couleur foncée vers 900.
+ */
+export function shadeScale(input: string) {
+  const hex = normalizeHex(input)!;
+  const L = hexToOklab(hex)[0];
+  const base = STEPS.reduce((best, step) =>
+    Math.abs(LIGHTNESS[step] - L) < Math.abs(LIGHTNESS[best] - L) ? step : best,
+  );
+  return STEPS.map((step) => {
+    const target = LIGHTNESS[step];
+    return {
+      step,
+      base: step === base,
+      hex:
+        step === base
+          ? hex
+          : target > L
+            ? mix(hex, WHITE, (target - L) / (1 - L))
+            : mix(hex, BLACK, (L - target) / L),
+    };
+  });
 }

@@ -7,10 +7,12 @@ import {
   formatCmyk,
   formatHsl,
   formatRgb,
+  hexToOklab,
   isLight,
   neutralScale,
   normalizeHex,
   shadeScale,
+  wantsDarkText,
 } from '../src/lib/resources/colors';
 import { lockEditor } from '../src/lib/resources/editor';
 import { iconSvgUrl, variantId } from '../src/lib/resources/icons';
@@ -68,12 +70,24 @@ describe('neutres et nuances', () => {
     expect(isLight(scale[8].hex)).toBe(false);
   });
 
-  it('décline chaque couleur : 500 est la couleur, plus claire vers 50, plus foncée vers 950', () => {
-    const scale = shadeScale('#ec5f14');
-    expect(scale.find((s) => s.step === 500)!.hex).toBe('#EC5F14');
-    expect(isLight(scale[0].hex)).toBe(true);
-    expect(isLight(scale[10].hex)).toBe(false);
-    expect(new Set(scale.map((s) => s.hex)).size).toBe(11);
+  it('décline chaque couleur du plus clair au plus foncé, la couleur rangée à son palier', () => {
+    const lightness = (hex: string) => hexToOklab(hex)[0];
+    const orange = shadeScale('#ec5f14');
+    expect(orange.filter((s) => s.base)).toEqual([{ step: 500, base: true, hex: '#EC5F14' }]);
+    expect(isLight(orange[0].hex)).toBe(true);
+    expect(isLight(orange[10].hex)).toBe(false);
+    expect(new Set(orange.map((s) => s.hex)).size).toBe(11);
+    for (let i = 1; i < 11; i++) expect(lightness(orange[i].hex)).toBeLessThan(lightness(orange[i - 1].hex));
+    // une couleur claire se range en haut de la gamme, une foncée en bas
+    expect(shadeScale('#F1E2DA').find((s) => s.base)!.step).toBeLessThanOrEqual(200);
+    expect(shadeScale('#431604').find((s) => s.base)!.step).toBeGreaterThanOrEqual(900);
+  });
+
+  it('écrit les codes des nuances dans la couleur de texte la plus lisible', () => {
+    // orange moyen : le texte foncé contraste mieux que le clair
+    expect(wantsDarkText('#F27848')).toBe(true);
+    expect(wantsDarkText('#B5470D')).toBe(false);
+    expect(wantsDarkText('#431604')).toBe(false);
   });
 
   it('Couleur : saisir les deux couleurs opposées construit les neutres', async () => {
@@ -86,8 +100,7 @@ describe('neutres et nuances', () => {
     await user.type(screen.getByRole('textbox', { name: 'Couleur foncée des neutres' }), '1B1B1B{Enter}');
     const list = await screen.findByRole('list', { name: 'Neutres' });
     expect(within(list).getAllByRole('listitem')).toHaveLength(11);
-    expect(within(list).getByText('Neutre 50')).toBeInTheDocument();
-    expect(within(list).getByRole('button', { name: 'Copier HEX #F7F4ED' })).toBeInTheDocument();
+    expect(within(list).getByRole('button', { name: 'Copier Neutres 50 #F7F4ED' })).toBeInTheDocument();
   });
 });
 
@@ -186,6 +199,13 @@ describe('mode édition des Ressources', () => {
       'aria-disabled',
       'false',
     );
+    // les nuances de la couleur se construisent seules ; plus de section Dégradés
+    const shades = screen.getByRole('list', { name: 'Orange' });
+    expect(within(shades).getAllByRole('listitem')).toHaveLength(11);
+    expect(
+      within(shades).getByRole('button', { name: 'Copier Orange 500 #EC5F14 (couleur d’origine)' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Dégradés' })).not.toBeInTheDocument();
   });
 
   it('Logo : un seul SVG par section, décliné dans chaque couleur de la marque', async () => {
@@ -236,6 +256,11 @@ describe('mode édition des Ressources', () => {
     expect(screen.queryByRole('button', { name: 'Télécharger Geist Regular' })).not.toBeInTheDocument();
     expect(screen.getByText('Titre XXL')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copier le code CSS' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copier le CSS de Titre XXL' })).toBeInTheDocument();
+    // chaque graisse est écrite dans sa graisse
+    expect(within(screen.getByRole('list', { name: 'Graisses' })).getByText('700 Bold')).toHaveStyle({
+      fontWeight: '700',
+    });
   });
 
   it('Patterns prédéfinis : filtre par format, en attendant les layouts', async () => {

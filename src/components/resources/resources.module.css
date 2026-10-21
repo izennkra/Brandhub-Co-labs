@@ -21,6 +21,18 @@
   letter-spacing: var(--tracking-ui);
 }
 
+.sectionHeading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: var(--size-text-max);
+}
+
+.sectionDescription {
+  color: var(--color-text-secondary);
+  line-height: var(--leading-body);
+}
+
 .sectionActions {
   display: flex;
   flex-wrap: wrap;

@@ -7,10 +7,10 @@ import { Empty, Section } from '../../components/resources/Section';
 import {
   formatCmyk,
   formatRgb,
-  isLight,
   neutralScale,
   normalizeHex,
   shadeScale,
+  wantsDarkText,
 } from '../../lib/resources/colors';
 import { copyToClipboard, downloadBlob } from '../../lib/resources/download';
 import { useDownloadAll } from '../../lib/resources/downloadAll';
@@ -20,8 +20,8 @@ import { nearestPantone } from '../../lib/resources/pantone';
 import { useCollection, type Entry } from '../../lib/resources/useCollection';
 import page from './ColorPage.module.css';
 
-// Page Couleur : palette principale, palette secondaire (couleurs d'accent), neutres construits
-// à partir de deux couleurs opposées, nuances de chaque couleur de la palette, dégradés.
+// Page Couleur : palette principale, palette secondaire (couleurs d'accent), nuances de chaque couleur
+// des deux palettes (calculées seules), puis neutres construits à partir de deux couleurs opposées.
 // On saisit un nom et un code HEX : RVB, CMJN et Pantone (le plus proche) sont calculés,
 // et peuvent être corrigés à la main (CMJN et Pantone).
 type Group = 'principale' | 'secondaire';
@@ -34,16 +34,21 @@ type Color = {
   pantone?: string;
 };
 type Neutrals = { light: string; dark: string };
-type Gradient = { name: string; from: string; to: string; angle: number };
 
 const groupOf = (color: Color): Group =>
   color.group === 'secondaire' || color.group === 'neutres' ? 'secondaire' : 'principale';
 
-const PALETTES: { id: Group; title: string; hint: string }[] = [
-  { id: 'principale', title: 'Palette de couleur principale', hint: 'Les couleurs qui portent la marque.' },
+const PALETTES: { id: Group; title: string; short: string; hint: string }[] = [
+  {
+    id: 'principale',
+    title: 'Palette de couleur principale',
+    short: 'Principale',
+    hint: 'Les couleurs qui portent la marque.',
+  },
   {
     id: 'secondaire',
     title: 'Palette de couleur secondaire',
+    short: 'Secondaire',
     hint: 'Les couleurs d’accent, en appui de la palette principale.',
   },
 ];
@@ -81,7 +86,8 @@ function Values({ hex, cmyk, pantone }: { hex: string; cmyk?: string; pantone?: 
           }
           onClick={() => copy(value)}
         >
-          <span>{value}</span>
+          <span className={page.valueLabel}>{label}</span>
+          <span className={page.valueText}>{value}</span>
           <Icon name="square-behind-square2" size="xs" />
         </button>
       ))}
@@ -175,83 +181,25 @@ function ColorCard({
   );
 }
 
-function GradientCard({
-  gradient,
-  editing,
-  update,
-  onDelete,
-}: {
-  gradient: Entry<Gradient>;
-  editing: boolean;
-  update: (patch: Partial<Gradient>) => void;
-  onDelete: () => void;
-}) {
-  const from = normalizeHex(gradient.from),
-    to = normalizeHex(gradient.to);
-  const css = from && to ? `linear-gradient(${gradient.angle}deg, ${from}, ${to})` : '';
-  return (
-    <li className={page.card}>
-      <div className={page.swatch} data-empty={!css} style={css ? { background: css } : undefined} />
-      <EditableText
-        value={gradient.name}
-        label="Nom du dégradé"
-        editing={editing}
-        onSave={(name) => update({ name })}
-        className={page.name}
-      />
-      {editing ? (
-        <div className={page.fields}>
-          <HexField
-            label={`Couleur de départ de ${gradient.name}`}
-            value={gradient.from}
-            onSave={(hex) => update({ from: hex })}
-          />
-          <HexField
-            label={`Couleur d’arrivée de ${gradient.name}`}
-            value={gradient.to}
-            onSave={(hex) => update({ to: hex })}
-          />
-          <Field
-            label={`Angle de ${gradient.name} (degrés)`}
-            value={String(gradient.angle)}
-            onSave={(value) => update({ angle: Math.round(Number(value) || 0) % 360 })}
-          />
-          <DeleteButton name={gradient.name} onDelete={onDelete} />
-        </div>
-      ) : (
-        css && (
-          <div className={page.values}>
-            <button
-              type="button"
-              className={page.value}
-              aria-label={`Copier CSS ${css}`}
-              onClick={() => copy(css)}
-            >
-              <span>{css}</span>
-              <Icon name="square-behind-square2" size="xs" />
-            </button>
-          </div>
-        )
-      )}
-    </li>
-  );
-}
+type Step = { step: number; hex: string; base?: boolean };
 
-/** Rangée de nuances : un clic copie le code. */
-function Scale({ label, steps }: { label: string; steps: { step: number; hex: string }[] }) {
+/** Rangée de nuances : un clic copie le code ; la couleur d'origine est marquée. */
+function Scale({ label, steps }: { label: string; steps: Step[] }) {
   return (
     <ul className={page.scale} aria-label={label}>
-      {steps.map(({ step, hex }) => (
+      {steps.map(({ step, hex, base }) => (
         <li key={step}>
           <button
             type="button"
             className={page.step}
-            data-light={isLight(hex)}
+            data-light={wantsDarkText(hex)}
+            data-base={base || undefined}
             style={{ background: hex }}
-            aria-label={`Copier ${label} ${step} ${hex}`}
+            aria-label={`Copier ${label} ${step} ${hex}${base ? ' (couleur d’origine)' : ''}`}
+            title={base ? 'Couleur d’origine' : undefined}
             onClick={() => copy(hex)}
           >
-            <span>{step}</span>
+            <span className={page.stepNumber}>{step}</span>
             <span>{hex}</span>
           </button>
         </li>
@@ -260,11 +208,50 @@ function Scale({ label, steps }: { label: string; steps: { step: number; hex: st
   );
 }
 
+/** Une gamme : nom, bouton « Copier en CSS », puis les 11 paliers. */
+function ScaleRow({
+  name,
+  hex,
+  steps,
+  showName = true,
+}: {
+  name: string;
+  hex?: string;
+  steps: Step[];
+  showName?: boolean;
+}) {
+  const css = steps.map((s) => `--${cssName(name)}-${s.step}: ${s.hex};`).join('\n');
+  return (
+    <div className={page.shadeRow}>
+      <div className={page.shadeHead}>
+        <span className={page.shadeName} hidden={!showName}>
+          {hex && <span className={page.dot} style={{ background: hex }} aria-hidden />}
+          {name}
+        </span>
+        <button
+          type="button"
+          className={page.copyCss}
+          aria-label={`Copier les nuances de ${name} en CSS`}
+          onClick={async () =>
+            notify(
+              (await copyToClipboard(css))
+                ? `Nuances de ${name} copiées en CSS.`
+                : 'La copie n’a pas été autorisée.',
+            )
+          }
+        >
+          <Icon name="square-behind-square2" size="xs" /> CSS
+        </button>
+      </div>
+      <Scale label={name} steps={steps} />
+    </div>
+  );
+}
+
 export function ColorPage() {
   const { unlocked } = useEditor();
   const colors = useCollection<Color>('res-colors');
   const neutrals = useCollection<Neutrals>('res-neutrals');
-  const gradients = useCollection<Gradient>('res-gradients');
   const reorder = useReorder(colors.move);
 
   const neutral = neutrals.items[0];
@@ -283,7 +270,7 @@ export function ColorPage() {
       lines.push(`  --${name}: ${normalizeHex(color.hex)};`);
       for (const { step, hex } of shadeScale(color.hex)) lines.push(`  --${name}-${step}: ${hex};`);
     }
-    for (const { step, hex } of neutralSteps ?? []) lines.push(`  --neutre-${step}: ${hex};`);
+    for (const { step, hex } of neutralSteps ?? []) lines.push(`  --neutres-${step}: ${hex};`);
     return `:root {\n${lines.join('\n')}\n}\n`;
   };
   useDownloadAll(
@@ -297,8 +284,8 @@ export function ColorPage() {
   const saveNeutral = (patch: Partial<Neutrals>) =>
     neutral ? neutrals.update(neutral.id, patch) : neutrals.add({ light: '', dark: '', ...patch });
 
-  if (!colors.loaded || !neutrals.loaded || !gradients.loaded) return null;
-  if (!colors.items.length && !neutralSteps && !gradients.items.length && !unlocked)
+  if (!colors.loaded || !neutrals.loaded) return null;
+  if (!colors.items.length && !neutralSteps && !unlocked)
     return <Empty>Aucune couleur pour l’instant.</Empty>;
 
   return (
@@ -310,6 +297,7 @@ export function ColorPage() {
           <Section
             key={p.id}
             title={p.title}
+            description={list.length ? `${p.hint} Clique sur une valeur pour la copier.` : undefined}
             actions={
               unlocked && (
                 <button
@@ -342,90 +330,54 @@ export function ColorPage() {
         );
       })}
 
-      {(neutralSteps || unlocked) && (
-        <Section title="Neutres">
-          {unlocked && (
-            <>
-              <p className={page.hint}>
-                Saisis tes deux couleurs opposées : la plus claire (50) et la plus foncée (950). Les paliers
-                entre les deux se construisent seuls.
-              </p>
-              <div className={page.pairFields}>
-                <HexField
-                  label="Couleur claire des neutres"
-                  value={neutral?.light ?? ''}
-                  onSave={(hex) => saveNeutral({ light: hex })}
-                />
-                <HexField
-                  label="Couleur foncée des neutres"
-                  value={neutral?.dark ?? ''}
-                  onSave={(hex) => saveNeutral({ dark: hex })}
-                />
+      {palette.length > 0 && (
+        <Section
+          title="Nuances"
+          description="Calculées à partir de chaque couleur des palettes : elles suivent toute modification. La couleur d’origine est marquée d’un point. Clique sur une case pour copier son code."
+        >
+          {PALETTES.map((p) => {
+            const list = palette.filter((c) => groupOf(c) === p.id);
+            if (!list.length) return null;
+            return (
+              <div key={p.id} className={page.shadeGroup}>
+                <h3 className={page.groupTitle}>{p.short}</h3>
+                {list.map((color) => (
+                  <ScaleRow
+                    key={color.id}
+                    name={color.name}
+                    hex={normalizeHex(color.hex)!}
+                    steps={shadeScale(color.hex)}
+                  />
+                ))}
               </div>
-            </>
+            );
+          })}
+        </Section>
+      )}
+
+      {(neutralSteps || unlocked) && (
+        <Section
+          title="Neutres"
+          description="Fonds, textes et traits : onze paliers entre une couleur claire (50) et une couleur foncée (950)."
+        >
+          {unlocked && (
+            <div className={page.pairFields}>
+              <HexField
+                label="Couleur claire des neutres"
+                value={neutral?.light ?? ''}
+                onSave={(hex) => saveNeutral({ light: hex })}
+              />
+              <HexField
+                label="Couleur foncée des neutres"
+                value={neutral?.dark ?? ''}
+                onSave={(hex) => saveNeutral({ dark: hex })}
+              />
+            </div>
           )}
           {neutralSteps ? (
-            <ul className={page.gridSmall} aria-label="Neutres">
-              {neutralSteps.map(({ step, hex }) => (
-                <li key={step} className={page.card}>
-                  <div className={page.swatch} data-small style={{ background: hex }} />
-                  <span className={page.name}>Neutre {step}</span>
-                  <Values hex={hex} />
-                </li>
-              ))}
-            </ul>
+            <ScaleRow name="Neutres" steps={neutralSteps} showName={false} />
           ) : (
             <Empty>Les neutres apparaîtront ici dès que les deux couleurs seront saisies.</Empty>
-          )}
-        </Section>
-      )}
-
-      {palette.length > 0 && (
-        <Section title="Nuances">
-          <p className={page.hint}>
-            Chaque couleur des palettes, éclaircie (50 à 400) et assombrie (600 à 950) ; 500 est la couleur
-            d’origine.
-          </p>
-          <div className={page.shades}>
-            {palette.map((color) => (
-              <div key={color.id} className={page.shadeRow}>
-                <span className={page.shadeName}>{color.name}</span>
-                <Scale label={color.name} steps={shadeScale(color.hex)} />
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {(gradients.items.length > 0 || unlocked) && (
-        <Section
-          title="Dégradés"
-          actions={
-            unlocked && (
-              <button
-                type="button"
-                className={styles.button}
-                onClick={() => gradients.add({ name: 'Nouveau dégradé', from: '', to: '', angle: 90 })}
-              >
-                <Icon name="plus-large" size="sm" /> Ajouter un dégradé
-              </button>
-            )
-          }
-        >
-          {gradients.items.length ? (
-            <ul className={page.grid} aria-label="Dégradés">
-              {gradients.items.map((gradient) => (
-                <GradientCard
-                  key={gradient.id}
-                  gradient={gradient}
-                  editing={unlocked}
-                  update={(patch) => gradients.update(gradient.id, patch)}
-                  onDelete={() => gradients.remove(gradient.id, `Dégradé supprimé : ${gradient.name}`)}
-                />
-              ))}
-            </ul>
-          ) : (
-            <Empty>Aucun dégradé.</Empty>
           )}
         </Section>
       )}

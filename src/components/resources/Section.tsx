@@ -1,20 +1,25 @@
 import type { ReactNode } from 'react';
 import styles from './resources.module.css';
 
-// Section d'une page Ressource (Figma : « Logo », « Logo symbole »…) : titre, actions, contenu.
+// Section d'une page Ressource (Figma : « Logo », « Logo symbole »…) : titre, description, actions, contenu.
 export function Section({
   title,
+  description,
   actions,
   children,
 }: {
   title: ReactNode;
+  description?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section className={styles.section}>
       <div className={styles.sectionHead}>
-        <h2 className={styles.sectionTitle}>{title}</h2>
+        <div className={styles.sectionHeading}>
+          <h2 className={styles.sectionTitle}>{title}</h2>
+          {description && <p className={styles.sectionDescription}>{description}</p>}
+        </div>
         {actions && <div className={styles.sectionActions}>{actions}</div>}
       </div>
       {children}
