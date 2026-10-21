@@ -29,6 +29,9 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
   const fakeEngine = {
     core: { S, PALETTE },
     actions: {
+      setApp: (mode: string) => {
+        S.app = mode;
+      },
       setBackground: (id: string) => {
         S.bg = id;
         notify();

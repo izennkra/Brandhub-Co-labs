@@ -8,7 +8,7 @@ export type NavPage = { path: string; label: string; icon: IconName };
 export type EditorSection = { title: string; open?: boolean };
 
 export type ToolPageDef = NavPage & {
-  engine?: 'motif'; // page affichant le moteur de patterns dans la zone centrale
+  engine?: 'motif' | 'illustration'; // page affichant le moteur de patterns dans la zone centrale
   pending: string; // texte d'attente, tant que la page n'a pas son contenu
   editorSections: EditorSection[]; // dans l'ordre du Figma
 };
@@ -42,6 +42,7 @@ export const TOOL_PAGES: ToolPageDef[] = [
     path: '/outils/illustration',
     label: 'Illustration',
     icon: 'circles-three',
+    engine: 'illustration',
     pending: 'Les illustrations arrivent avec la partie pattern-engine.',
     editorSections: [
       { title: 'Préréglages partagés', open: true },

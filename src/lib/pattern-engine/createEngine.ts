@@ -105,6 +105,7 @@ const LINE_PRESET = {
 };
 
 export type Structure = 1 | 2; // Membrane, Ligne
+export type AppMode = 'motif' | 'image'; // Motif, Illustration (valeurs de S.app dans le prototype)
 export type Shape = 0 | 1 | 2 | 3; // Nœud, Ample, Simple, Hasard
 
 // Actions de l'interface du prototype, reprises à l'identique pour la partie moteur
@@ -134,6 +135,41 @@ function createActions(core: PrototypeEngine, syncAll: () => void, toast: (messa
     setLineMode(mode: number) {
       core.S.lineMode = mode;
       core.lineLobes = [];
+    },
+    // Passage Motif ↔ Illustration (setApp, prototype ligne 3116) : chaque mode garde ses réglages.
+    setApp(mode: AppMode) {
+      const S = core.S;
+      if (S.app === mode) return;
+      const pick = (o: Record<string, unknown>) => {
+        const r: Record<string, unknown> = {};
+        core.IMG_KEYS.forEach((k) => (r[k] = o[k] instanceof Set ? new Set(o[k]) : o[k]));
+        return r;
+      };
+      if (mode === 'image') {
+        core.motifStash = Object.assign(pick(S), { _wr: core.worldR });
+        S.app = 'image';
+        Object.assign(S, core.imageStash || core.IMAGE_DEFAULTS);
+        core.imgTime = 0;
+        core.imgDirty = true;
+      } else {
+        core.imageStash = pick(S);
+        S.app = 'motif';
+        const stash = core.motifStash;
+        if (stash) {
+          core.worldR = stash._wr || core.worldR;
+          delete stash._wr;
+          Object.assign(S, stash);
+        } else {
+          Object.assign(S, pick(core.MEMBRANE_BASE));
+          core.regenerate();
+        }
+      }
+      if (S.dots instanceof Set) S.dots = new Set(S.dots);
+      syncAll();
+      core.refreshColors();
+      core.resetView();
+      // syncApp (ligne 3132) : images de démo si la bibliothèque est vide.
+      if (mode === 'image' && !core.imgList.length) core.imgList = core.demoImages();
     },
     // Pastilles carrées « Fond » (prototype ligne 3530).
     setBackground(id: string) {

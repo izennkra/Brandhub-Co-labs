@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ToolPageDef } from '../../app/navigation';
 import type { Engine } from '../../lib/pattern-engine/createEngine';
 import styles from './EngineStage.module.css';
 
 type Status = 'loading' | 'ready' | 'error';
 
-// Zone centrale des pages Tool : y place la scène du moteur (chargé à la demande, une seule fois).
-export function EngineStage() {
+// Zone centrale des pages Tool : y place la scène du moteur (chargé à la demande, une seule fois)
+// et met le moteur dans le mode de la page (Motif ou Illustration).
+export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']> }) {
   const host = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>('loading');
 
@@ -20,6 +22,7 @@ export function EngineStage() {
       .then((ready) => {
         if (cancelled) return;
         engine = ready;
+        ready.actions.setApp(mode === 'illustration' ? 'image' : 'motif');
         ready.attach(element);
         setStatus('ready');
       })
@@ -32,7 +35,7 @@ export function EngineStage() {
       cancelled = true;
       engine?.detach(element);
     };
-  }, []);
+  }, [mode]);
 
   return (
     <div ref={host} className={styles.stage} aria-busy={status === 'loading'}>

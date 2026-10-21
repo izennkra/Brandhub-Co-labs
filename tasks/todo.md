@@ -77,15 +77,15 @@
   - Taille : M
 
 ### ✅ Point de contrôle B
-- [ ] Tu règles le motif depuis le panneau Éditeur
+- [x] Tu règles le motif depuis le panneau Éditeur — validé le 21/10/2026
 
 ## Phase 3 : l'Illustration
 
-- [ ] **Tâche 8 : bascule Motif ↔ Illustration**
+- [x] **Tâche 8 : bascule Motif ↔ Illustration**
   - Description : passer d'une page à l'autre bascule le moteur de mode, en gardant les réglages de chaque mode (logique `setApp` du prototype reprise dans la couche). Le test de rendu identique est étendu à l'Illustration.
   - Acceptation :
-    - [ ] `/outils/illustration` affiche les images de démo en pastilles, identiques au prototype
-    - [ ] Aller et retour Motif ↔ Illustration : les réglages de chacun sont conservés
+    - [x] `/outils/illustration` affiche les images de démo en pastilles, identiques au prototype
+    - [x] Aller et retour Motif ↔ Illustration : les réglages de chacun sont conservés
   - Vérification : `npm run test:e2e -- engine-render --repeat-each=3`
   - Fichiers : `src/lib/pattern-engine/createEngine.ts`, `src/pages/tool/ToolPage.tsx`, `e2e/engine-render.spec.ts`
   - Taille : M

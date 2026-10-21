@@ -27,11 +27,18 @@ const EXPORTS = [
   'isLine',
   'buildLine',
   'PALETTE',
+  'IMG_KEYS',
+  'IMAGE_DEFAULTS',
+  'motifStash',
+  'imageStash',
+  'worldR',
+  'imgList',
+  'demoImages',
 ];
 
 // Variables du bloc que la couche d'adaptation doit pouvoir réaffecter, comme le faisait
 // l'interface du prototype (ex. « rng = mulberry32(…) » avant une nouvelle forme).
-const SETTERS = ['rng', 'lineLobes'];
+const SETTERS = ['rng', 'lineLobes', 'motifStash', 'imageStash', 'worldR', 'imgTime', 'imgDirty', 'imgList'];
 
 // Fonctions du navigateur que la couche d'adaptation remplace pour le bloc (sans toucher au bloc) :
 // requestAnimationFrame permet de mettre la boucle en pause hors des pages Tool.
@@ -83,13 +90,27 @@ function findFreeNames(block) {
   return [...names].sort();
 }
 
+// Noms déclarés au premier niveau du bloc (const, let, function), y compris « let a = 1, b = 2 ».
+function declaredNames(block) {
+  const source = ts.createSourceFile('/block.js', block, ts.ScriptTarget.ES2022, false, ts.ScriptKind.JS);
+  const names = new Set();
+  for (const statement of source.statements) {
+    if (ts.isFunctionDeclaration(statement) && statement.name) names.add(statement.name.text);
+    if (ts.isVariableStatement(statement))
+      for (const declaration of statement.declarationList.declarations)
+        if (ts.isIdentifier(declaration.name)) names.add(declaration.name.text);
+  }
+  return names;
+}
+
 function generate() {
   const lines = readFileSync(PROTOTYPE, 'utf8').split('\n');
   const block = findBlock(lines);
   const sha = createHash('sha256').update(block.text, 'utf8').digest('hex');
   const names = [...new Set([...findFreeNames(block.text), ...SHADOWED])].sort();
+  const declared = declaredNames(block.text);
   for (const name of [...EXPORTS, ...SETTERS]) {
-    if (!new RegExp(`(?:const|let|function)\\s+${name}\\b`).test(block.text)) {
+    if (!declared.has(name)) {
       throw new Error(`« ${name} » n'est pas défini dans le bloc moteur`);
     }
   }

@@ -160,6 +160,14 @@ const CASES: Case[] = [
     app: (page) => page.evaluate(() => (window as any).__engine.actions.setShape(2)), // eslint-disable-line @typescript-eslint/no-explicit-any
     prototype: clickPrototypeButton('Simple'),
   },
+  {
+    name: 'Illustration (images de démo)',
+    app: (page) => page.evaluate(() => (window as any).__engine.actions.setApp('image')), // eslint-disable-line @typescript-eslint/no-explicit-any
+    prototype: (page) =>
+      page.evaluate(() =>
+        document.querySelector<HTMLButtonElement>('#appSwitch button[data-app="image"]')!.click(),
+      ),
+  },
 ];
 
 test.describe('rendu identique au prototype', () => {

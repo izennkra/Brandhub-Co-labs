@@ -69,7 +69,7 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 | Partie | État |
 |---|---|
 | `app-shell` (structure globale, navigation, design system) | ✅ **terminée, fusionnée dans `main`** (PR n° 1) |
-| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 7 sur 12 faites** |
+| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 8 sur 12 faites** |
 | `data-store` (stockage partagé) | à faire |
 | `editor-access` (profil éditeur, mot de passe) | à faire |
 | `resources` (pages Ressource) | à faire |
@@ -96,7 +96,8 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
   - ✅ **Tâche 5** : composants `Slider`, `Toggle`, `Segmented` dans `src/components/engine/` (tokens ajoutés : `--size-toggle-knob`, `--size-slider-handle*`).
   - ✅ **Tâche 6** : panneau Motif branché (`EditorPanel` + `EngineControls` + `useEngine`), « Réglage avancé » mémorisé (`bhc.expert`), conditions d’affichage du prototype dans `controls.ts` (`when`), actions `change` / `setLineMode` dans `createEngine.ts` (`isLine`, `buildLine`, `lineLobes` exposés par le script). Couleurs et Préréglages affichent encore « Réglages à venir ». Libellés courts affichés : `SHORT_LABELS` / `SHORT_OPTIONS` dans `controls.ts` (une seule ligne partout, vérifié par `e2e/editor-panel.spec.ts`).
   - ✅ **Tâche 7** : section Couleurs (`ColorPicker`), actions `setBackground` / `toggleDot` dans `createEngine.ts` (`PALETTE` exposée), « Répartition » seulement avec plusieurs couleurs de pastilles.
-  - ⏸️ **Point de contrôle B** : à faire tester au porteur (régler le motif depuis le panneau). Ensuite tâche 8 (bascule Motif ↔ Illustration).
+  - ✅ **Point de contrôle B** : validé le 21/10/2026.
+  - ✅ **Tâche 8** : bascule Motif ↔ Illustration (`actions.setApp`, repris de `setApp` du prototype ; la page Illustration a `engine: 'illustration'`). Rendu identique prouvé en Illustration. Le script vérifie maintenant les noms exposés avec le compilateur TypeScript (gère `let a=…, b=…`).
 - Le panneau Éditeur à droite affiche encore « Réglages à venir » : (sections Couleurs et Préréglages partagés seulement : tâche 7 et partie data-store).
 - **Attention** : le raccourci est encore **H** dans `src/app/ToolLayout.tsx` (ligne 30). Le passage à ⌥ H est prévu à la **tâche 11**.
 

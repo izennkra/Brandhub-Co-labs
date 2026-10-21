@@ -106,3 +106,26 @@ test('panneau Motif : textes sur une ligne et barres justes, dans tous les état
     expect(await layoutProblems(page), mode).toEqual([]);
   }
 });
+
+test('aller-retour Motif ↔ Illustration : chaque mode garde ses réglages', async ({ page }) => {
+  // « Taille » existe dans les deux modes : le prototype garde une valeur par mode (IMG_KEYS).
+  const size = () => panel(page).getByRole('slider', { name: 'Taille', exact: true });
+  const menu = page.getByRole('navigation', { name: 'Navigation principale' });
+  await page.goto('/outils/motif');
+  await expect(size()).toBeVisible({ timeout: 15000 });
+  await size().focus();
+  await page.keyboard.press('End');
+  await expect(size()).toHaveAttribute('aria-valuetext', '3.50');
+
+  await menu.getByRole('link', { name: 'Illustration' }).click();
+  await expect(page.locator('main #scene')).toBeVisible();
+  await expect(size()).toHaveAttribute('aria-valuetext', '1.00'); // valeur d'origine de l'Illustration
+  await size().focus();
+  await page.keyboard.press('Home');
+  await expect(size()).toHaveAttribute('aria-valuetext', '0.20');
+
+  await menu.getByRole('link', { name: 'Motif' }).click();
+  await expect(size()).toHaveAttribute('aria-valuetext', '3.50');
+  await menu.getByRole('link', { name: 'Illustration' }).click();
+  await expect(size()).toHaveAttribute('aria-valuetext', '0.20');
+});

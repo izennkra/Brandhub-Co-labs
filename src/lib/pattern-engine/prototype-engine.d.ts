@@ -31,8 +31,17 @@ export type PrototypeEngine = {
   readonly isLine: () => boolean;
   readonly buildLine: (keep: boolean) => void;
   readonly PALETTE: ReadonlyArray<{ id: string; name: string; hex: string }>;
+  readonly IMG_KEYS: readonly string[];
+  readonly IMAGE_DEFAULTS: EngineSettings;
+  readonly demoImages: () => unknown[];
+  motifStash: (EngineSettings & { _wr?: number }) | null;
+  imageStash: EngineSettings | null;
+  worldR: number;
+  imgList: unknown[];
   rng: () => number;
   lineLobes: unknown[];
+  imgTime: number;
+  imgDirty: boolean;
 };
 
 export function runPrototypeEngine(env: EngineEnv): PrototypeEngine;
