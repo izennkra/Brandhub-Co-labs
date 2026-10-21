@@ -53,14 +53,14 @@
 
 ## Phase 2 : navigation
 
-- [ ] **Tâche 5 : colonne de gauche et pages Tool**
+- [x] **Tâche 5 : colonne de gauche et pages Tool**
   - Description : `AppLayout` + `Sidebar` (logo co-labs, badge BETA, liste des pages) et les 3 pages Tool (Motif, Illustrations iconographique, Layout editor) avec un emplacement réservé. L'accueil redirige vers Motif.
   - Acceptation :
-    - [ ] Les 3 pages s'ouvrent par clic et par adresse directe, et le rafraîchissement garde la page
-    - [ ] La page active est surlignée et porte `aria-current="page"`
+    - [x] Les 3 pages s'ouvrent par clic et par adresse directe, et le rafraîchissement garde la page
+    - [x] La page active est surlignée et porte `aria-current="page"`
   - Vérification : `npm test && npm run test:e2e`
   - Dépend de : 3, 4
-  - Fichiers : `src/app/router.tsx`, `src/app/AppLayout.tsx`, `src/components/Sidebar/*`, `src/pages/tool/*`, `e2e/navigation.spec.ts`
+  - Fichiers : `src/app/router.tsx`, `src/app/AppLayout.tsx`, `src/components/Sidebar/*`, `src/pages/tool/ToolPage.tsx`, `src/app/routes.tsx`, `e2e/navigation.spec.ts`
   - Taille : M
 
 - [ ] **Tâche 6 : sélecteur Tool / Ressource et pages Ressource**

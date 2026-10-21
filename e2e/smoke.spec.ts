@@ -9,8 +9,8 @@ test("l'application démarre sans erreur", async ({ page }) => {
 
   await page.goto('/');
 
-  await expect(page).toHaveTitle('Brand Hub · Co-labs');
-  await expect(page.getByRole('heading', { level: 1, name: 'co-labs' })).toBeVisible();
+  await expect(page).toHaveTitle('Motif · Brand Hub · Co-labs');
+  await expect(page.getByRole('img', { name: 'co-labs' })).toBeVisible();
   expect(errors).toEqual([]);
 });
 

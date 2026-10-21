@@ -64,6 +64,7 @@
 
   /* ---------- Tailles ---------- */
   --size-sidebar: 256px; /* colonne de gauche */
+  --size-logo: 28px; /* hauteur du logo co-labs (Figma 39,2 ÷ 1,44) */
   --size-panel: 272px; /* panneau Éditeur */
   --size-aside: 56px; /* colonne droite des pages Ressource */
   --size-control: 36px; /* champ, curseur, entrée de menu, segment, ligne d'interrupteur */

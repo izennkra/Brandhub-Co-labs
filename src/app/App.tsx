@@ -1,8 +1,8 @@
-// Page minimale de la tâche 1 : remplacée par la navigation à la tâche 5.
+import { createBrowserRouter, RouterProvider } from 'react-router';
+import { routes } from './routes';
+
+const router = createBrowserRouter(routes);
+
 export function App() {
-  return (
-    <main>
-      <h1>co-labs</h1>
-    </main>
-  );
+  return <RouterProvider router={router} />;
 }
