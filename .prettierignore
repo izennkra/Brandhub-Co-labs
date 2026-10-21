@@ -2,7 +2,6 @@
 *.md
 reference
 .claude
-skills-lock.json
 package-lock.json
 dist
 test-results

@@ -40,17 +40,7 @@ Puis, plus tard :
 
 > **Depuis le 22/10/2026 : on va vite.** Le porteur demande de ne plus suivre le process à la lettre et d'enlever toutes les étapes inutiles : pas de `SPEC-*.md` ni de `tasks/plan.md` pour une partie déjà cadrée, pas de `/review` en document séparé, pas de question « on enchaîne ? ». **On garde** : tests + 1 ou 2 erreurs volontaires, porte de qualité avant chaque commit, contrôle visuel si l'affichage change, moteur intouché, validation des maquettes.
 
-**Méthode** : les Agent Skills d'Addy Osmani (`.claude/skills/`, commandes dans `.claude/commands/`). Si `/spec`, `/plan`, `/build`, `/review`, `/ship` ne sont pas chargées automatiquement, lire `.claude/commands/<nom>.md` et la skill correspondante.
-
-1. **`/spec`** : poser **toutes** les questions de cadrage en une fois (choix cliquables), écrire `SPEC-<partie>.md`.
-2. **`/plan`** : `tasks/plan.md` + `tasks/todo.md` (petites tâches, critères d'acceptation, points de contrôle). L'ancien plan terminé va dans `tasks/archive/`.
-3. **`/build`** : les tâches **s'enchaînent sans demander « on enchaîne ? »**, un commit par tâche. On s'arrête **seulement** aux points de contrôle (le porteur teste) et quand une **maquette** doit être validée. Dans chaque tâche :
-   - tests d'abord (rouge), puis code (vert) ;
-   - **1 ou 2 erreurs volontaires ciblées** (« mutations ») qui doivent faire échouer le test, puis on remet le code ;
-   - contrôle visuel dans le navigateur **seulement si l'affichage change** ;
-   - commit + push.
-4. **`/review`** en fin de partie (5 axes) → `docs/review-<partie>.md`.
-5. **Pull request** vers `main`, proposée au porteur. On **ne fusionne que sur son accord explicite**.
+**Méthode** : les Agent Skills d'Addy Osmani ont été **supprimées du projet le 22/10/2026** (trop longues). On code directement, voir `CLAUDE.md` § Méthode. Pas de `SPEC-*.md`, de `tasks/` ni de `docs/review-*.md` pour les nouvelles parties.
 
 **Git** : une branche par partie (`feature/…`), jamais de travail direct sur `main`. Messages en français. Chaque commit se termine par :
 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
