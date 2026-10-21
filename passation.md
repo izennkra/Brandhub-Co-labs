@@ -1,7 +1,7 @@
 # Passation : Brand Hub · Co-labs
 
 > Document de reprise pour la prochaine IA (ou personne) qui travaille sur ce projet.
-> Mis à jour le 22/10/2026. Branche en cours : `feature/data-store` (créée depuis `main` après la fusion de la PR n° 2).
+> Mis à jour le 22/10/2026 (soir). Branche en cours : `feature/data-store` (code fait, poussé, en attente du test du porteur).
 > **Lire aussi, dans cet ordre** : `CLAUDE.md` (règles), `CAPABILITY-MAP.md` (carte), puis la section 5 ci-dessous (où on en est exactement).
 
 ---
@@ -37,6 +37,8 @@ Puis, plus tard :
 4. Le porteur n'est pas développeur : chaque étape doit être **expliquée, vérifiable et validée**.
 
 ## 4. Le process de travail (version accélérée, validée le 21/10/2026)
+
+> **Depuis le 22/10/2026 : on va vite.** Le porteur demande de ne plus suivre le process à la lettre et d'enlever toutes les étapes inutiles : pas de `SPEC-*.md` ni de `tasks/plan.md` pour une partie déjà cadrée, pas de `/review` en document séparé, pas de question « on enchaîne ? ». **On garde** : tests + 1 ou 2 erreurs volontaires, porte de qualité avant chaque commit, contrôle visuel si l'affichage change, moteur intouché, validation des maquettes.
 
 **Méthode** : les Agent Skills d'Addy Osmani (`.claude/skills/`, commandes dans `.claude/commands/`). Si `/spec`, `/plan`, `/build`, `/review`, `/ship` ne sont pas chargées automatiquement, lire `.claude/commands/<nom>.md` et la skill correspondante.
 
@@ -74,7 +76,7 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 |---|---|
 | `app-shell` (structure, navigation, design system) | ✅ terminée, fusionnée (PR n° 1) |
 | `pattern-engine` (Motif + Illustration) | ✅ **terminée, fusionnée dans `main` le 22/10/2026 (PR n° 2, commit `4fa7434`)**. Relecture : `docs/review-pattern-engine.md`. Plan archivé : `tasks/archive/pattern-engine-*.md` |
-| `data-store` (stockage partagé) | 🟡 **en cours : cadrage fait, spec à écrire** |
+| `data-store` (stockage partagé) | 🟡 **codé et poussé : le porteur teste, puis étapes Vercel et PR** |
 | `editor-access` (profil éditeur, mot de passe) | à faire |
 | `resources` (pages Ressource) | à faire |
 | `layout-editor` | à faire |
@@ -82,7 +84,13 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 
 ### Partie en cours : `data-store`
 
-- **Branche** : `feature/data-store`, créée depuis `main` à jour et poussée. Rien n'est codé : seuls ce document et l'archivage du plan précédent y sont.
+- **Branche** : `feature/data-store`, poussée. Commits `2203103` (service + module) et `eb8f864` (préréglages).
+- **Fait** :
+  - `api/store.ts` : fonction Vercel `/api/store` (contrat ci-dessous), données dans Upstash Redis (une table `bhc:<collection>`), variables `KV_REST_API_URL`/`KV_REST_API_TOKEN` (ou `UPSTASH_REDIS_REST_*`). Sans ces variables, le ping répond « absent » et tout reste dans le navigateur. Logique testée avec une base en mémoire (`tests/store.test.ts`).
+  - `src/lib/store/store.ts` : module de stockage de l'appli (`getStore()`), mêmes clés que le moteur. Pas encore utilisé : prêt pour les Ressources.
+  - `src/lib/pattern-engine/presets.ts` : section Préréglages recopiée du prototype (fichier léger : **ne pas importer `createEngine.ts` depuis le panneau**, sinon Three.js se charge sur les pages Ressource). Affichée par `src/components/engine/PresetList.tsx`. Moteur : seuls `orbit` et `storeReady` ajoutés à `EXPORTS` (SHA du bloc inchangé).
+  - Adaptations au fait que l'outil dépend de la page : la liste ne montre que les préréglages de l'outil affiché ; le préréglage étoilé s'applique quand son outil s'ouvre.
+- **Pas fait (volontairement)** : `/api/files` (Vercel Blob) → reporté à la partie `resources`, la seule qui en a besoin. Le sélecteur « Préréglage » posé sur la scène dans le prototype (`presetPill`) n'est pas repris (absent du Figma).
 - **Décisions du porteur (22/10/2026)**, à reporter dans `SPEC-data-store.md` :
   1. **Stockage** : Vercel + **Upstash Redis** (données) + **Vercel Blob** (gros fichiers : logos, images).
   2. **Périmètre** : le **service de stockage partagé** + la section **« Préréglages partagés »** (enregistrer, appliquer, supprimer, préréglage ouvert au démarrage, comme le prototype) + un **module de stockage côté appli** prêt pour les Ressources.
@@ -188,12 +196,7 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 
 ## 10. Prochaines étapes
 
-1. **`data-store`** (branche `feature/data-store`) :
-   1. écrire `SPEC-data-store.md` avec les 4 décisions et le contrat de `/api/store` (section 5) ;
-   2. écrire `tasks/plan.md` et `tasks/todo.md` ;
-   3. construire : service `/api/store` (logique testable + base en mémoire), `/api/files` (Blob), module `src/lib/store/`, section « Préréglages partagés » recopiée du prototype (lignes 2677-2775) ;
-   4. point de contrôle : le porteur teste les préréglages en local ;
-   5. donner au porteur les étapes Vercel (projet, Upstash, Blob) ; `/review` ; pull request.
-2. Puis, chacune avec spec → plan → build → review → PR : `editor-access`, `resources`, `layout-editor`.
+1. **`data-store`** (branche `feature/data-store`) : le porteur teste les préréglages en local (`npm run dev`, page Motif) ; puis étapes Vercel (projet, Upstash, Blob) ; pull request.
+2. Puis, en version rapide (section 4) : `editor-access`, `resources` (avec `/api/files` et Vercel Blob), `layout-editor`.
 3. **Export** (PNG, WebP, JPEG, SVG, vidéo, Figma) : à planifier (les réglages d'export du prototype ne sont pas dans `controls.ts`).
 4. **Temps 2** : `brand-settings`, `logo-variants`, `pattern-embed`.
