@@ -74,3 +74,73 @@
   color: var(--color-text-secondary);
   font-size: var(--text-xs);
 }
+
+.hint {
+  margin-top: calc(-1 * var(--space-4));
+  color: var(--color-text-secondary);
+}
+
+.pairFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--size-card-min)), 1fr));
+  gap: var(--space-4);
+  max-width: calc(var(--size-card-min) * 2 + var(--space-4));
+}
+
+/* paliers (neutres, nuances) : 11 cases côte à côte */
+.scale {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  min-height: calc(var(--space-16) + var(--space-4));
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-inverse);
+  font: inherit;
+  font-size: var(--text-xs);
+  text-align: left;
+  cursor: copy;
+}
+
+.step[data-light='true'] {
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-divider);
+}
+
+.step span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shades {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.shadeRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.shadeName {
+  font-weight: var(--weight-medium);
+}
+
+@media (max-width: 720px) {
+  .scale {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}

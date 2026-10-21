@@ -3,7 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
 import { routes } from '../src/app/routes';
-import { formatHsl, formatRgb, isLight, normalizeHex } from '../src/lib/resources/colors';
+import {
+  formatHsl,
+  formatRgb,
+  isLight,
+  neutralScale,
+  normalizeHex,
+  shadeScale,
+} from '../src/lib/resources/colors';
 import { lockEditor } from '../src/lib/resources/editor';
 import { sizedSvg } from '../src/lib/resources/svg';
 import { LOCAL_EDITOR_CODE } from '../src/lib/store/store';
@@ -36,6 +43,37 @@ describe('calculs de couleur', () => {
     expect(formatHsl('#EC5F14')).toBe('hsl(21 85% 50%)');
     expect(isLight('#F1E2DA')).toBe(true);
     expect(isLight('#431604')).toBe(false);
+  });
+});
+
+describe('neutres et nuances', () => {
+  it('construit 11 neutres entre les deux couleurs opposées', () => {
+    const scale = neutralScale('#F7F4ED', '#1B1B1B');
+    expect(scale.map((s) => s.step)).toEqual([50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]);
+    expect(scale[0].hex).toBe('#F7F4ED');
+    expect(scale[10].hex).toBe('#1B1B1B');
+    expect(isLight(scale[2].hex)).toBe(true);
+    expect(isLight(scale[8].hex)).toBe(false);
+  });
+
+  it('décline chaque couleur : 500 est la couleur, plus claire vers 50, plus foncée vers 950', () => {
+    const scale = shadeScale('#ec5f14');
+    expect(scale.find((s) => s.step === 500)!.hex).toBe('#EC5F14');
+    expect(isLight(scale[0].hex)).toBe(true);
+    expect(isLight(scale[10].hex)).toBe(false);
+    expect(new Set(scale.map((s) => s.hex)).size).toBe(11);
+  });
+
+  it('Couleur : saisir les deux couleurs opposées construit les neutres', async () => {
+    renderAt('/ressources/couleur');
+    const user = await unlock();
+    await user.type(
+      await screen.findByRole('textbox', { name: 'Couleur claire des neutres' }),
+      'F7F4ED{Enter}',
+    );
+    await user.type(screen.getByRole('textbox', { name: 'Couleur foncée des neutres' }), '1B1B1B{Enter}');
+    const list = await screen.findByRole('list', { name: 'Neutre' });
+    expect(within(list).getAllByRole('button')).toHaveLength(11);
   });
 });
 
@@ -81,7 +119,7 @@ describe('mode édition des Ressources', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Verrouiller' }));
-    const list = await screen.findByRole('list', { name: 'Couleurs de marque' });
+    const list = await screen.findByRole('list', { name: 'Palette principale' });
     expect(within(list).getByText('Orange')).toBeInTheDocument();
     expect(within(list).getByRole('button', { name: 'Copier RVB rgb(236 95 20)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Télécharger la palette (CSS)' })).toHaveAttribute(
