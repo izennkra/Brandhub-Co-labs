@@ -1,5 +1,5 @@
 import type { Engine } from '../../lib/pattern-engine/createEngine';
-import type { Control } from '../../lib/pattern-engine/controls';
+import { displayLabel, displayOptions, type Control } from '../../lib/pattern-engine/controls';
 import { Segmented } from '../engine/Segmented';
 import { Slider } from '../engine/Slider';
 import { Toggle } from '../engine/Toggle';
@@ -33,7 +33,7 @@ export function EngineControls({ engine, controls }: { engine: Engine; controls:
       return (
         <Slider
           key={control.key}
-          label={control.label}
+          label={displayLabel(control)}
           min={control.min}
           max={control.max}
           step={control.step}
@@ -46,7 +46,7 @@ export function EngineControls({ engine, controls }: { engine: Engine; controls:
       return (
         <Toggle
           key={control.key}
-          label={control.label}
+          label={displayLabel(control)}
           checked={Boolean(S[control.key])}
           onChange={(value) => change(control, value)}
         />
@@ -55,12 +55,12 @@ export function EngineControls({ engine, controls }: { engine: Engine; controls:
       <div key={control.key} className={styles.choice}>
         {!UNTITLED_CHOICES.has(control.key) && (
           <span className={styles.choiceLabel} aria-hidden="true">
-            {control.label}
+            {displayLabel(control)}
           </span>
         )}
         <Segmented
-          label={control.label}
-          options={control.options}
+          label={displayLabel(control)}
+          options={displayOptions(control)}
           value={Number(S[control.key])}
           onChange={(value) => change(control, value)}
         />

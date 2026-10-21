@@ -5,6 +5,9 @@
 }
 
 .choiceLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* toujours une seule ligne */
   color: var(--color-text-secondary);
   font-size: var(--text-xs);
   line-height: var(--leading-xs);

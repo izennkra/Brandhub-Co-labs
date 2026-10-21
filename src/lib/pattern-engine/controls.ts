@@ -249,5 +249,60 @@ export const CONTROLS: Control[] = [...ILLUSTRATION, ...MOTIF, ...BOTH].map((con
   VISIBLE_WHEN[control.key] ? { ...control, when: VISIBLE_WHEN[control.key] } : control,
 );
 
+// Libellés affichés dans le panneau : courts, toujours sur une seule ligne (demande du 21/10/2026).
+// Le libellé du prototype reste dans `label` ; le sous-menu ou la section donne le contexte.
+const SHORT_LABELS: Record<string, string> = {
+  imgLoop: 'Boucle d’images',
+  noiseSize: 'Taille variable',
+  imgHigh: 'Saturation noirs',
+  flow: 'Vitesse du flux',
+  grow: 'Croissance',
+  births: 'Apparitions',
+  synapses: 'Synapses',
+  maxLinks: 'Connexions',
+  lobeContrast: 'Contraste',
+  dataContrast: 'Contraste',
+  procMin: 'Taille de départ',
+  infoScale: 'Échelle',
+  infoGap: 'Écart légende',
+  lineLen: 'Longueur',
+  lineWave: 'Ondulation',
+  lineFade: 'Fondu des bouts',
+  lobeLen: 'Étirement',
+  junction: 'Gonflement',
+  pinchSpeed: 'Pulsation',
+  qCount: 'Quantité',
+  tubeR: 'Épaisseur',
+  fill: 'Remplissage',
+  neckDensity: 'Densité des cols',
+  relief: 'Relief',
+  fov: 'Perspective',
+  depthThin: 'Raréfaction',
+  swirl: 'Tourbillon',
+  density: 'Densité',
+  strands: 'Brins',
+  bundle: 'Ouverture',
+  fusion: 'Fusion',
+  contrast: 'Variation',
+  maxPx: 'Taille max.',
+  nodeSize: 'Neurones',
+  linePx: 'Fil',
+  hoverOn: 'Effet au survol',
+  hoverRadius: 'Rayon',
+  hoverForce: 'Force',
+  hoverIn: 'Ouverture',
+  hoverOut: 'Reconstruction',
+  sway: 'Balancement',
+};
+const SHORT_OPTIONS: Record<string, string[]> = {
+  hoverMode: ['Curseur', 'Forme entière'],
+};
+
+/** Libellé affiché (et annoncé) dans le panneau. */
+export const displayLabel = (control: Control) => SHORT_LABELS[control.key] ?? control.label;
+/** Choix affichés d'un sélecteur, avec les mêmes valeurs que le prototype. */
+export const displayOptions = (control: ChoiceControl) =>
+  control.options.map((option, i) => ({ ...option, label: SHORT_OPTIONS[control.key]?.[i] ?? option.label }));
+
 /** Le réglage est-il affiché, d'après l'état du moteur (comme dans le prototype) ? */
 export const isVisible = (control: Control, settings: EngineSettings) => control.when?.(settings) ?? true;

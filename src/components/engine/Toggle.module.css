@@ -12,6 +12,10 @@
 }
 
 .label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* toujours une seule ligne */
   color: var(--color-text-secondary);
 }
 

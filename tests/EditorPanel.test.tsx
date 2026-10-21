@@ -113,9 +113,7 @@ describe('panneau Motif branché au moteur', () => {
     const volume = await screen.findByRole('region', { name: 'Volume' });
     expect(within(volume).getByRole('group', { name: 'Structure' })).toBeInTheDocument();
     expect(within(volume).getByRole('slider', { name: 'Renflements' })).toBeInTheDocument();
-    expect(
-      within(volume).queryByRole('slider', { name: 'Étirement des renflements' }),
-    ).not.toBeInTheDocument();
+    expect(within(volume).queryByRole('slider', { name: 'Étirement' })).not.toBeInTheDocument();
     const dots = screen.getByRole('region', { name: 'Pastilles' });
     expect(
       within(dots)
@@ -130,7 +128,7 @@ describe('panneau Motif branché au moteur', () => {
     await screen.findByRole('slider', { name: 'Renflements' });
     expect(screen.queryByRole('button', { name: 'Circulation' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('switch', { name: 'Réglage avancé' }));
-    expect(screen.getByRole('slider', { name: 'Étirement des renflements' })).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Étirement' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Circulation' })).toBeInTheDocument();
     expect(localStorage.getItem('bhc.expert')).toBe('1');
   });

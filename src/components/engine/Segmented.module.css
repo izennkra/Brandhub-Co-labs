@@ -8,9 +8,12 @@
 }
 
 .segment {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* toujours une seule ligne */
   flex: 1;
   min-width: 0;
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-1);
   border: 0;
   border-radius: var(--radius-sm);
   background: none;

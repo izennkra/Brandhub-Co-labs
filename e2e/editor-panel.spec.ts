@@ -58,3 +58,51 @@ test('les réglages du Motif se règlent au clavier et pilotent le moteur', asyn
   await expect(panel(page).getByRole('group', { name: 'Mode de la ligne' })).toBeVisible();
   await expect(panel(page).getByRole('button', { name: 'Réseau' })).toHaveCount(0);
 });
+
+// Chaque texte du panneau tient sur une ligne, sans être coupé, et la barre de chaque curseur
+// couvre son libellé sans que le repère touche la valeur, à 0 % comme à 100 %.
+async function layoutProblems(page: Page) {
+  return panel(page).evaluate((aside) => {
+    const problems: string[] = [];
+    aside.querySelectorAll('details').forEach((d) => (d.open = true));
+    const texts = aside.querySelectorAll<HTMLElement>(
+      '[class*="_label_"], [class*="_value_"], [class*="_segment_"], [class*="_choiceLabel_"]',
+    );
+    for (const el of texts) {
+      if (!el.offsetParent) continue;
+      if (el.scrollWidth > el.clientWidth + 1) problems.push(`coupé : ${el.textContent}`);
+      if (getComputedStyle(el).whiteSpace !== 'nowrap')
+        problems.push(`peut passer sur 2 lignes : ${el.textContent}`);
+    }
+    for (const input of aside.querySelectorAll<HTMLInputElement>('input[type="range"]')) {
+      const row = input.parentElement!;
+      if (!row.offsetParent) continue;
+      const label = row.querySelector('[class*="_label_"]')!.getBoundingClientRect();
+      const value = row.querySelector('[class*="_value_"]')!.getBoundingClientRect();
+      const before = row.style.getPropertyValue('--progress');
+      for (const p of ['0', '1']) {
+        row.style.setProperty('--progress', p);
+        const end = row.querySelector('[class*="_fill_"]')!.getBoundingClientRect().right;
+        // repère : 2 px de large, 8 px avant le bout de la barre ; la valeur a 8 px de marge à gauche
+        if (end - 10 < label.right) problems.push(`repère sur le libellé à ${p} : ${input.ariaLabel}`);
+        if (end - 8 > value.left + 8) problems.push(`repère sur la valeur à ${p} : ${input.ariaLabel}`);
+      }
+      row.style.setProperty('--progress', before);
+    }
+    return problems;
+  });
+}
+
+test('panneau Motif : textes sur une ligne et barres justes, dans tous les états', async ({ page }) => {
+  await page.goto('/outils/motif');
+  await expect(panel(page).getByRole('slider', { name: 'Renflements' })).toBeVisible({ timeout: 15000 });
+  await panel(page).getByText('Réglage avancé').click();
+  const closed = panel(page).locator('button[aria-expanded="false"]');
+  while ((await closed.count()) > 0) await closed.first().click();
+  expect(await layoutProblems(page)).toEqual([]);
+  await panel(page).getByRole('button', { name: 'Ligne' }).click();
+  for (const mode of ['Aléatoire', 'Données', 'Process']) {
+    await panel(page).getByRole('button', { name: mode }).click();
+    expect(await layoutProblems(page), mode).toEqual([]);
+  }
+});
