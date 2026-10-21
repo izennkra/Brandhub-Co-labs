@@ -161,7 +161,10 @@ describe('mode édition des Ressources', () => {
   it('Typographie : Geist par défaut, avec son échelle', async () => {
     renderAt('/ressources/typographie');
     expect(await screen.findByText('Geist')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Télécharger Geist (variable)' })).toBeInTheDocument();
+    // chaque variante à installer, les versions variables, et toute la famille en .zip
+    for (const name of ['Geist Regular', 'Geist Bold Italic', 'Geist Black', 'Geist Variable', 'Geist (web)'])
+      expect(screen.getByRole('button', { name: `Télécharger ${name}` })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Télécharger toute la famille/ })).toBeInTheDocument();
     expect(screen.getByText('Titre XXL')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copier le code CSS' })).toBeInTheDocument();
   });

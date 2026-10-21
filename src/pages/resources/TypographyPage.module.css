@@ -140,3 +140,15 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+.fileGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fileGroupTitle {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}

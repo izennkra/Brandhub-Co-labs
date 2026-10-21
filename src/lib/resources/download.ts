@@ -59,3 +59,20 @@ export async function copyToClipboard(text: string) {
     return false;
   }
 }
+
+/** Plusieurs fichiers dans un seul .zip (polices d'une famille, logos déclinés…). */
+export async function downloadZip(zipName: string, entries: { name: string; data: Blob | string }[]) {
+  const { zipSync, strToU8 } = await import('fflate');
+  const files: Record<string, Uint8Array> = {};
+  for (const entry of entries) {
+    let data: Uint8Array;
+    if (typeof entry.data === 'string' && !/^(data:|https?:|\/)/.test(entry.data)) data = strToU8(entry.data);
+    else {
+      const blob = typeof entry.data === 'string' ? await (await fetch(entry.data)).blob() : entry.data;
+      data = new Uint8Array(await blob.arrayBuffer());
+    }
+    files[entry.name] = data;
+  }
+  const zipped = zipSync(files, { level: 6 });
+  downloadBlob(new Blob([zipped as BlobPart], { type: 'application/zip' }), zipName);
+}

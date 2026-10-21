@@ -7,7 +7,7 @@ import { DropZone } from '../../components/resources/DropZone';
 import { EditableText } from '../../components/resources/EditableText';
 import styles from '../../components/resources/resources.module.css';
 import { Section } from '../../components/resources/Section';
-import { copyToClipboard, downloadFile } from '../../lib/resources/download';
+import { copyToClipboard, downloadFile, downloadZip, slug } from '../../lib/resources/download';
 import { useDownloadAll } from '../../lib/resources/downloadAll';
 import { useEditor } from '../../lib/resources/editor';
 import { notify } from '../../lib/resources/events';
@@ -17,7 +17,9 @@ import page from './TypographyPage.module.css';
 
 // Page Typographie (référence du Figma « Ressource / Typographie ») : la famille, ses fichiers
 // à télécharger, puis l'échelle typographique. Par défaut : Geist, la police de l'appli.
-type FontFile = { label: string; url: string; filename: string };
+// static : une graisse, à installer (TTF, OTF) ; variable : toutes les graisses dans un fichier ; web : WOFF2.
+type FontKind = 'static' | 'variable' | 'web';
+type FontFile = { label: string; url: string; filename: string; kind?: FontKind };
 type Family = { name: string; role: string; weights: string; css: string; files: FontFile[] };
 type Level = {
   name: string;
@@ -28,14 +30,61 @@ type Level = {
   sample: string;
 };
 
+// Fichiers de Geist (licence libre OFL, paquet officiel « geist ») : chaque variante en TTF, à installer,
+// les versions variables, et les fichiers web de l'appli.
+const GEIST = '/fonts/geist/';
+const GEIST_STATICS = [
+  ['Thin', 'Thin'],
+  ['Thin Italic', 'ThinItalic'],
+  ['ExtraLight', 'UltraLight'],
+  ['ExtraLight Italic', 'ExtraLightItalic'],
+  ['Light', 'Light'],
+  ['Light Italic', 'LightItalic'],
+  ['Regular', 'Regular'],
+  ['Italic', 'Italic'],
+  ['Medium', 'Medium'],
+  ['Medium Italic', 'MediumItalic'],
+  ['SemiBold', 'SemiBold'],
+  ['SemiBold Italic', 'SemiBoldItalic'],
+  ['Bold', 'Bold'],
+  ['Bold Italic', 'BoldItalic'],
+  ['ExtraBold Italic', 'ExtraBoldItalic'],
+  ['Black', 'Black'],
+  ['Black Italic', 'BlackItalic'],
+  ['UltraBlack', 'UltraBlack'],
+];
+
 const DEFAULT_FAMILY: Family = {
   name: 'Geist',
   role: 'Principale — interface, titres et texte',
   weights: '400 Regular · 500 Medium · 600 Semibold · 700 Bold',
   css: "font-family: 'Geist', system-ui, sans-serif;",
   files: [
-    { label: 'Geist (variable)', url: geistUrl, filename: 'geist-variable.woff2' },
-    { label: 'Geist Italic (variable)', url: geistItalicUrl, filename: 'geist-variable-italic.woff2' },
+    ...GEIST_STATICS.map(([label, file]) => ({
+      label: `Geist ${label}`,
+      url: `${GEIST}Geist-${file}.ttf`,
+      filename: `Geist-${file}.ttf`,
+      kind: 'static' as const,
+    })),
+    {
+      label: 'Geist Variable',
+      url: `${GEIST}Geist-Variable.ttf`,
+      filename: 'Geist-Variable.ttf',
+      kind: 'variable',
+    },
+    {
+      label: 'Geist Italic Variable',
+      url: `${GEIST}Geist-Italic-Variable.ttf`,
+      filename: 'Geist-Italic-Variable.ttf',
+      kind: 'variable',
+    },
+    { label: 'Geist (web)', url: geistUrl, filename: 'geist-variable.woff2', kind: 'web' },
+    {
+      label: 'Geist Italic (web)',
+      url: geistItalicUrl,
+      filename: 'geist-variable-italic.woff2',
+      kind: 'web',
+    },
   ],
 };
 
@@ -70,6 +119,22 @@ const NUMBER_FIELDS = [
   { key: 'tracking', label: 'Interlettrage', unit: '%' },
   { key: 'leading', label: 'Interlignage', unit: '%' },
 ] as const;
+
+const FILE_GROUPS: { kind: FontKind; title: string }[] = [
+  { kind: 'static', title: 'Variantes à installer (une graisse par fichier)' },
+  { kind: 'variable', title: 'Versions variables (toutes les graisses)' },
+  { kind: 'web', title: 'Fichiers web (WOFF2)' },
+];
+
+const guessKind = (filename: string): FontKind =>
+  /\.woff2?$/i.test(filename) ? 'web' : /variable|\[wght\]/i.test(filename) ? 'variable' : 'static';
+const kindOf = (file: FontFile) => file.kind ?? guessKind(file.filename);
+
+const downloadFamily = (family: Family) =>
+  downloadZip(`${slug(family.name)}.zip`, [
+    ...family.files.map((file) => ({ name: file.filename, data: file.url })),
+    ...(family.name === 'Geist' ? [{ name: 'OFL.txt', data: `${GEIST}OFL.txt` }] : []),
+  ]);
 
 // Les polices déposées sont chargées pour que les exemples s'affichent dans la bonne police.
 function useFontFaces(families: Family[]) {
@@ -107,6 +172,7 @@ function FamilyCards({
           label: file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
           url,
           filename: file.name,
+          kind: guessKind(file.name),
         });
       } catch {
         notify(`Impossible d’ajouter « ${file.name} ».`);
@@ -173,30 +239,46 @@ function FamilyCards({
       <article className={page.card}>
         <h3 className={page.family}>Fichiers de police</h3>
         <p className={page.muted}>À installer pour le travail de création.</p>
-        <ul className={page.files}>
-          {family.files.map((file, index) => (
-            <li key={file.url} className={page.file}>
-              <button
-                type="button"
-                className={page.fileButton}
-                onClick={() => void downloadFile(file.url, file.filename)}
-                aria-label={`Télécharger ${file.label}`}
-              >
-                <Icon name="arrow-inbox" size="sm" />
-                {file.label}
-              </button>
-              {canEdit && (
-                <DeleteButton
-                  name={file.label}
-                  onDelete={() => {
-                    void removeResourceFile(file.url);
-                    update?.({ files: family.files.filter((_, i) => i !== index) });
-                  }}
-                />
-              )}
-            </li>
-          ))}
-        </ul>
+        {FILE_GROUPS.map(({ kind, title }) => {
+          const files = family.files
+            .map((file, index) => ({ file, index }))
+            .filter(({ file }) => kindOf(file) === kind);
+          if (!files.length) return null;
+          return (
+            <div key={kind} className={page.fileGroup}>
+              <h4 className={page.fileGroupTitle}>{title}</h4>
+              <ul className={page.files}>
+                {files.map(({ file, index }) => (
+                  <li key={file.url} className={page.file}>
+                    <button
+                      type="button"
+                      className={page.fileButton}
+                      onClick={() => void downloadFile(file.url, file.filename)}
+                      aria-label={`Télécharger ${file.label}`}
+                    >
+                      <Icon name="arrow-inbox" size="sm" />
+                      {file.label}
+                    </button>
+                    {canEdit && (
+                      <DeleteButton
+                        name={file.label}
+                        onDelete={() => {
+                          void removeResourceFile(file.url);
+                          update?.({ files: family.files.filter((_, i) => i !== index) });
+                        }}
+                      />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+        {family.files.length > 0 && (
+          <button type="button" className={styles.primary} onClick={() => void downloadFamily(family)}>
+            <Icon name="arrow-inbox" size="sm" /> Télécharger toute la famille (.zip)
+          </button>
+        )}
         {canEdit && (
           <DropZone
             accept=".woff2,.woff,.otf,.ttf"
@@ -289,9 +371,8 @@ export function TypographyPage() {
   const fontFamily = `'${familyList[0].name}', var(--font-sans)`;
   useFontFaces(familyList);
 
-  useDownloadAll('Télécharger tous les fichiers de police', async () => {
-    for (const family of familyList)
-      for (const file of family.files) await downloadFile(file.url, file.filename);
+  useDownloadAll('Télécharger toutes les polices (.zip)', async () => {
+    for (const family of familyList) await downloadFamily(family);
   });
 
   // En mode édition, on part d'une copie modifiable de Geist si rien n'a encore été enregistré.
