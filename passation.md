@@ -1,7 +1,7 @@
 # Passation : Brand Hub · Co-labs
 
 > Document de reprise pour la prochaine IA (ou personne) qui travaille sur ce projet.
-> Rédigé le 21/10/2026. État au commit `2293b04` de la branche `feature/pattern-engine`.
+> Rédigé le 21/10/2026. Mis à jour le 21/10/2026 après la tâche 4, branche `feature/pattern-engine`.
 > **Lire aussi, dans cet ordre** : `CLAUDE.md` (règles), `CAPABILITY-MAP.md` (carte), `SPEC-pattern-engine.md` (spec en cours), `tasks/todo.md` (tâches en cours).
 
 ---
@@ -30,7 +30,7 @@ Puis, plus tard :
 
 ## 3. La problématique
 
-1. **Le moteur de patterns ne doit JAMAIS être modifié** : c'est la règle n° 1 de `CLAUDE.md`. Il est validé par le client. Il faut pourtant le sortir d'un prototype où il est **entremêlé avec l'interface** (un seul bloc de code : moteur, 68 curseurs, export, Design libre), et prouver que son rendu reste **identique**.
+1. **Le moteur de patterns ne doit JAMAIS être modifié** : c'est la règle n° 1 de `CLAUDE.md`. Il est validé par le client. Il faut pourtant le sortir d'un prototype où il est **entremêlé avec l'interface** (un seul bloc de code : moteur, 67 curseurs, export, Design libre), et prouver que son rendu reste **identique**.
 2. **Le Figma fait foi pour le design**, mais il est dessiné **à l'échelle × 1,44**, avec des valeurs irrégulières et **sans variables**. Il a fallu **harmoniser** : base 14 px, grille de 4 px, contrastes WCAG AA. Le tableau est validé dans `docs/design-tokens.md`.
 3. Certaines pages **n'ont pas de maquette** (Imagerie, Patterns prédéfinis, profil éditeur, Réglages, section Couleurs du panneau). Règle : l'IA les conçoit à partir des références du client, dans le style du Figma, et **les fait valider avant de coder**.
 4. Le porteur n'est pas développeur : chaque étape doit être **expliquée, vérifiable et validée**.
@@ -69,7 +69,7 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 | Partie | État |
 |---|---|
 | `app-shell` (structure globale, navigation, design system) | ✅ **terminée, fusionnée dans `main`** (PR n° 1) |
-| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 3 sur 12 faites** |
+| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 4 sur 12 faites** |
 | `data-store` (stockage partagé) | à faire |
 | `editor-access` (profil éditeur, mot de passe) | à faire |
 | `resources` (pages Ressource) | à faire |
@@ -91,9 +91,10 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
   - ✅ **Tâche 1** : bloc moteur extrait octet pour octet, test d'identité.
   - ✅ **Tâche 2** : le moteur s'affiche et s'anime dans Tool › Motif.
   - ✅ **Tâche 3** : rendu identique au prototype, prouvé au pixel (< 0,1 %).
-  - ⏸️ **Point de contrôle A** : présenté au porteur, qui a répondu « Super ». Il n'a pas encore cliqué « je valide » formellement : le lui faire confirmer en une phrase avant la tâche 4.
-  - ⏭️ **Prochaine tâche : tâche 4**, la table des réglages reprise du prototype (`controls.ts`).
-- Le panneau Éditeur à droite affiche encore « Réglages à venir » : il n'est pas relié au moteur (tâches 4 à 7).
+  - ✅ **Point de contrôle A** : validé par le porteur le 21/10/2026.
+  - ✅ **Tâche 4** : table des réglages `src/lib/pattern-engine/controls.ts` (66 curseurs, 5 interrupteurs, 5 sélecteurs, hors export), vérifiée contre le prototype par `tests/engine-controls.test.ts`. Niveaux : `essential` (Figma), `advanced` (liste ADV_… du prototype + tracé de ligne et infographie), `hidden` (réglages des variantes Aérée et Dense, jamais affichés dans le prototype).
+  - ⏭️ **Prochaine tâche : tâche 5**, les composants de contrôle (curseur, sélecteur segmenté, interrupteur) dans le style du Figma.
+- Le panneau Éditeur à droite affiche encore « Réglages à venir » : il n’est pas relié au moteur (tâches 5 à 7).
 - **Attention** : le raccourci est encore **H** dans `src/app/ToolLayout.tsx` (ligne 30). Le passage à ⌥ H est prévu à la **tâche 11**.
 
 ## 6. Fichiers importants
@@ -177,7 +178,7 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 
 - **Ne jamais toucher** `reference/prototype.html` ni `src/lib/pattern-engine/prototype-engine.js`. Toute adaptation se fait dans `createEngine.ts`. Pour exposer une nouvelle variable du moteur : l'ajouter à `EXPORTS` ou `SETTERS` dans le script, puis lancer `npm run engine:extract`.
 - Les **actions de l'interface du prototype** (`setVariant`, `setApp`, `applySettings`, boutons de forme…) ne font pas partie du moteur. Elles sont **recopiées fidèlement** dans `createEngine.ts`, avec la ligne d'origine en commentaire, et leur rendu est vérifié avec `engine-render.spec.ts`.
-- Pour la **tâche 4** (`controls.ts`) : les réglages se trouvent dans `reference/prototype.html`, lignes 2618 à 3600 environ. Ce sont des appels `slider(…)`, `toggle(…)` et `seg(…)` : 68 curseurs, 13 interrupteurs et 2 sélecteurs, avec leurs effets (`regenSoon`, `refreshColors`…). Le test doit comparer la table à ces appels.
+- Pour la **tâche 4** (`controls.ts`) : les réglages se trouvent dans `reference/prototype.html`, lignes 2618 à 3600 environ. Ce sont des appels `slider(…)`, `toggle(…)` et `seg(…)` : 67 curseurs, 6 interrupteurs et 7 sélecteurs, avec leurs effets (`regenSoon`, `refreshColors`…). Le test doit comparer la table à ces appels.
 - **Mise en ligne (`/ship`)** :
   - règle de réécriture Vercel pour les adresses rafraîchies ;
   - vérifier la licence Central Icons ;
@@ -187,7 +188,7 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 
 ## 10. Prochaines étapes
 
-1. Faire confirmer au porteur le **point de contrôle A**, puis lancer **`/build` tâche 4** (table des réglages).
+1. Lancer **`/build` tâche 5** (composants de contrôle). À la tâche 6, il faudra ajouter dans la table les conditions d’affichage du prototype (ex. réglages de la Ligne seulement en mode Ligne, « Taille de la zone » seulement « Autour du curseur »).
 2. Continuer le plan `pattern-engine` :
    - tâches 5 à 7 : composants de contrôle, panneau Motif branché, section Couleurs (**maquette à faire valider avant de coder**) ; puis point de contrôle B ;
    - tâches 8 à 10 : bascule vers l'Illustration, images, panneau Illustration ; puis point de contrôle C ;

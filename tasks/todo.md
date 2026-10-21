@@ -35,16 +35,16 @@
   - Taille : M
 
 ### ✅ Point de contrôle A
-- [ ] Tu vois le motif tourner dans l'appli (`/outils/motif`)
+- [x] Tu vois le motif tourner dans l’appli (`/outils/motif`) — validé le 21/10/2026
 - [x] Le rendu identique au prototype est prouvé par le test
 
 ## Phase 2 : les réglages du Motif
 
-- [ ] **Tâche 4 : table des réglages reprise du prototype**
+- [x] **Tâche 4 : table des réglages reprise du prototype**
   - Description : `controls.ts` liste chaque réglage : clé dans `S`, libellé, bornes, pas, format, effet, section, niveau (essentiel ou avancé) et mode (Motif, Illustration ou les deux). Un test compare la table aux appels `slider/toggle/seg` du prototype.
   - Acceptation :
-    - [ ] Les 68 curseurs, 13 interrupteurs et 2 sélecteurs sont présents, avec les bornes et les pas du prototype
-    - [ ] Chaque clé existe dans `S`. Les réglages du Figma sont « essentiels »
+    - [x] Les 66 curseurs, 5 interrupteurs et 5 sélecteurs (hors export) sont présents, avec les bornes, les pas et les formats du prototype (recompté : la spec annonçait 68, 13 et 2)
+    - [x] Chaque clé existe dans `S`. Les réglages du Figma sont « essentiels » (le tri « avancé » reprend celui du prototype, plus tracé de ligne et infographie)
   - Vérification : `npm test`
   - Fichiers : `src/lib/pattern-engine/controls.ts`, `tests/engine-controls.test.ts`
   - Taille : M

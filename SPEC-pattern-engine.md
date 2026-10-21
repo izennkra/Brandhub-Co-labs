@@ -19,7 +19,7 @@ Faire tourner **le moteur de motifs validé par le client**, sans le modifier, d
 
 - Tout le code est dans **un seul bloc** de 3 570 lignes (`reference/prototype.html`, lignes 848 à 4416). Le moteur occupe les lignes **852 à 2617**, de « Palette » à « Rendu d'un calque ». Il est suivi de l'interface (curseurs, préréglages, export, Design libre).
 - Le moteur dépend de **Three.js r128**. Il dessine dans un `<canvas id="scene">`, place ses étiquettes dans `#labels`, et appelle quelques fonctions de l'interface (`toast`, `syncers`…).
-- Ses réglages vivent dans un objet `S` : 68 curseurs, 13 interrupteurs, 2 sélecteurs. Les fonctions qui changent de mode (`setVariant`, `setApp`, `applySettings`) sont dans la partie interface.
+- Ses réglages vivent dans un objet `S` : 67 curseurs, 6 interrupteurs et 7 sélecteurs (1 appel `seg`, 6 faits à la main), dont 1 curseur, 1 interrupteur et 1 sélecteur pour l’export. Le prototype ne garde que la variante Quantique : 10 curseurs, qui ne servaient qu’aux variantes Aérée et Dense, ne sont jamais affichés. Les fonctions qui changent de mode (`setVariant`, `setApp`, `applySettings`) sont dans la partie interface.
 - La boucle d'animation tourne en permanence (`requestAnimationFrame`).
 
 ## Solution : « copie à l'identique + couche d'adaptation »
