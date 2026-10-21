@@ -76,18 +76,18 @@
 
 ### ✅ Point de contrôle B
 - [x] Tous les tests passent, le build est OK
-- [ ] Tu as testé la navigation sur ton ordinateur (`npm run dev`) et validé le rendu
+- [x] Tu as testé la navigation sur ton ordinateur (`npm run dev`) et validé le rendu
 
 ## Phase 3 : panneaux et finitions
 
-- [ ] **Tâche 7 : panneau « Éditeur » des pages Tool**
+- [x] **Tâche 7 : panneau « Éditeur » des pages Tool**
   - Description : panneau droit repliable (bouton « Éditeur », raccourci H comme le prototype), composant de section en accordéon réutilisable et bouton Export (désactivé pour l'instant).
   - Acceptation :
-    - [ ] Le panneau s'ouvre et se ferme au clic et au clavier ; la zone centrale s'élargit quand il est fermé
-    - [ ] Les sections s'ouvrent et se ferment, avec `aria-expanded` à jour
+    - [x] Le panneau s'ouvre et se ferme au clic et au clavier ; la zone centrale s'élargit quand il est fermé
+    - [x] Les sections s'ouvrent et se ferment, avec `aria-expanded` à jour
   - Vérification : `npm test && npm run test:e2e`
   - Dépend de : 6
-  - Fichiers : `src/components/EditorPanel/*`, `src/app/ToolLayout.tsx`, `tests/EditorPanel.test.tsx`
+  - Fichiers : `src/components/EditorPanel/*`, `src/app/ToolLayout.tsx`, `src/app/editorSections.ts`, `tests/EditorPanel.test.tsx`, `e2e/editor-panel.spec.ts`
   - Taille : M
 
 - [ ] **Tâche 8 : habillage des pages Ressource**

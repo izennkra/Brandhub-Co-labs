@@ -3,6 +3,7 @@ import { ResourcePage } from '../pages/resources/ResourcePage';
 import { ToolPage } from '../pages/tool/ToolPage';
 import { AppLayout } from './AppLayout';
 import { RESOURCE_PAGES, TOOL_PAGES } from './navigation';
+import { ToolLayout } from './ToolLayout';
 
 // Texte affiché en attendant le contenu de chaque page (parties suivantes de CAPABILITY-MAP.md).
 const TOOL_PENDING: Record<string, string> = {
@@ -29,10 +30,13 @@ export const routes: RouteObject[] = [
     element: <AppLayout />,
     children: [
       { index: true, element: <Navigate to={TOOL_PAGES[0].path} replace /> },
-      ...TOOL_PAGES.map((page) => ({
-        path: toRoute(page.path),
-        element: <ToolPage title={page.label} pending={TOOL_PENDING[page.path]} />,
-      })),
+      {
+        element: <ToolLayout />,
+        children: TOOL_PAGES.map((page) => ({
+          path: toRoute(page.path),
+          element: <ToolPage title={page.label} pending={TOOL_PENDING[page.path]} />,
+        })),
+      },
       ...RESOURCE_PAGES.map((page) => ({
         path: toRoute(page.path),
         element: <ResourcePage title={page.label} description={RESOURCE_DESCRIPTIONS[page.path]} />,
