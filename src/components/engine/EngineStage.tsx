@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ToolPageDef } from '../../app/navigation';
 import type { Engine } from '../../lib/pattern-engine/createEngine';
+import { loadEngine } from '../../lib/pattern-engine/loadEngine';
 import { useEngine } from '../EditorPanel/useEngine';
 import styles from './EngineStage.module.css';
+import { Toaster } from '../Toaster';
 import { ImageStrip } from './ImageStrip';
+import { SceneToolbar } from './SceneToolbar';
 
 type Status = 'loading' | 'ready' | 'error';
 
@@ -12,7 +15,8 @@ type Status = 'loading' | 'ready' | 'error';
 export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']> }) {
   const host = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>('loading');
-  const illustration = useEngine(mode === 'illustration');
+  const live = useEngine(true);
+  const illustration = mode === 'illustration' ? live : null;
 
   useEffect(() => {
     const element = host.current;
@@ -20,8 +24,7 @@ export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']>
     let cancelled = false;
     let engine: Engine | null = null;
 
-    import('../../lib/pattern-engine/createEngine')
-      .then(({ getEngine }) => getEngine())
+    loadEngine()
       .then((ready) => {
         if (cancelled) return;
         engine = ready;
@@ -48,6 +51,15 @@ export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']>
           Le moteur n’a pas pu démarrer. Recharge la page ; si le problème continue, préviens l’équipe.
         </p>
       )}
+      {live && status === 'ready' && (
+        <SceneToolbar
+          paused={Boolean(live.core.S.paused)}
+          illustration={mode === 'illustration'}
+          onTogglePause={live.actions.togglePause}
+          onNewShape={live.actions.newShape}
+        />
+      )}
+      <Toaster events={live?.events ?? null} />
       {illustration && status === 'ready' && (
         <ImageStrip
           images={illustration.actions.images()}

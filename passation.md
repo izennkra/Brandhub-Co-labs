@@ -69,7 +69,7 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 | Partie | État |
 |---|---|
 | `app-shell` (structure globale, navigation, design system) | ✅ **terminée, fusionnée dans `main`** (PR n° 1) |
-| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 10 sur 12 faites** |
+| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 11 sur 12 faites** |
 | `data-store` (stockage partagé) | à faire |
 | `editor-access` (profil éditeur, mot de passe) | à faire |
 | `resources` (pages Ressource) | à faire |
@@ -100,9 +100,11 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
   - ✅ **Tâche 8** : bascule Motif ↔ Illustration (`actions.setApp`, repris de `setApp` du prototype ; la page Illustration a `engine: 'illustration'`). Rendu identique prouvé en Illustration. Le script vérifie maintenant les noms exposés avec le compilateur TypeScript (gère `let a=…, b=…`).
   - ✅ **Tâche 9** : images de l’Illustration. `ImageList` (panneau, poignée clavier ↑ ↓), `ImageStrip` (bandeau sous la scène, « + » pour importer), outils partagés dans `imageHooks.ts`. Actions `images`, `pickImage`, `moveImage`, `deleteImage`, `toggleLoop`, `addImages`, `loadTone`, `saveTone` dans `createEngine.ts` ; effets `toneChanged`, `dirtyImg`, `restartLoop` branchés. Icônes ajoutées : `dot-grid2x3`, `checkmark1-small`. L’ordre est enregistré 600 ms après le dernier changement (comme le prototype).
   - ✅ **Tâche 10** : panneau Illustration complet (bouton « Rétablir les tons » en avancé, `actions.resetTone`, placé avant « Trame » via `beforeSubs`).
-  - ⏸️ **Point de contrôle C** : à faire tester au porteur. Ensuite tâche 11 (barre de scène, notifications, ⌥ H) et tâche 12 (relecture, PR).
+  - ✅ **Point de contrôle C** : validé le 21/10/2026.
+  - ✅ **Tâche 11** : `SceneToolbar` (pause, nouvelle forme / rejouer, touche R), `Toaster` (messages du moteur, `role=status`), raccourci ⌥ H / Alt + H (`event.code === 'KeyH'`). Le moteur se charge par `loadEngine()` (une seule demande partagée : évite un blocage des tests quand plusieurs composants le demandent). Icônes ajoutées : `play`, `pause`, `shuffle`, `replay`.
+  - ⚠️ Le rendu identique « Ligne » échoue plus souvent depuis la tâche 11 (toujours exactement 0,146 %, déjà vu avant) : piste à creuser, un ordre de tirage du hasard au démarrage. Fermer l’onglet de prévisualisation pendant les tests (il occupe la carte graphique).
 - Le panneau Éditeur à droite affiche encore « Réglages à venir » : (sections Couleurs et Préréglages partagés seulement : tâche 7 et partie data-store).
-- **Attention** : le raccourci est encore **H** dans `src/app/ToolLayout.tsx` (ligne 30). Le passage à ⌥ H est prévu à la **tâche 11**.
+- Raccourci : ⌥ H / Alt + H (tâche 11).
 
 ## 6. Fichiers importants
 

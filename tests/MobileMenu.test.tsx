@@ -54,11 +54,11 @@ describe('menu repliable sur petit écran (sous 1280 px)', () => {
     expect(mainNav()).not.toBeInTheDocument();
   });
 
-  it('ignore la touche H tant que le menu est ouvert', async () => {
+  it('ignore la touche ⌥ H tant que le menu est ouvert', async () => {
     simulateNarrowScreen();
     renderAt('/outils/motif');
     await userEvent.click(menuButton());
-    await userEvent.keyboard('h');
+    await userEvent.keyboard('{Alt>}h{/Alt}');
     await userEvent.keyboard('{Escape}');
     expect(screen.getByRole('complementary', { name: 'Éditeur' })).toBeInTheDocument();
   });

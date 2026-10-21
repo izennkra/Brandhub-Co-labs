@@ -108,15 +108,15 @@
   - Taille : S
 
 ### ✅ Point de contrôle C
-- [ ] Tu testes l'Illustration : images, réglages, aller-retour avec Motif
+- [x] Tu testes l’Illustration : images, réglages, aller-retour avec Motif — validé le 21/10/2026
 
 ## Phase 4 : finitions
 
-- [ ] **Tâche 11 : barre de scène, notifications et ⌥ H**
+- [x] **Tâche 11 : barre de scène, notifications et ⌥ H**
   - Description : barre d'icônes en haut à gauche de la scène (lecture/pause, nouvelle forme / rejouer avec la touche R), notifications du moteur dans une zone annoncée (`aria-live`), et raccourci ⌥ H / Alt + H à la place de H.
   - Acceptation :
-    - [ ] Lecture/pause et nouvelle forme fonctionnent au clic et au clavier
-    - [ ] ⌥ H replie l'Éditeur ; H seul ne fait rien
+    - [x] Lecture/pause et nouvelle forme fonctionnent au clic et au clavier
+    - [x] ⌥ H replie l’Éditeur ; H seul ne fait rien
   - Vérification : `npm test && npm run test:e2e`
   - Fichiers : `src/components/engine/SceneToolbar.tsx` (+ css), `src/components/Toaster.tsx`, `src/app/ToolLayout.tsx`, tests associés
   - Taille : M

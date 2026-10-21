@@ -71,11 +71,11 @@ describe('panneau Éditeur des pages Tool', () => {
     expect(screen.getByRole('button', { name: 'Éditeur' })).toHaveFocus();
   });
 
-  it('se masque et se réaffiche avec la touche H', async () => {
+  it('se masque et se réaffiche avec la touche ⌥ H', async () => {
     renderAt('/outils/motif');
-    await userEvent.keyboard('h');
+    await userEvent.keyboard('{Alt>}h{/Alt}');
     expect(panel()).not.toBeInTheDocument();
-    await userEvent.keyboard('h');
+    await userEvent.keyboard('{Alt>}h{/Alt}');
     expect(panel()).toBeInTheDocument();
   });
 

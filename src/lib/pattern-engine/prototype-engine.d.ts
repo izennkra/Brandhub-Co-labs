@@ -54,6 +54,7 @@ export type PrototypeEngine = {
   curImg: number;
   selImg: number;
   imgTr: unknown;
+  linePh: unknown;
   motifStash: (EngineSettings & { _wr?: number }) | null;
   imageStash: EngineSettings | null;
   worldR: number;

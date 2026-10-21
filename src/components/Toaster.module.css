@@ -1,0 +1,18 @@
+.region {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  max-width: var(--size-text-max);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-dark);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-overlay);
+  text-align: center;
+}

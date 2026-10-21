@@ -28,7 +28,15 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
   const notify = () => actual.engineEvents.dispatchEvent(new Event('settings'));
   const fakeEngine = {
     core: { S, PALETTE },
+    events: actual.engineEvents,
     actions: {
+      togglePause: () => {
+        S.paused = !S.paused;
+        notify();
+      },
+      newShape: () => {
+        S.newShapes = Number(S.newShapes ?? 0) + 1;
+      },
       images: () => [],
       pickImage: () => {},
       moveImage: () => {},

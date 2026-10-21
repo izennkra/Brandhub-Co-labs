@@ -176,6 +176,21 @@ function createActions(core: PrototypeEngine, syncAll: () => void, toast: (messa
       // syncApp (ligne 3132) : images de démo si la bibliothèque est vide.
       if (mode === 'image' && !core.imgList.length) core.imgList = core.demoImages();
     },
+    // Bouton lecture / pause (btnPlay, ligne 3546).
+    togglePause() {
+      core.S.paused = !core.S.paused;
+      syncAll();
+    },
+    // Bouton et touche R « Nouvelle forme » ; en Illustration, « Rejouer » (newNetwork, ligne 3547).
+    newShape() {
+      if (core.S.app === 'image') {
+        core.imgTime = 0;
+        return;
+      }
+      newSeed();
+      core.linePh = null;
+      core.regenerate();
+    },
     // ---------- Images de l'Illustration (interface du prototype, lignes 2800 à 2890) ----------
     /** Liste à afficher : nom, vignette, boucle, image choisie. */
     images() {
@@ -337,6 +352,8 @@ export type Engine = {
   core: PrototypeEngine;
   actions: ReturnType<typeof createActions>;
   canvas: HTMLCanvasElement;
+  /** Événements du moteur : toast (message), settings (réglages modifiés), library (images). */
+  events: EventTarget;
   /** Affiche la scène dans `host` (zone centrale) et relance l'animation. */
   attach: (host: HTMLElement) => void;
   /** Retire la scène et met l'animation en pause. */
@@ -373,6 +390,7 @@ async function createEngine(): Promise<Engine> {
     core,
     actions,
     canvas,
+    events: engineEvents,
     attach(host) {
       host.append(canvas);
       labels.hidden = false;

@@ -79,7 +79,7 @@ export function EditorPanel({
         className={styles.header}
         aria-expanded="true"
         aria-controls={EDITOR_PANEL_ID}
-        title="Masquer l’éditeur (H)"
+        title="Masquer l’éditeur (⌥ H)"
         onClick={onHide}
       >
         <Icon name="sidebar-simple-right-wide" size="md" />
