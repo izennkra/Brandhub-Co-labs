@@ -1,0 +1,72 @@
+.row {
+  /* barre minimale : libellé + 40 px (prototype) ; à droite, la place de la valeur la plus large */
+  --base: calc(var(--label-w) + var(--space-10));
+  --reserve: calc(var(--value-w) + var(--space-4) + var(--space-3));
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--size-control);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  overflow: hidden;
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--base) + (100% - var(--base) - var(--reserve)) * var(--progress));
+  background: var(--color-slider-fill);
+  pointer-events: none;
+}
+
+/* repère vertical au bout de la barre */
+.fill::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: var(--space-2);
+  width: var(--size-slider-handle);
+  height: var(--size-slider-handle-height);
+  border-radius: var(--size-slider-handle);
+  background: var(--color-text-secondary);
+  transform: translateY(-50%);
+}
+
+.label,
+.value {
+  position: relative;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.label {
+  flex: 0 1 auto; /* filet de sécurité : rétrécit (…) sans grandir ; les libellés courts tiennent sur une ligne */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-secondary);
+}
+
+.value {
+  flex-shrink: 0;
+  padding-left: var(--space-2);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+
+.row:has(.input:focus-visible) {
+  outline: var(--size-focus-ring) solid var(--color-focus);
+  outline-offset: var(--size-focus-ring);
+}

@@ -19,9 +19,11 @@ for (const path of PAGES) {
   test(`rendu de référence : ${path}`, async ({ page }) => {
     await page.goto(`/${path}`);
     await page.evaluate(() => document.fonts.ready);
+    // La scène du moteur est animée : on la masque et on compare le cadre autour.
     await expect(page).toHaveScreenshot(`${path.replace('/', '-')}.png`, {
       maxDiffPixels: 50,
       threshold: 0.02,
+      mask: [page.locator('main #scene')],
     });
   });
 }

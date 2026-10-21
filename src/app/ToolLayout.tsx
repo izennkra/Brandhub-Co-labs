@@ -5,9 +5,10 @@ import { Icon } from '../components/Icon';
 import { TOOL_PAGES } from './navigation';
 import styles from './ToolLayout.module.css';
 
-// Gabarit des pages Tool : zone centrale + panneau Éditeur repliable (bouton ou touche H).
+// Gabarit des pages Tool : zone centrale + panneau Éditeur repliable (bouton ou ⌥ H / Alt + H).
 export function ToolLayout() {
   const { pathname } = useLocation();
+  const page = TOOL_PAGES.find((tool) => tool.path === pathname);
   const [panelOpen, setPanelOpen] = useState(true);
   const panelToggle = useRef<HTMLButtonElement>(null);
   const reopenButton = useRef<HTMLButtonElement>(null);
@@ -27,7 +28,8 @@ export function ToolLayout() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== 'h' || event.metaKey || event.ctrlKey || event.altKey) return;
+      // ⌥ H / Alt + H (la touche H seule reste libre pour écrire) ; event.code car ⌥ H donne « ˙ » sur Mac.
+      if (event.code !== 'KeyH' || !event.altKey || event.metaKey || event.ctrlKey) return;
       const target = event.target as HTMLElement;
       if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
       // Menu ouvert sur petit écran : la page est inactive, le raccourci aussi.
@@ -51,7 +53,7 @@ export function ToolLayout() {
             aria-label="Afficher l’éditeur"
             aria-expanded="false"
             aria-controls={EDITOR_PANEL_ID}
-            title="Afficher l’éditeur (H)"
+            title="Afficher l’éditeur (⌥ H)"
             onClick={togglePanel}
           >
             <Icon name="sidebar-simple-right-wide" size="md" />
@@ -60,7 +62,8 @@ export function ToolLayout() {
       </div>
       {panelOpen && (
         <EditorPanel
-          sections={TOOL_PAGES.find((page) => page.path === pathname)?.editorSections ?? []}
+          sections={page?.editorSections ?? []}
+          engineMode={page?.engine}
           pageKey={pathname}
           onHide={togglePanel}
           toggleRef={panelToggle}

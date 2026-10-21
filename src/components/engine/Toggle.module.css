@@ -1,0 +1,69 @@
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: var(--size-control);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  cursor: pointer;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* toujours une seule ligne */
+  color: var(--color-text-secondary);
+}
+
+.input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.track {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--size-toggle-width);
+  height: var(--size-toggle-height);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+}
+
+/* pastille carrée : à gauche quand l'interrupteur est éteint, à droite quand il est allumé */
+.track::after {
+  content: '';
+  position: absolute;
+  top: calc((var(--size-toggle-height) - var(--size-toggle-knob)) / 2);
+  left: calc((var(--size-toggle-height) - var(--size-toggle-knob)) / 2);
+  width: var(--size-toggle-knob);
+  height: var(--size-toggle-knob);
+  border-radius: var(--radius-xs);
+  background: var(--color-dark);
+}
+
+.input:checked + .track {
+  background: var(--color-control-active);
+}
+
+.input:checked + .track::after {
+  left: auto;
+  right: calc((var(--size-toggle-height) - var(--size-toggle-knob)) / 2);
+}
+
+.input:focus-visible + .track {
+  outline: var(--size-focus-ring) solid var(--color-focus);
+  outline-offset: var(--size-focus-ring);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .track::after {
+    transition: left 0.15s ease;
+  }
+}

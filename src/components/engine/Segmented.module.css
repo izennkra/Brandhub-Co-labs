@@ -1,0 +1,30 @@
+.group {
+  display: flex;
+  gap: var(--space-1);
+  min-height: var(--size-control);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--color-control-group);
+}
+
+.segment {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* toujours une seule ligne */
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.segment:hover {
+  background: var(--color-control);
+}
+
+.segment[aria-pressed='true'] {
+  background: var(--color-control-active);
+}

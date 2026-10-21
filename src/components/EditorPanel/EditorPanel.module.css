@@ -47,3 +47,17 @@
 .exportChevron {
   transform: rotate(180deg);
 }
+
+/* action secondaire dans une section (« Rétablir les tons ») */
+.action {
+  min-height: var(--size-control);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.action:hover {
+  background: var(--color-control-active);
+}

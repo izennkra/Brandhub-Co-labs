@@ -7,7 +7,16 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   // Le prototype de référence et les outils installés ne sont pas notre code.
-  { ignores: ['dist', 'reference', '.claude', 'test-results', 'playwright-report'] },
+  {
+    ignores: [
+      'dist',
+      'reference',
+      '.claude',
+      'test-results',
+      'playwright-report',
+      'src/lib/pattern-engine/prototype-engine.js',
+    ],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended, prettier],

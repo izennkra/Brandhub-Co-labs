@@ -1,0 +1,29 @@
+.stage {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+/* Le canvas du moteur (#scene) remplit la zone ; mêmes curseurs que dans le prototype. */
+.stage :global(#scene) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.stage :global(#scene.dragging) {
+  cursor: grabbing;
+}
+
+.message {
+  margin: auto;
+  padding: var(--space-8);
+  color: var(--color-text-secondary);
+  text-align: center;
+}

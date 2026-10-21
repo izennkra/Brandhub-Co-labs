@@ -1,0 +1,49 @@
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.choiceLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* toujours une seule ligne */
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+}
+
+/* sous-menu repliable (« Particules », « Infographie »…) */
+.sub {
+  border-block: var(--size-divider) solid var(--color-divider);
+}
+
+.sub + .sub {
+  border-top: 0;
+}
+
+.subTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--size-control);
+  color: var(--color-text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.subTitle::-webkit-details-marker {
+  display: none;
+}
+
+/* chevron vers le bas quand le sous-menu est déplié, vers le haut sinon (comme les sections) */
+.sub:not([open]) .chevron {
+  transform: rotate(180deg);
+}
+
+.subBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+}
