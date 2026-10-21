@@ -28,13 +28,13 @@
   - Taille : S
 
 ### ✅ Point de contrôle A
-- [ ] Tu as validé le tableau d'harmonisation (ou demandé des ajustements)
+- [x] Tu as validé le tableau d'harmonisation (ou demandé des ajustements)
 
-- [ ] **Tâche 3 : fichier de tokens, polices et garde-fou**
+- [x] **Tâche 3 : fichier de tokens, polices et garde-fou**
   - Description : traduire le tableau validé en variables dans `src/styles/tokens.css`, charger les polices, poser les styles de base. Ajouter un test qui échoue si une couleur en dur apparaît ailleurs.
   - Acceptation :
-    - [ ] Toutes les valeurs du tableau existent dans `tokens.css`, nommées par rôle
-    - [ ] Le test « pas de couleur hexadécimale hors de `tokens.css` » passe et échoue si on en ajoute une
+    - [x] Toutes les valeurs du tableau existent dans `tokens.css`, nommées par rôle
+    - [x] Le test « pas de couleur hexadécimale hors de `tokens.css` » passe et échoue si on en ajoute une
   - Vérification : `npm test && npm run build`
   - Dépend de : 2
   - Fichiers : `src/styles/tokens.css`, `src/styles/global.css`, `index.html`, `tests/no-hardcoded-values.test.ts`

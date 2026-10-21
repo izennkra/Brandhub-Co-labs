@@ -1,6 +1,6 @@
 # Harmonisation du design system : tableau à valider
 
-> Statut : **à valider (point de contrôle A)**. Tâche 2 de `tasks/todo.md`.
+> Statut : **validé le 21/10/2026** (point de contrôle A : les 6 points du § 8 sont acceptés). Tâche 2 de `tasks/todo.md`.
 > Source : Figma « Brand hub co labs », écrans Tool / Motif, Tool / Illustrations, Tool / Layout editor, Ressource / Logo et Ressource / Inspiration. Relevé fait avec le MCP Figma le 21/10/2026.
 > Ce tableau ne contient aucun code. Une fois validé, il devient `src/styles/tokens.css` (tâche 3).
 
