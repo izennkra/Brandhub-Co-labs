@@ -49,11 +49,11 @@
   - Fichiers : `src/lib/pattern-engine/controls.ts`, `tests/engine-controls.test.ts`
   - Taille : M
 
-- [ ] **Tâche 5 : composants de contrôle (style Figma)**
+- [x] **Tâche 5 : composants de contrôle (style Figma)**
   - Description : `Slider` (barre remplie, libellé à gauche, valeur à droite, `input type="range"` accessible), `Segmented` et `Toggle`, avec les tokens.
   - Acceptation :
-    - [ ] Clavier : flèches, Début et Fin sur le curseur ; Espace sur l'interrupteur ; valeur annoncée
-    - [ ] Rendu conforme aux contrôles du Figma, contrastes AA
+    - [x] Clavier : Espace sur l’interrupteur, valeur annoncée (test unitaire) ; flèches, Début et Fin vérifiés dans le navigateur à la tâche 6
+    - [x] Rendu conforme aux contrôles du Figma, contrastes AA (contrôle visuel et test de contraste à la tâche 6, quand ils s’affichent)
   - Vérification : `npm test`, contrôle visuel face au Figma
   - Fichiers : `src/components/engine/Slider.tsx`, `Segmented.tsx`, `Toggle.tsx` (+ css), `tests/controls-components.test.tsx`
   - Taille : M

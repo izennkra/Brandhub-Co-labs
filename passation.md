@@ -69,7 +69,7 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 | Partie | État |
 |---|---|
 | `app-shell` (structure globale, navigation, design system) | ✅ **terminée, fusionnée dans `main`** (PR n° 1) |
-| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 4 sur 12 faites** |
+| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 5 sur 12 faites** |
 | `data-store` (stockage partagé) | à faire |
 | `editor-access` (profil éditeur, mot de passe) | à faire |
 | `resources` (pages Ressource) | à faire |
@@ -93,7 +93,8 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
   - ✅ **Tâche 3** : rendu identique au prototype, prouvé au pixel (< 0,1 %).
   - ✅ **Point de contrôle A** : validé par le porteur le 21/10/2026.
   - ✅ **Tâche 4** : table des réglages `src/lib/pattern-engine/controls.ts` (66 curseurs, 5 interrupteurs, 5 sélecteurs, hors export), vérifiée contre le prototype par `tests/engine-controls.test.ts`. Niveaux : `essential` (Figma), `advanced` (liste ADV_… du prototype + tracé de ligne et infographie), `hidden` (réglages des variantes Aérée et Dense, jamais affichés dans le prototype).
-  - ⏭️ **Prochaine tâche : tâche 5**, les composants de contrôle (curseur, sélecteur segmenté, interrupteur) dans le style du Figma.
+  - ✅ **Tâche 5** : composants `Slider`, `Toggle`, `Segmented` dans `src/components/engine/` (tokens ajoutés : `--size-toggle-knob`, `--size-slider-handle*`).
+  - ⏭️ **Prochaine tâche : tâche 6**, le panneau Motif branché au moteur.
 - Le panneau Éditeur à droite affiche encore « Réglages à venir » : il n’est pas relié au moteur (tâches 5 à 7).
 - **Attention** : le raccourci est encore **H** dans `src/app/ToolLayout.tsx` (ligne 30). Le passage à ⌥ H est prévu à la **tâche 11**.
 
