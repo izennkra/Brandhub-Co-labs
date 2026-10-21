@@ -1,6 +1,6 @@
 # Carte des parties : Brand Hub · Co Labs
 
-> Statut : **proposition à valider**. Aucune spec de partie n'est écrite tant que cette carte n'est pas validée.
+> Statut : **validée le 21/10/2026**. Les specs de chaque partie sont écrites dans l'ordre de construction ci-dessous.
 > Prototype de référence : `reference/prototype.html` · Règles : `CLAUDE.md`
 
 ## Ce qui existe aujourd'hui (prototype)
