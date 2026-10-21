@@ -1,0 +1,11 @@
+.panel {
+  flex-shrink: 0;
+  width: var(--size-panel);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.pending {
+  color: var(--color-text-secondary);
+}

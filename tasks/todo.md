@@ -90,14 +90,14 @@
   - Fichiers : `src/components/EditorPanel/*`, `src/app/ToolLayout.tsx`, `src/app/editorSections.ts`, `tests/EditorPanel.test.tsx`, `e2e/editor-panel.spec.ts`
   - Taille : M
 
-- [ ] **Tâche 8 : habillage des pages Ressource**
+- [x] **Tâche 8 : habillage des pages Ressource**
   - Description : `ResourceLayout` avec l'icône de panneau en haut à droite (ouvre un panneau latéral vide pour l'instant) et le bouton orange flottant « Télécharger » (désactivé pour l'instant, avec une infobulle).
   - Acceptation :
-    - [ ] Les deux boutons ont un libellé accessible et un focus visible
-    - [ ] Le panneau latéral s'ouvre et se ferme
+    - [x] Les deux boutons ont un libellé accessible et un focus visible
+    - [x] Le panneau latéral s'ouvre et se ferme
   - Vérification : `npm test && npm run test:e2e`
   - Dépend de : 6
-  - Fichiers : `src/app/ResourceLayout.tsx`, `src/components/SidePanel/*`, `tests/ResourceLayout.test.tsx`
+  - Fichiers : `src/app/ResourceLayout.tsx`, `src/components/SidePanel/*`, `tests/ResourceLayout.test.tsx`, `e2e/resource-layout.spec.ts`
   - Taille : S
 
 - [ ] **Tâche 9 : petits écrans, clavier et accessibilité**
