@@ -4,6 +4,7 @@
 import geistLatinUrl from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
 import * as THREE from 'three';
 import type { ControlEffect } from './controls';
+import { createPresets } from './presets';
 import {
   runPrototypeEngine,
   type EngineEnv,
@@ -351,8 +352,10 @@ const testHooks = () => (window as Window & { __engineTestHooks?: EngineTestHook
 export type Engine = {
   core: PrototypeEngine;
   actions: ReturnType<typeof createActions>;
+  /** Préréglages partagés (section du panneau). */
+  presets: ReturnType<typeof createPresets>;
   canvas: HTMLCanvasElement;
-  /** Événements du moteur : toast (message), settings (réglages modifiés), library (images). */
+  /** Événements du moteur : toast (message), settings (réglages), library (images), presets. */
   events: EventTarget;
   /** Affiche la scène dans `host` (zone centrale) et relance l'animation. */
   attach: (host: HTMLElement) => void;
@@ -380,15 +383,29 @@ async function createEngine(): Promise<Engine> {
   // Chaque mise à jour des réglages (par le moteur ou par le panneau) prévient l'appli.
   env.syncers.push(() => engineEvents.dispatchEvent(new Event('settings')));
 
-  const actions = createActions(core, () => env.syncers.forEach((sync) => sync()), env.toast);
+  const syncAll = () => env.syncers.forEach((sync) => sync());
+  const actions = createActions(core, syncAll, env.toast);
+  const presets = createPresets(core, actions, syncAll, env.toast, () =>
+    engineEvents.dispatchEvent(new Event('presets')),
+  );
+  // Le préréglage de démarrage d'un outil s'applique quand cet outil s'ouvre.
+  const setApp = actions.setApp;
+  actions.setApp = (mode) => {
+    setApp(mode);
+    presets.onAppChanged();
+  };
   // onLibraryChanged (ligne 2888) : bibliothèque d'images chargée ou modifiée par le moteur.
   engineEvents.addEventListener('library', () =>
     actions.loadTone(Math.min(core.selImg, core.imgList.length - 1)),
   );
 
+  // initPresets() : appelé au démarrage, comme à la fin du prototype (ligne 4411).
+  void presets.init();
+
   const ready: Engine = {
     core,
     actions,
+    presets,
     canvas,
     events: engineEvents,
     attach(host) {

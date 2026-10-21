@@ -1,8 +1,10 @@
 import { useState, type Ref } from 'react';
 import type { EditorSection, ToolPageDef } from '../../app/navigation';
 import { CONTROLS, isVisible, type Control } from '../../lib/pattern-engine/controls';
+import { fmtDate } from '../../lib/pattern-engine/presets';
 import { ColorPicker } from '../engine/ColorPicker';
 import { ImageList } from '../engine/ImageList';
+import { PresetList } from '../engine/PresetList';
 import { Toggle } from '../engine/Toggle';
 import { Icon } from '../Icon';
 import styles from './EditorPanel.module.css';
@@ -29,8 +31,8 @@ function storeAdvanced(on: boolean) {
   }
 }
 
-// Section dont le contenu arrive plus tard : Préréglages partagés (partie data-store).
-const PENDING_SECTIONS = new Set(['Préréglages partagés']);
+// Section « Préréglages partagés » : enregistrer, appliquer, supprimer (stockage partagé).
+const PRESETS_SECTION = 'Préréglages partagés';
 // Section Couleurs : choix du fond et des pastilles, puis « Répartition » (table des réglages).
 const COLORS_SECTION = 'Couleurs';
 // Section Images de l'Illustration : liste des images (choisir, retirer, réordonner).
@@ -60,15 +62,14 @@ export function EditorPanel({
     (!engine || isVisible(control, engine.core.S));
 
   const visibleSections = sections.flatMap((section) => {
-    const controls = PENDING_SECTIONS.has(section.title)
-      ? []
-      : modeControls.filter((c) => c.section === section.title);
+    const controls = modeControls.filter((c) => c.section === section.title);
     const visible = controls.filter(shown);
     const colors = engineMode !== undefined && section.title === COLORS_SECTION;
     const images = engineMode === 'illustration' && section.title === IMAGES_SECTION;
+    const presets = engineMode !== undefined && section.title === PRESETS_SECTION;
     // Section entièrement masquée dans l'état actuel (ex. Réseau en mode Ligne) : comme le prototype.
     if (!colors && controls.length > 0 && visible.length === 0) return [];
-    return [{ section, controls: visible, colors, images }];
+    return [{ section, controls: visible, colors, images, presets }];
   });
 
   return (
@@ -98,14 +99,27 @@ export function EditorPanel({
       )}
 
       <div className={styles.sections}>
-        {visibleSections.map(({ section, controls, colors, images }) => (
+        {visibleSections.map(({ section, controls, colors, images, presets }) => (
           <PanelSection key={`${pageKey}-${section.title}`} title={section.title} defaultOpen={section.open}>
-            {!colors && !images && controls.length === 0 ? (
+            {!colors && !images && !presets && controls.length === 0 ? (
               <p>Réglages à venir.</p>
             ) : !engine ? (
               <p>Chargement des réglages…</p>
             ) : (
               <>
+                {presets && (
+                  <PresetList
+                    presets={engine.presets
+                      .list()
+                      .map((p) => ({ id: p.id, name: p.name, detail: fmtDate(p) }))}
+                    defaultId={engine.presets.defaultId}
+                    note={engine.presets.note()}
+                    onSave={engine.presets.save}
+                    onApply={engine.presets.apply}
+                    onToggleDefault={engine.presets.toggleDefault}
+                    onDelete={(id) => void engine.presets.remove(id)}
+                  />
+                )}
                 {images && (
                   <ImageList
                     images={engine.actions.images()}

@@ -1,0 +1,124 @@
+.presets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.save {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--size-control);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.button {
+  min-height: var(--size-control);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  color: var(--color-text);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--color-control-active);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--size-control);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+}
+
+.name,
+.icon {
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-1);
+  color: var(--color-text);
+  text-align: left;
+}
+
+.label,
+.detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* toujours une seule ligne */
+}
+
+.detail {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  min-height: var(--size-control-compact);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.icon:hover,
+.icon[data-armed='true'] {
+  background: var(--color-control-active);
+  color: var(--color-text);
+}
+
+/* préréglage ouvert au démarrage : étoile pleine */
+.icon[data-on='true'] {
+  color: var(--color-text);
+}
+
+.icon[data-on='true'] svg {
+  fill: currentColor;
+}
+
+.empty,
+.note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
