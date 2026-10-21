@@ -1,7 +1,7 @@
 # Passation : Brand Hub · Co-labs
 
 > Document de reprise pour la prochaine IA (ou personne) qui travaille sur ce projet.
-> Mis à jour le 22/10/2026 (soir). Branche en cours : `feature/data-store` (code fait, poussé, en attente du test du porteur).
+> Mis à jour le 22/10/2026 (soir). `data-store` fusionnée (PR n° 3). Branche en cours : `feature/editor-access` (créée depuis `main`, rien de codé).
 > **Lire aussi, dans cet ordre** : `CLAUDE.md` (règles), `CAPABILITY-MAP.md` (carte), puis la section 5 ci-dessous (où on en est exactement).
 
 ---
@@ -76,8 +76,8 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 |---|---|
 | `app-shell` (structure, navigation, design system) | ✅ terminée, fusionnée (PR n° 1) |
 | `pattern-engine` (Motif + Illustration) | ✅ **terminée, fusionnée dans `main` le 22/10/2026 (PR n° 2, commit `4fa7434`)**. Relecture : `docs/review-pattern-engine.md`. Plan archivé : `tasks/archive/pattern-engine-*.md` |
-| `data-store` (stockage partagé) | 🟡 **codé et poussé : le porteur teste, puis étapes Vercel et PR** |
-| `editor-access` (profil éditeur, mot de passe) | à faire |
+| `data-store` (stockage partagé) | ✅ **terminée, testée par le porteur, fusionnée le 22/10/2026 (PR n° 3, commit `583eb8c`)**. Étapes Vercel données au porteur (projet, Upstash, Blob, redéploiement) |
+| `editor-access` (profil éditeur, mot de passe) | 🟡 **prochaine partie** (branche `feature/editor-access`) |
 | `resources` (pages Ressource) | à faire |
 | `layout-editor` | à faire |
 | Temps 2 : `brand-settings`, `logo-variants`, `pattern-embed` | à faire, après les Ressources |
@@ -196,7 +196,7 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 
 ## 10. Prochaines étapes
 
-1. **`data-store`** (branche `feature/data-store`) : le porteur teste les préréglages en local (`npm run dev`, page Motif) ; puis étapes Vercel (projet, Upstash, Blob) ; pull request.
+1. **Vercel** : le porteur crée le projet et relie Upstash (et Blob) ; vérifier en ligne que la note des préréglages dit « Partagés : … ».
 2. Puis, en version rapide (section 4) : `editor-access`, `resources` (avec `/api/files` et Vercel Blob), `layout-editor`.
 3. **Export** (PNG, WebP, JPEG, SVG, vidéo, Figma) : à planifier (les réglages d'export du prototype ne sont pas dans `controls.ts`).
 4. **Temps 2** : `brand-settings`, `logo-variants`, `pattern-embed`.
