@@ -109,7 +109,7 @@ export type Shape = 0 | 1 | 2 | 3; // Nœud, Ample, Simple, Hasard
 
 // Actions de l'interface du prototype, reprises à l'identique pour la partie moteur
 // (la mise à jour des boutons du prototype, elle, est remplacée par le panneau Éditeur).
-function createActions(core: PrototypeEngine, syncAll: () => void) {
+function createActions(core: PrototypeEngine, syncAll: () => void, toast: (message: string) => void) {
   const newSeed = () => {
     core.rng = core.mulberry32((Math.random() * 1e9) | 0);
   };
@@ -134,6 +134,22 @@ function createActions(core: PrototypeEngine, syncAll: () => void) {
     setLineMode(mode: number) {
       core.S.lineMode = mode;
       core.lineLobes = [];
+    },
+    // Pastilles carrées « Fond » (prototype ligne 3530).
+    setBackground(id: string) {
+      core.S.bg = id;
+      core.refreshColors();
+      syncAll();
+    },
+    // Pastilles rondes « Pastilles » : au moins une couleur reste choisie (prototype ligne 3536).
+    toggleDot(id: string) {
+      const dots = core.S.dots as Set<string>;
+      if (dots.has(id)) {
+        if (dots.size === 1) return toast('Garde au moins une couleur de pastilles.');
+        dots.delete(id);
+      } else dots.add(id);
+      core.refreshColors();
+      syncAll();
     },
     /** Change un réglage de la table controls.ts, puis fait ce que faisait le prototype après ce changement. */
     change(key: string, value: number | boolean, effect?: ControlEffect) {
@@ -191,7 +207,7 @@ async function createEngine(): Promise<Engine> {
 
   const ready: Engine = {
     core,
-    actions: createActions(core, () => env.syncers.forEach((sync) => sync())),
+    actions: createActions(core, () => env.syncers.forEach((sync) => sync()), env.toast),
     canvas,
     attach(host) {
       host.append(canvas);

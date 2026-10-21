@@ -18,9 +18,28 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
     ]),
   );
   S.qStruct = 1;
+  S.bg = 'brun';
+  S.dots = new Set(['orange']);
+  const PALETTE = [
+    { id: 'brun', name: 'Brun', hex: '#431604' },
+    { id: 'orange', name: 'Orange', hex: '#EC5F14' },
+    { id: 'lin', name: 'Lin', hex: '#F1E2DA' },
+  ];
+  const notify = () => actual.engineEvents.dispatchEvent(new Event('settings'));
   const fakeEngine = {
-    core: { S },
+    core: { S, PALETTE },
     actions: {
+      setBackground: (id: string) => {
+        S.bg = id;
+        notify();
+      },
+      toggleDot: (id: string) => {
+        const dots = S.dots as Set<string>;
+        if (dots.has(id)) {
+          if (dots.size > 1) dots.delete(id);
+        } else dots.add(id);
+        notify();
+      },
       change: (key: string, value: unknown) => {
         S[key] = value;
         actual.engineEvents.dispatchEvent(new Event('settings'));

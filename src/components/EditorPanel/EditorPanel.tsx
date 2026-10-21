@@ -1,6 +1,7 @@
 import { useState, type Ref } from 'react';
 import type { EditorSection, ToolPageDef } from '../../app/navigation';
 import { CONTROLS, isVisible, type Control } from '../../lib/pattern-engine/controls';
+import { ColorPicker } from '../engine/ColorPicker';
 import { Toggle } from '../engine/Toggle';
 import { Icon } from '../Icon';
 import styles from './EditorPanel.module.css';
@@ -27,9 +28,10 @@ function storeAdvanced(on: boolean) {
   }
 }
 
-// Sections dont le contenu arrive plus tard : Couleurs (maquette à valider, tâche 7),
-// Préréglages partagés (partie data-store).
-const PENDING_SECTIONS = new Set(['Couleurs', 'Préréglages partagés']);
+// Section dont le contenu arrive plus tard : Préréglages partagés (partie data-store).
+const PENDING_SECTIONS = new Set(['Préréglages partagés']);
+// Section Couleurs : choix du fond et des pastilles, puis « Répartition » (table des réglages).
+const COLORS_SECTION = 'Couleurs';
 
 // Panneau droit des pages Tool (Figma « Tool / … ») : en-tête repliable, sections, bouton Export.
 export function EditorPanel({
@@ -57,9 +59,10 @@ export function EditorPanel({
       ? []
       : modeControls.filter((c) => c.section === section.title);
     const visible = controls.filter(shown);
+    const colors = engineMode !== undefined && section.title === COLORS_SECTION;
     // Section entièrement masquée dans l'état actuel (ex. Réseau en mode Ligne) : comme le prototype.
-    if (controls.length > 0 && visible.length === 0) return [];
-    return [{ section, controls: visible }];
+    if (!colors && controls.length > 0 && visible.length === 0) return [];
+    return [{ section, controls: visible, colors }];
   });
 
   return (
@@ -89,14 +92,25 @@ export function EditorPanel({
       )}
 
       <div className={styles.sections}>
-        {visibleSections.map(({ section, controls }) => (
+        {visibleSections.map(({ section, controls, colors }) => (
           <PanelSection key={`${pageKey}-${section.title}`} title={section.title} defaultOpen={section.open}>
-            {controls.length === 0 ? (
+            {!colors && controls.length === 0 ? (
               <p>Réglages à venir.</p>
-            ) : engine ? (
-              <EngineControls engine={engine} controls={controls} />
-            ) : (
+            ) : !engine ? (
               <p>Chargement des réglages…</p>
+            ) : (
+              <>
+                {colors && (
+                  <ColorPicker
+                    palette={engine.core.PALETTE}
+                    background={String(engine.core.S.bg)}
+                    dots={engine.core.S.dots as Set<string>}
+                    onBackground={engine.actions.setBackground}
+                    onToggleDot={engine.actions.toggleDot}
+                  />
+                )}
+                <EngineControls engine={engine} controls={controls} />
+              </>
             )}
           </PanelSection>
         ))}

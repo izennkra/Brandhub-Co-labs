@@ -243,6 +243,7 @@ const VISIBLE_WHEN: Record<string, (s: EngineSettings) => boolean> = {
   lineWave: isLine,
   lineFade: isLine,
   hoverRadius: (s) => s.hoverMode === 0,
+  colorMode: (s) => (s.dots as Set<string>).size > 1, // syncColorsUI, ligne 3538
 };
 
 export const CONTROLS: Control[] = [...ILLUSTRATION, ...MOTIF, ...BOTH].map((control) =>

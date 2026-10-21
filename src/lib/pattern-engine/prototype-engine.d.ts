@@ -30,6 +30,7 @@ export type PrototypeEngine = {
   readonly loadLibrary: () => Promise<void>;
   readonly isLine: () => boolean;
   readonly buildLine: (keep: boolean) => void;
+  readonly PALETTE: ReadonlyArray<{ id: string; name: string; hex: string }>;
   rng: () => number;
   lineLobes: unknown[];
 };

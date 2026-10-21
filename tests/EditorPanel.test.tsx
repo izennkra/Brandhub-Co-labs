@@ -152,3 +152,21 @@ describe('panneau Motif branché au moteur', () => {
     expect(screen.queryByRole('switch', { name: 'Réglage avancé' })).not.toBeInTheDocument();
   });
 });
+
+describe('section Couleurs du Motif', () => {
+  it('Fond et Pastilles passent par le moteur ; Répartition n’apparaît qu’avec plusieurs couleurs', async () => {
+    const user = userEvent.setup();
+    renderAt('/outils/motif');
+    await user.click(await screen.findByRole('button', { name: 'Couleurs' }));
+    const colors = screen.getByRole('region', { name: 'Couleurs' });
+    expect(within(colors).getByRole('radio', { name: 'Brun' })).toBeChecked();
+    expect(within(colors).queryByRole('group', { name: 'Répartition' })).not.toBeInTheDocument();
+    await user.click(within(colors).getByRole('checkbox', { name: 'Lin' }));
+    expect(within(colors).getByRole('checkbox', { name: 'Lin' })).toBeChecked();
+    expect(within(colors).getByRole('group', { name: 'Répartition' })).toBeInTheDocument();
+    await user.click(within(colors).getByRole('radio', { name: 'Orange' }));
+    expect(within(colors).getByRole('radio', { name: 'Orange' })).toBeChecked();
+    await user.click(within(colors).getByRole('checkbox', { name: 'Lin' }));
+    expect(within(colors).queryByRole('group', { name: 'Répartition' })).not.toBeInTheDocument();
+  });
+});

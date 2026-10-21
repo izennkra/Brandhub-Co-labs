@@ -67,11 +67,11 @@
   - Fichiers : `src/components/EditorPanel/*`, `src/app/navigation.ts`, `src/lib/pattern-engine/createEngine.ts`, `tests/EditorPanel.test.tsx`
   - Taille : M
 
-- [ ] **Tâche 7 : section Couleurs**
+- [x] **Tâche 7 : section Couleurs**
   - Description : d'abord une maquette de la section, reprenant les choix du prototype (fond, couleurs des pastilles, couleur de la ligne) dans le style du panneau, **montrée pour validation**. Ensuite le code.
   - Acceptation :
-    - [ ] Maquette validée par toi
-    - [ ] Les couleurs changent le rendu comme dans le prototype ; contrastes et clavier OK
+    - [x] Maquette validée par toi (21/10/2026)
+    - [x] Les couleurs changent le rendu comme dans le prototype ; contrastes et clavier OK
   - Vérification : `npm test && npm run test:e2e`
   - Fichiers : `src/components/engine/ColorPicker.tsx` (+ css), `tests/ColorPicker.test.tsx`
   - Taille : M

@@ -69,7 +69,7 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 | Partie | État |
 |---|---|
 | `app-shell` (structure globale, navigation, design system) | ✅ **terminée, fusionnée dans `main`** (PR n° 1) |
-| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 6 sur 12 faites** |
+| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 7 sur 12 faites** |
 | `data-store` (stockage partagé) | à faire |
 | `editor-access` (profil éditeur, mot de passe) | à faire |
 | `resources` (pages Ressource) | à faire |
@@ -95,7 +95,8 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
   - ✅ **Tâche 4** : table des réglages `src/lib/pattern-engine/controls.ts` (66 curseurs, 5 interrupteurs, 5 sélecteurs, hors export), vérifiée contre le prototype par `tests/engine-controls.test.ts`. Niveaux : `essential` (Figma), `advanced` (liste ADV_… du prototype + tracé de ligne et infographie), `hidden` (réglages des variantes Aérée et Dense, jamais affichés dans le prototype).
   - ✅ **Tâche 5** : composants `Slider`, `Toggle`, `Segmented` dans `src/components/engine/` (tokens ajoutés : `--size-toggle-knob`, `--size-slider-handle*`).
   - ✅ **Tâche 6** : panneau Motif branché (`EditorPanel` + `EngineControls` + `useEngine`), « Réglage avancé » mémorisé (`bhc.expert`), conditions d’affichage du prototype dans `controls.ts` (`when`), actions `change` / `setLineMode` dans `createEngine.ts` (`isLine`, `buildLine`, `lineLobes` exposés par le script). Couleurs et Préréglages affichent encore « Réglages à venir ». Libellés courts affichés : `SHORT_LABELS` / `SHORT_OPTIONS` dans `controls.ts` (une seule ligne partout, vérifié par `e2e/editor-panel.spec.ts`).
-  - ⏭️ **Prochaine tâche : tâche 7**, maquette de la section Couleurs à faire valider avant le code.
+  - ✅ **Tâche 7** : section Couleurs (`ColorPicker`), actions `setBackground` / `toggleDot` dans `createEngine.ts` (`PALETTE` exposée), « Répartition » seulement avec plusieurs couleurs de pastilles.
+  - ⏸️ **Point de contrôle B** : à faire tester au porteur (régler le motif depuis le panneau). Ensuite tâche 8 (bascule Motif ↔ Illustration).
 - Le panneau Éditeur à droite affiche encore « Réglages à venir » : (sections Couleurs et Préréglages partagés seulement : tâche 7 et partie data-store).
 - **Attention** : le raccourci est encore **H** dans `src/app/ToolLayout.tsx` (ligne 30). Le passage à ⌥ H est prévu à la **tâche 11**.
 
@@ -190,7 +191,7 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 
 ## 10. Prochaines étapes
 
-1. Tâche 7 : maquette Couleurs à faire valider, puis code ; puis point de contrôle B.
+1. Faire valider le **point de contrôle B**, puis tâches 8 à 10 jusqu’au point de contrôle C.
 2. Continuer le plan `pattern-engine` :
    - tâches 5 à 7 : composants de contrôle, panneau Motif branché, section Couleurs (**maquette à faire valider avant de coder**) ; puis point de contrôle B ;
    - tâches 8 à 10 : bascule vers l'Illustration, images, panneau Illustration ; puis point de contrôle C ;

@@ -1773,5 +1773,5 @@ function renderLayerTo(L, live, pw, ph, dt, ctx){
   }); } finally { PXK=oldK; }
 }
 // ===== FIN DU BLOC MOTEUR =====
-  return { get S() { return S; }, get canvas() { return canvas; }, get renderer() { return renderer; }, get regenerate() { return regenerate; }, get refreshColors() { return refreshColors; }, get resetView() { return resetView; }, get resize() { return resize; }, get frame() { return frame; }, get MEMBRANE_BASE() { return MEMBRANE_BASE; }, get mulberry32() { return mulberry32; }, get loadLibrary() { return loadLibrary; }, get isLine() { return isLine; }, get buildLine() { return buildLine; }, set rng(value) { rng = value; }, set lineLobes(value) { lineLobes = value; } };
+  return { get S() { return S; }, get canvas() { return canvas; }, get renderer() { return renderer; }, get regenerate() { return regenerate; }, get refreshColors() { return refreshColors; }, get resetView() { return resetView; }, get resize() { return resize; }, get frame() { return frame; }, get MEMBRANE_BASE() { return MEMBRANE_BASE; }, get mulberry32() { return mulberry32; }, get loadLibrary() { return loadLibrary; }, get isLine() { return isLine; }, get buildLine() { return buildLine; }, get PALETTE() { return PALETTE; }, set rng(value) { rng = value; }, set lineLobes(value) { lineLobes = value; } };
 }

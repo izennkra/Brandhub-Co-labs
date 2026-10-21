@@ -26,6 +26,7 @@ const EXPORTS = [
   'loadLibrary',
   'isLine',
   'buildLine',
+  'PALETTE',
 ];
 
 // Variables du bloc que la couche d'adaptation doit pouvoir réaffecter, comme le faisait
