@@ -69,7 +69,7 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 | Partie | État |
 |---|---|
 | `app-shell` (structure globale, navigation, design system) | ✅ **terminée, fusionnée dans `main`** (PR n° 1) |
-| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 9 sur 12 faites** |
+| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 10 sur 12 faites** |
 | `data-store` (stockage partagé) | à faire |
 | `editor-access` (profil éditeur, mot de passe) | à faire |
 | `resources` (pages Ressource) | à faire |
@@ -99,6 +99,8 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
   - ✅ **Point de contrôle B** : validé le 21/10/2026.
   - ✅ **Tâche 8** : bascule Motif ↔ Illustration (`actions.setApp`, repris de `setApp` du prototype ; la page Illustration a `engine: 'illustration'`). Rendu identique prouvé en Illustration. Le script vérifie maintenant les noms exposés avec le compilateur TypeScript (gère `let a=…, b=…`).
   - ✅ **Tâche 9** : images de l’Illustration. `ImageList` (panneau, poignée clavier ↑ ↓), `ImageStrip` (bandeau sous la scène, « + » pour importer), outils partagés dans `imageHooks.ts`. Actions `images`, `pickImage`, `moveImage`, `deleteImage`, `toggleLoop`, `addImages`, `loadTone`, `saveTone` dans `createEngine.ts` ; effets `toneChanged`, `dirtyImg`, `restartLoop` branchés. Icônes ajoutées : `dot-grid2x3`, `checkmark1-small`. L’ordre est enregistré 600 ms après le dernier changement (comme le prototype).
+  - ✅ **Tâche 10** : panneau Illustration complet (bouton « Rétablir les tons » en avancé, `actions.resetTone`, placé avant « Trame » via `beforeSubs`).
+  - ⏸️ **Point de contrôle C** : à faire tester au porteur. Ensuite tâche 11 (barre de scène, notifications, ⌥ H) et tâche 12 (relecture, PR).
 - Le panneau Éditeur à droite affiche encore « Réglages à venir » : (sections Couleurs et Préréglages partagés seulement : tâche 7 et partie data-store).
 - **Attention** : le raccourci est encore **H** dans `src/app/ToolLayout.tsx` (ligne 30). Le passage à ⌥ H est prévu à la **tâche 11**.
 
@@ -193,7 +195,7 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 
 ## 10. Prochaines étapes
 
-1. Faire valider le **point de contrôle B**, puis tâches 8 à 10 jusqu’au point de contrôle C.
+1. Faire valider le **point de contrôle C**, puis tâches 11 et 12 (fin de la partie pattern-engine, pull request).
 2. Continuer le plan `pattern-engine` :
    - tâches 5 à 7 : composants de contrôle, panneau Motif branché, section Couleurs (**maquette à faire valider avant de coder**) ; puis point de contrôle B ;
    - tâches 8 à 10 : bascule vers l'Illustration, images, panneau Illustration ; puis point de contrôle C ;

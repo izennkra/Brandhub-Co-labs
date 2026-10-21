@@ -62,3 +62,57 @@ test('Illustration : choisir une image dans le bandeau la montre dans la liste',
     'true',
   );
 });
+
+// Luminosité moyenne de la scène, lue juste après un rendu (le tampon WebGL est vidé ensuite).
+const sceneBrightness = (page: Page) =>
+  page.locator('main #scene').evaluate(
+    (canvas: HTMLCanvasElement) =>
+      new Promise<number>((resolve) =>
+        requestAnimationFrame(() => {
+          const copy = document.createElement('canvas');
+          copy.width = 200;
+          copy.height = 200;
+          const ctx = copy.getContext('2d')!;
+          ctx.drawImage(canvas, 0, 0, 200, 200);
+          const { data } = ctx.getImageData(0, 0, 200, 200);
+          let sum = 0;
+          for (let i = 0; i < data.length; i += 4) sum += data[i] + data[i + 1] + data[i + 2];
+          resolve(sum / (data.length / 4) / 3);
+        }),
+      ),
+  );
+
+test('Illustration : les tons sont propres à chaque image, agissent sur le rendu et se rétablissent', async ({
+  page,
+}) => {
+  await page.goto('/outils/illustration');
+  await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(3);
+  const [first, second] = await names(page);
+  const bright = panel(page).getByRole('slider', { name: 'Luminosité' });
+  await page.waitForTimeout(1500); // l'image d'ouverture a fini de se former
+  const before = await sceneBrightness(page);
+
+  await bright.focus();
+  await page.keyboard.press('Home');
+  await expect(bright).toHaveAttribute('aria-valuetext', '-100');
+  await expect.poll(() => sceneBrightness(page), { timeout: 10000 }).not.toBeCloseTo(before, 0);
+
+  await panel(page).getByRole('button', { name: second, exact: true }).click();
+  await expect(bright).toHaveAttribute('aria-valuetext', '0');
+  await panel(page).getByRole('button', { name: first, exact: true }).click();
+  await expect(bright).toHaveAttribute('aria-valuetext', '-100');
+
+  await panel(page).getByText('Réglage avancé').click();
+  await panel(page).getByRole('button', { name: 'Rétablir les tons' }).click();
+  await expect(bright).toHaveAttribute('aria-valuetext', '0');
+});
+
+test('Illustration : « Boucle d’images » ajoute les coches de boucle dans le bandeau', async ({ page }) => {
+  await page.goto('/outils/illustration');
+  const strip = page.getByRole('group', { name: 'Bande d’images' });
+  await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(3);
+  await expect(strip.getByRole('button', { name: /dans la boucle/ })).toHaveCount(0);
+  await panel(page).getByRole('button', { name: 'Animation' }).click();
+  await panel(page).getByText('Boucle d’images').click();
+  await expect(strip.getByRole('button', { name: /dans la boucle/ })).toHaveCount(3);
+});

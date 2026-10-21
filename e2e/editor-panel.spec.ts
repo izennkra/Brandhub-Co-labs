@@ -129,3 +129,12 @@ test('aller-retour Motif ↔ Illustration : chaque mode garde ses réglages', as
   await menu.getByRole('link', { name: 'Illustration' }).click();
   await expect(size()).toHaveAttribute('aria-valuetext', '0.20');
 });
+
+test('panneau Illustration : textes sur une ligne et barres justes', async ({ page }) => {
+  await page.goto('/outils/illustration');
+  await expect(panel(page).getByRole('slider', { name: 'Luminosité' })).toBeVisible({ timeout: 15000 });
+  await panel(page).getByText('Réglage avancé').click();
+  const closed = panel(page).locator('button[aria-expanded="false"]');
+  while ((await closed.count()) > 0) await closed.first().click();
+  expect(await layoutProblems(page)).toEqual([]);
+});

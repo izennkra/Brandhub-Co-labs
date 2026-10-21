@@ -35,6 +35,8 @@ const PENDING_SECTIONS = new Set(['Préréglages partagés']);
 const COLORS_SECTION = 'Couleurs';
 // Section Images de l'Illustration : liste des images (choisir, retirer, réordonner).
 const IMAGES_SECTION = 'Images';
+// Section des tons : bouton « Rétablir les tons » en réglage avancé, comme dans le prototype.
+const TONE_SECTION = 'Lumière et tons de l’image';
 
 // Panneau droit des pages Tool (Figma « Tool / … ») : en-tête repliable, sections, bouton Export.
 export function EditorPanel({
@@ -121,7 +123,19 @@ export function EditorPanel({
                     onToggleDot={engine.actions.toggleDot}
                   />
                 )}
-                <EngineControls engine={engine} controls={controls} />
+                <EngineControls
+                  engine={engine}
+                  controls={controls}
+                  beforeSubs={
+                    advanced &&
+                    engineMode === 'illustration' &&
+                    section.title === TONE_SECTION && (
+                      <button type="button" className={styles.action} onClick={engine.actions.resetTone}>
+                        Rétablir les tons
+                      </button>
+                    )
+                  }
+                />
               </>
             )}
           </PanelSection>

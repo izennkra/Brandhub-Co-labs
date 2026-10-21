@@ -99,10 +99,10 @@
   - Fichiers : `src/components/engine/ImageList.tsx`, `ImageStrip.tsx` (+ css), `tests/images.test.tsx`, `e2e/illustration.spec.ts`
   - Taille : M
 
-- [ ] **Tâche 10 : panneau Illustration branché**
+- [x] **Tâche 10 : panneau Illustration branché**
   - Description : sections Animation, Lumière et tons de l'image, Pastilles, Survol, Rotation et Couleurs, depuis la table des réglages (filtrée sur le mode Illustration).
   - Acceptation :
-    - [ ] Chaque réglage agit sur l'Illustration comme dans le prototype
+    - [x] Chaque réglage agit sur l’Illustration comme dans le prototype (tons propres à chaque image, « Rétablir les tons » en avancé, boucle)
   - Vérification : `npm test && npm run test:e2e`
   - Fichiers : `src/app/navigation.ts`, `src/components/EditorPanel/*`, `tests/EditorPanel.test.tsx`
   - Taille : S

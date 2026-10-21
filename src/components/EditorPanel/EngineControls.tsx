@@ -1,3 +1,4 @@
+import { Fragment, type ReactNode } from 'react';
 import type { Engine } from '../../lib/pattern-engine/createEngine';
 import { displayLabel, displayOptions, type Control } from '../../lib/pattern-engine/controls';
 import { Segmented } from '../engine/Segmented';
@@ -23,7 +24,15 @@ function runs(controls: Control[]) {
 }
 
 // Réglages d'une section du panneau, dans l'ordre de la table ; les sous-menus sont repliables.
-export function EngineControls({ engine, controls }: { engine: Engine; controls: Control[] }) {
+export function EngineControls({
+  engine,
+  controls,
+  beforeSubs,
+}: {
+  engine: Engine;
+  controls: Control[];
+  beforeSubs?: ReactNode; // placé juste avant le premier sous-menu (ex. « Rétablir les tons »)
+}) {
   const S = engine.core.S;
   const change = (control: Control, value: number | boolean) =>
     engine.actions.change(control.key, value, control.effect);
@@ -68,17 +77,24 @@ export function EngineControls({ engine, controls }: { engine: Engine; controls:
     );
   };
 
-  return runs(controls).map((run) =>
-    run.sub ? (
-      <details key={run.sub} className={styles.sub} open={OPEN_SUBS.has(run.sub)}>
-        <summary className={styles.subTitle}>
-          <span>{run.sub}</span>
-          <Icon name="chevron-down-small" size="xs" className={styles.chevron} />
-        </summary>
-        <div className={styles.subBody}>{run.controls.map(field)}</div>
-      </details>
-    ) : (
-      run.controls.map(field)
-    ),
-  );
+  const list = runs(controls);
+  const firstSub = list.findIndex((run) => run.sub);
+  return list
+    .map((run, i) =>
+      run.sub ? (
+        <Fragment key={run.sub}>
+          {i === firstSub && beforeSubs}
+          <details className={styles.sub} open={OPEN_SUBS.has(run.sub)}>
+            <summary className={styles.subTitle}>
+              <span>{run.sub}</span>
+              <Icon name="chevron-down-small" size="xs" className={styles.chevron} />
+            </summary>
+            <div className={styles.subBody}>{run.controls.map(field)}</div>
+          </details>
+        </Fragment>
+      ) : (
+        run.controls.map(field)
+      ),
+    )
+    .concat(firstSub < 0 && beforeSubs ? [<Fragment key="before-subs">{beforeSubs}</Fragment>] : []);
 }

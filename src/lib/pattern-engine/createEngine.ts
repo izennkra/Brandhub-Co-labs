@@ -203,6 +203,20 @@ function createActions(core: PrototypeEngine, syncAll: () => void, toast: (messa
       core.imgDirty = true;
       core.saveImageMeta(image);
     },
+    // Bouton « Rétablir les tons » (ligne 2823).
+    resetTone() {
+      Object.assign(core.S, {
+        imgBright: 0,
+        imgContr: 10,
+        imgGamma: 1,
+        imgLow: 8,
+        imgHigh: 94,
+        imgBlur: 1,
+        imgInvert: false,
+      });
+      syncAll();
+      actions.saveTone();
+    },
     // pick (ligne 2861).
     pickImage(index: number) {
       core.showImage(index);
