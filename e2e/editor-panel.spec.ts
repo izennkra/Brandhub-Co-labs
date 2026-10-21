@@ -24,6 +24,9 @@ test('le panneau Éditeur se masque, la zone centrale s’élargit, puis il revi
 
 test('la touche H masque et réaffiche le panneau', async ({ page }) => {
   await page.goto('/outils/layout-editor');
+  // Attendre que la page soit prête (raccourci clavier branché) avant d'appuyer sur H.
+  await expect(panel(page)).toBeVisible();
+  await page.waitForLoadState('networkidle');
   await page.keyboard.press('h');
   await expect(panel(page)).toBeHidden();
   await page.keyboard.press('h');
