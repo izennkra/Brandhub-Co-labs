@@ -1,6 +1,6 @@
 # Spec : `app-shell` (structure globale)
 
-> Statut : **à valider**. Première partie de la carte (`CAPABILITY-MAP.md`). Aucune autre partie n'en dépend avant validation.
+> Statut : **validée le 21/10/2026**. Première partie de la carte (`CAPABILITY-MAP.md`).
 > Design : Figma, page « Brand hub co labs » (`2337:6322`).
 
 ## Objectif
@@ -18,7 +18,7 @@ Poser la **coquille de l'application** : la vraie appli React qui remplace le fi
 - **Zone centrale** : une grande carte aux coins arrondis.
 - Colonne de droite :
   - sur les pages **Tool**, un panneau **« Éditeur »** repliable, fait de sections en accordéon (Préréglages partagés, Réseau, Volume, Pastilles, Survol, Rotation, Couleurs…), avec un bouton orange **Export** en bas ;
-  - sur les pages **Ressource**, une icône de panneau en haut à droite et un bouton orange flottant en bas à droite.
+  - sur les pages **Ressource**, une icône de panneau en haut à droite et un bouton orange flottant en bas à droite, qui sert à **télécharger / exporter** le contenu de la page (validé ; le contenu exact du téléchargement est défini dans `resources`).
 
 **Pages Tool** : Motif · Illustrations iconographique · Layout editor
 
@@ -35,10 +35,11 @@ Le design de l'intérieur des pages Ressource et Tool n'est **pas** dans cette p
 
 ## Hypothèses
 
-1. **Bureau d'abord** (écrans d'ordinateur à partir de 1280 px de large). Sur tablette et mobile, la colonne de gauche se replie derrière un bouton, comme dans le prototype, sans design dédié pour l'instant.
+1. **Ordinateur d'abord** (validé) : écrans à partir de 1280 px de large. Sur tablette et mobile, la colonne de gauche se replie derrière un bouton, comme dans le prototype, sans design dédié pour l'instant.
 2. Les adresses des pages sont en français : `/outils/motif`, `/ressources/logo`… En ouvrant l'appli, on arrive sur `/outils/motif`.
-3. **Feedback** n'apparaît plus dans le Figma : on ne l'affiche pas (voir questions).
+3. **Feedback est supprimé** (validé), comme dans le Figma.
 4. Le titre « COULEURS » de la page Logo dans le Figma est une coquille : la page s'appellera « Logo ».
+5. Les libellés du menu reprennent ceux du Figma (dont « Illustrations iconographique »), corrigés seulement pour l'orthographe.
 
 ## Tech stack
 
@@ -51,7 +52,7 @@ Le design de l'intérieur des pages Ressource et Tool n'est **pas** dans cette p
 | Hébergement | Vercel (fonctions `api/` pour le stockage, plus tard) | Le prototype y est déjà relié (`/api/store`) |
 | Tests | Vitest + Testing Library (unitaires), Playwright (parcours dans le navigateur) | Standards, rapides |
 | Qualité | ESLint + Prettier | Code homogène |
-| Icônes | VisualSystem Icon, **set Central**, Line, coins 2px Medium, trait 1,5 px (à confirmer) | Imposé par `CLAUDE.md` ; réglages repris de l'écran Iconographie du Figma |
+| Icônes | VisualSystem Icon, **set Central**, Line, coins 2px Medium, trait de base 1,5 px (validé). Taille et épaisseur du trait adaptées selon l'endroit, via une échelle fixe (voir Harmonisation) | Imposé par `CLAUDE.md` ; réglages repris de l'écran Iconographie du Figma |
 
 Aucune autre dépendance sans validation.
 
@@ -141,6 +142,7 @@ Les espacements et tailles de typo du Figma ne sont pas parfaitement réguliers.
 | Interlignage | Un interlignage associé à chaque taille (≈ 1,4 pour le courant, ≈ 1,1 pour les grands titres) |
 | Graisses | 2 ou 3 graisses maximum |
 | Arrondis | 3 ou 4 valeurs maximum (petit, moyen, grand, pilule) |
+| Icônes | 3 ou 4 tailles liées à l'usage, chacune avec son épaisseur de trait, pour garder le même poids visuel partout. Ordre d'idée : 16 px dans les listes et contrôles denses, 20 px dans les boutons, 24 px seules, 32 px et plus pour l'affichage. Valeurs exactes dans le tableau à valider. On appelle `<Icon size="sm">`, jamais une taille en pixels |
 | Couleurs | Palette du Figma, nommée par rôle (texte, texte secondaire, fond, surface, accent…) |
 
 **Règles UX/UI à respecter**
@@ -182,7 +184,7 @@ Les tests passent avant chaque commit.
 ## Critères de réussite
 
 1. `npm run dev` ouvre l'appli sur la page Motif, sans erreur dans la console.
-2. La colonne de gauche correspond au Figma : logo + BETA, sélecteur Tool / Ressource, liste des pages avec icônes, page active surlignée.
+2. La colonne de gauche correspond au Figma : logo + BETA, sélecteur Tool / Ressource, liste des pages avec icônes, page active surlignée. Pas d'entrée Feedback.
 3. Les **10 pages** (3 Tool + 7 Ressource) s'ouvrent par clic et par adresse directe. Rafraîchir le navigateur garde la page.
 4. Les pages Tool affichent la zone centrale et le panneau « Éditeur » repliable (avec le bouton Export, désactivé pour l'instant). Les pages Ressource affichent leur titre et un emplacement réservé.
 5. Le tableau d'harmonisation « valeur Figma → valeur retenue » est validé. Toutes les couleurs, typos et espacements viennent ensuite de `tokens.css` (vérifié par test), et les contrastes respectent WCAG AA.
@@ -192,10 +194,14 @@ Les tests passent avant chaque commit.
 9. `npm run build`, `npm test`, `npm run test:e2e` et `npm run lint` passent.
 10. Une capture de chaque écran à 1440 px est fidèle au Figma pour le cadre (gauche, centre, droite), aux harmonisations validées près.
 
-## Questions ouvertes
+## Décisions (21/10/2026)
 
-1. **Feedback** n'est plus dans le Figma : on le supprime, ou on le garde comme page à venir ?
-2. Pages Ressource : à quoi sert le **bouton orange en bas à droite** (exporter, partager, importer) ? Et l'**icône de panneau** en haut à droite ?
-3. **Icônes** : je propose le set **Central**, style Line, coins 2px Medium, trait 1,5 px, comme dans ton écran Iconographie. C'est bien ce set ? (À vérifier aussi : la licence du set Central.)
-4. **Mobile** : bureau d'abord, avec une simple version repliée sur petit écran. Ça te va pour le moment ?
-5. Le libellé exact du menu : « Illustrations iconographique » ou « Illustrations » ?
+- Feedback : supprimé.
+- Bouton orange des pages Ressource : télécharger / exporter.
+- Icônes : Central, Line, coins 2px Medium. Taille et trait adaptés selon l'endroit, avec une échelle cohérente.
+- Ordinateur d'abord.
+
+## Questions ouvertes (non bloquantes)
+
+1. L'**icône de panneau** en haut à droite des pages Ressource : sans précision, elle ouvrira un panneau latéral vide, que `resources` remplira (par exemple avec les outils du mode éditeur).
+2. La **licence** du set Central est à vérifier avant la mise en ligne.

@@ -46,7 +46,9 @@ Guide : https://visual.systems/modules/icon/llms.txt · Source : https://visual.
 
 | Composant | Famille | Variante | Trait |
 |---|---|---|---|
-| `[ ]` | `[ ]` | `[ ]` | `[ ]` |
+| `Icon.tsx` | Central | Line, coins 2px Medium (ID exact de variante à relever dans le catalogue) | 1,5 px de base, adapté à la taille |
+
+Taille et épaisseur du trait suivent une échelle fixe liée à l'usage (tokens d'icônes dans `tokens.css`). On appelle `<Icon size="sm">`, jamais une taille en pixels.
 
 ## Autres modules VisualSystem (seulement si besoin, sur proposition)
 
