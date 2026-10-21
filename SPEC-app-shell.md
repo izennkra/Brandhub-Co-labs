@@ -120,7 +120,35 @@ export function NavItem({ to, label, icon }: NavItemProps) {
 ```
 
 - Styles : CSS Modules (`*.module.css`) + variables de `tokens.css`. Pas de librairie de composants externe.
-- Noms des tokens : `--color-*`, `--font-*`, `--text-*`, `--space-*`, `--radius-*`, valeurs relevées dans le Figma.
+- Noms des tokens : `--color-*`, `--font-*`, `--text-*`, `--space-*`, `--radius-*`.
+
+## Harmonisation du design system
+
+Les espacements et tailles de typo du Figma ne sont pas parfaitement réguliers. On ne les recopie pas au pixel près : on les **ramène à des échelles cohérentes**. Le Figma reste la référence pour l'intention visuelle (hiérarchie, ambiance, composants).
+
+**Méthode**
+1. Relever dans le Figma toutes les valeurs utilisées : espacements, tailles de texte, interlignages, graisses, arrondis, couleurs.
+2. Les regrouper et les ramener aux échelles ci-dessous (chaque valeur va à l'échelon le plus proche).
+3. Livrer un tableau **« valeur Figma → valeur retenue »** à valider **avant** d'écrire `tokens.css`.
+4. Ensuite, n'utiliser que ces tokens : aucune valeur « à la main » dans le code.
+
+**Échelles proposées (ajustées après le relevé)**
+
+| Famille | Règle |
+|---|---|
+| Espacements | Grille de 4 px : 4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 48 · 64 |
+| Tailles de texte | 6 à 8 tailles maximum, pas de taille en dessous de 12 px pour du texte à lire |
+| Interlignage | Un interlignage associé à chaque taille (≈ 1,4 pour le courant, ≈ 1,1 pour les grands titres) |
+| Graisses | 2 ou 3 graisses maximum |
+| Arrondis | 3 ou 4 valeurs maximum (petit, moyen, grand, pilule) |
+| Couleurs | Palette du Figma, nommée par rôle (texte, texte secondaire, fond, surface, accent…) |
+
+**Règles UX/UI à respecter**
+- Contrastes WCAG AA : 4,5:1 pour le texte courant, 3:1 pour les grands textes et les icônes utiles. Certains textes gris clair du Figma (champs, libellés) devront peut-être être foncés : ce sera signalé dans le tableau.
+- Zones cliquables d'au moins 24 × 24 px.
+- Mêmes composants pour les mêmes usages : un seul style de bouton, de champ, de curseur, de section accordéon.
+- Alignements sur la grille et marges régulières entre colonnes, sections et cartes.
+- États visibles : survol, focus clavier, actif, désactivé.
 
 ## Stratégie de test
 
@@ -157,12 +185,12 @@ Les tests passent avant chaque commit.
 2. La colonne de gauche correspond au Figma : logo + BETA, sélecteur Tool / Ressource, liste des pages avec icônes, page active surlignée.
 3. Les **10 pages** (3 Tool + 7 Ressource) s'ouvrent par clic et par adresse directe. Rafraîchir le navigateur garde la page.
 4. Les pages Tool affichent la zone centrale et le panneau « Éditeur » repliable (avec le bouton Export, désactivé pour l'instant). Les pages Ressource affichent leur titre et un emplacement réservé.
-5. Toutes les couleurs, typos et espacements viennent de `tokens.css` (vérifié par test).
+5. Le tableau d'harmonisation « valeur Figma → valeur retenue » est validé. Toutes les couleurs, typos et espacements viennent ensuite de `tokens.css` (vérifié par test), et les contrastes respectent WCAG AA.
 6. Toutes les icônes passent par `Icon.tsx` (set Central), avec `aria-label` sur les boutons sans texte.
 7. Tout se fait au clavier (Tab, Entrée), avec un contour de focus visible, et `aria-current` est posé sur la page active.
 8. En dessous de 1280 px de large, la colonne de gauche se replie derrière un bouton.
 9. `npm run build`, `npm test`, `npm run test:e2e` et `npm run lint` passent.
-10. Une capture de chaque écran à 1440 px est fidèle au Figma pour le cadre (gauche, centre, droite).
+10. Une capture de chaque écran à 1440 px est fidèle au Figma pour le cadre (gauche, centre, droite), aux harmonisations validées près.
 
 ## Questions ouvertes
 
