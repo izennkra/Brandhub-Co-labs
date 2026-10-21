@@ -256,11 +256,6 @@ describe('mode édition des Ressources', () => {
     expect(screen.queryByRole('button', { name: 'Télécharger Geist Regular' })).not.toBeInTheDocument();
     expect(screen.getByText('Titre XXL')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copier le code CSS' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Copier le CSS de Titre XXL' })).toBeInTheDocument();
-    // chaque graisse est écrite dans sa graisse
-    expect(within(screen.getByRole('list', { name: 'Graisses' })).getByText('700 Bold')).toHaveStyle({
-      fontWeight: '700',
-    });
   });
 
   it('Patterns prédéfinis : filtre par format, en attendant les layouts', async () => {

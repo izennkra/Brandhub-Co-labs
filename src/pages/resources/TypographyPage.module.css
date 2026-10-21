@@ -5,46 +5,16 @@
   gap: var(--space-4);
 }
 
-.card {
+.card,
+.level {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   min-width: 0;
   padding: var(--space-6);
   border-radius: var(--radius-md);
   background: var(--color-surface-raised);
   box-shadow: inset 0 0 0 1px var(--color-divider);
-}
-
-/* spécimen : grand « Aa » et alphabet dans la police */
-.specimen {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-6);
-  padding-bottom: var(--space-4);
-  border-bottom: var(--size-divider) solid var(--color-divider);
-}
-
-.glyphs {
-  font-size: calc(var(--text-2xl) * 3);
-  font-weight: var(--weight-medium);
-  line-height: 0.8;
-  letter-spacing: var(--tracking-title);
-}
-
-.alphabet {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  color: var(--color-text-secondary);
-  line-height: var(--leading-body);
-  overflow-wrap: anywhere;
-}
-
-.identity {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
 }
 
 .family {
@@ -57,17 +27,6 @@
   color: var(--color-text-secondary);
 }
 
-/* graisses : chacune écrite dans sa graisse */
-.weights {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-6);
-  margin: 0;
-  padding: 0;
-  font-size: var(--text-md);
-  list-style: none;
-}
-
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -77,7 +36,8 @@
   list-style: none;
 }
 
-.chip {
+.chip,
+.tag {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--color-card);
@@ -89,7 +49,6 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  margin-top: auto;
   padding: var(--space-3) var(--space-4);
   border: 0;
   border-radius: var(--radius-sm);
@@ -100,64 +59,86 @@
   cursor: copy;
 }
 
-.code:hover {
-  background: var(--color-control-group);
-}
-
 .code code {
   font-family: ui-monospace, monospace;
   font-size: var(--text-xs);
   overflow-wrap: anywhere;
 }
 
-/* contenu du téléchargement : trois chiffres clés */
-.counts {
+.files {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--size-card-min)), 1fr));
   gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.counts li {
+.file {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--space-1);
-  padding: var(--space-3);
+}
+
+.fileButton {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-control);
+  padding: 0 var(--space-3);
+  border: 0;
   border-radius: var(--radius-sm);
   background: var(--color-card);
-}
-
-.counts strong {
-  font-size: var(--text-xl);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-lg);
-}
-
-.counts span {
-  color: var(--color-text-secondary);
-  font-size: var(--text-xs);
-}
-
-.details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.details summary {
-  width: fit-content;
-  color: var(--color-text-secondary);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
-.details summary:hover {
-  color: var(--color-text);
+.fileButton:hover {
+  background: var(--color-control-active);
 }
 
-.details[open] summary {
-  margin-bottom: var(--space-3);
+.levels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.levelHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.levelName {
+  margin-right: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tagField {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+}
+
+.tagField input {
+  width: calc(var(--space-12) + var(--space-4));
+}
+
+.sample {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .fileGroup {
@@ -166,108 +147,8 @@
   gap: var(--space-2);
 }
 
-.fileGroup + .fileGroup {
-  margin-top: var(--space-3);
-}
-
 .fileGroupTitle {
   color: var(--color-text-secondary);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
-}
-
-/* échelle : une ligne par niveau, réglages à gauche, exemple à droite */
-.levels {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  border-radius: var(--radius-md);
-  background: var(--color-surface-raised);
-  box-shadow: inset 0 0 0 1px var(--color-divider);
-  list-style: none;
-}
-
-.level {
-  display: grid;
-  grid-template-columns: calc(var(--size-card-min) - var(--space-8)) minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-8);
-  padding: var(--space-6);
-}
-
-.level + .level {
-  border-top: var(--size-divider) solid var(--color-divider);
-}
-
-.levelMeta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.levelName {
-  color: var(--color-text);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.specs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-1) var(--space-4);
-  width: 100%;
-  margin: 0;
-  font-size: var(--text-xs);
-}
-
-.spec dt {
-  color: var(--color-text-secondary);
-}
-
-.spec dd {
-  margin: 0;
-  font-variant-numeric: tabular-nums;
-}
-
-.copyCss {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-height: var(--size-control-compact);
-  margin-left: calc(-1 * var(--space-2));
-  padding: 0 var(--space-2);
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-text-secondary);
-  font: inherit;
-  font-size: var(--text-xs);
-  cursor: copy;
-}
-
-.copyCss:hover {
-  background: var(--color-control);
-  color: var(--color-text);
-}
-
-.sample {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 720px) {
-  .level {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-4);
-  }
-
-  .specimen {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }

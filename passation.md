@@ -55,7 +55,7 @@
   - Cartes au style de la maquette du porteur : on saisit le HEX, et **RVB, CMJN et Pantone** sont calculés. Le Pantone est le plus proche dans la table libre `pantone-colors` ; c'est une approximation. CMJN et Pantone sont corrigeables à la main.
   - **Nuances** de chaque couleur principale et secondaire, calculées seules (11 paliers). La couleur se range au palier de sa luminosité (point sur la case), copie par case ou en CSS. **Plus de dégradés** (retirés le 22/10/2026, à la demande du porteur).
   - **Neutres** construits à partir de 2 couleurs opposées (11 paliers, 50 → 950), sur une seule bande.
-- **Typographie** : Geist par défaut. Grand spécimen, graisses écrites dans leur graisse, **un seul bouton télécharge la famille complète (.zip)** : 18 TTF, versions variables et WOFF2, rangés dans `public/fonts/geist/` avec la licence OFL (détail des fichiers repliable). Échelle en lignes, chaque niveau copiable en CSS.
+- **Typographie** : Geist par défaut. Les styles sont listés et **un seul bouton télécharge la famille complète (.zip)** : 18 TTF, versions variables et WOFF2, rangés dans `public/fonts/geist/` avec la licence OFL. (Une refonte a été essayée le 22/10/2026 puis annulée à la demande du porteur.)
 - **Iconographie** :
   - toute la bibliothèque **Central** (2 100 icônes), lue depuis le service visual.systems ;
   - recherche en anglais avec synonymes, style, arrondi, épaisseur, taille, couleur ;
@@ -70,7 +70,7 @@
 
 ## 5. Prochaines étapes
 
-1. Faire tester au porteur la dernière série (page Couleur revue avec nuances automatiques, page Typographie revue), puis ouvrir la **PR des Ressources**. La PR n° 4 (Export) peut être fusionnée avant, sur son accord.
+1. Faire tester au porteur la dernière série (page Couleur revue avec nuances automatiques, cartes Typographie), puis ouvrir la **PR des Ressources**. La PR n° 4 (Export) peut être fusionnée avant, sur son accord.
 2. **Layout editor**, décision du porteur : **simple**. C'est **une seule frame**, comme sur la maquette Figma (`Tool / Layout editor Motif`, nœud `2337:7799`), où l'on place son motif dans un format. Pas de plan de travail à plusieurs frames.
    - Le panneau du Figma : Layout (X, Y, W, H, rotation, alignements, rognage), Format, Calques, Fill, Pastilles, Survol, Rotation, Couleurs, puis le bloc Export.
    - Brancher le bloc Export sur la frame (il est aujourd'hui grisé sur cette page).

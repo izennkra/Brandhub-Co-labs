@@ -114,28 +114,11 @@ const DEFAULT_SCALE: Level[] = [
 ];
 
 const NUMBER_FIELDS = [
-  { key: 'size', label: 'Taille', unit: ' px' },
   { key: 'weight', label: 'Graisse', unit: '' },
-  { key: 'leading', label: 'Interlignage', unit: ' %' },
-  { key: 'tracking', label: 'Interlettrage', unit: ' %' },
+  { key: 'size', label: 'Taille', unit: 'px' },
+  { key: 'tracking', label: 'Interlettrage', unit: '%' },
+  { key: 'leading', label: 'Interlignage', unit: '%' },
 ] as const;
-
-const ALPHABET = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz', '0123456789 &@?!%€'];
-
-/** « 500 Medium » → 500, pour montrer chaque graisse dans sa graisse. */
-const weightOf = (label: string) => Number(label.match(/\d{3}/)?.[0]) || undefined;
-
-const levelCss = (level: Level, family: string) =>
-  [
-    `font-family: '${family}', sans-serif;`,
-    `font-weight: ${level.weight};`,
-    `font-size: ${level.size}px;`,
-    `line-height: ${level.leading}%;`,
-    `letter-spacing: ${level.tracking / 100}em;`,
-  ].join('\n');
-
-const copyText = async (value: string, done: string) =>
-  notify((await copyToClipboard(value)) ? done : 'La copie n’a pas été autorisée.');
 
 const FILE_GROUPS: { kind: FontKind; title: string }[] = [
   { kind: 'static', title: 'Styles (TTF / OTF)' },
@@ -197,38 +180,23 @@ function FamilyCards({
     }
     if (added.length) update?.({ files: [...family.files, ...added] });
   };
-  const weights = family.weights
-    .split('·')
-    .map((w) => w.trim())
-    .filter(Boolean);
-  const fontFamily = `'${family.name}', var(--font-sans)`;
   return (
     <div className={page.pair}>
       <article className={page.card}>
-        <div className={page.specimen} aria-hidden style={{ fontFamily }}>
-          <span className={page.glyphs}>Aa</span>
-          <span className={page.alphabet}>
-            {ALPHABET.map((line) => (
-              <span key={line}>{line}</span>
-            ))}
-          </span>
-        </div>
-        <div className={page.identity}>
-          <EditableText
-            value={family.name}
-            label="Nom de la police"
-            editing={canEdit}
-            onSave={(name) => update?.({ name })}
-            className={page.family}
-          />
-          <EditableText
-            value={family.role}
-            label="Rôle de la police"
-            editing={canEdit}
-            onSave={(role) => update?.({ role })}
-            className={page.muted}
-          />
-        </div>
+        <EditableText
+          value={family.name}
+          label="Nom de la police"
+          editing={canEdit}
+          onSave={(name) => update?.({ name })}
+          className={page.family}
+        />
+        <EditableText
+          value={family.role}
+          label="Rôle de la police"
+          editing={canEdit}
+          onSave={(role) => update?.({ role })}
+          className={page.muted}
+        />
         {canEdit ? (
           <EditableText
             value={family.weights}
@@ -237,12 +205,16 @@ function FamilyCards({
             onSave={(weights) => update?.({ weights })}
           />
         ) : (
-          <ul className={page.weights} aria-label="Graisses">
-            {weights.map((weight) => (
-              <li key={weight} style={{ fontFamily, fontWeight: weightOf(weight) }}>
-                {weight}
-              </li>
-            ))}
+          <ul className={page.chips} aria-label="Graisses">
+            {family.weights
+              .split('·')
+              .map((w) => w.trim())
+              .filter(Boolean)
+              .map((weight) => (
+                <li key={weight} className={page.chip}>
+                  {weight}
+                </li>
+              ))}
           </ul>
         )}
         {canEdit ? (
@@ -252,7 +224,11 @@ function FamilyCards({
             type="button"
             className={page.code}
             aria-label="Copier le code CSS"
-            onClick={() => copyText(family.css, 'Code CSS copié.')}
+            onClick={async () =>
+              notify(
+                (await copyToClipboard(family.css)) ? 'Code CSS copié.' : 'La copie n’a pas été autorisée.',
+              )
+            }
           >
             <code>{family.css}</code>
             <Icon name="square-behind-square2" size="xs" />
@@ -261,62 +237,44 @@ function FamilyCards({
         {canEdit && onDelete && <DeleteButton name={`la police ${family.name}`} onDelete={onDelete} />}
       </article>
       <article className={page.card}>
-        <div className={page.identity}>
-          <h3 className={page.family}>Fichiers de la police</h3>
-          <p className={page.muted}>
-            Toute la famille {family.name} en un seul téléchargement, à installer pour le travail de création.
-          </p>
-        </div>
-        {family.files.length > 0 && (
-          <>
-            <ul className={page.counts} aria-label="Contenu du téléchargement">
-              {FILE_GROUPS.map(({ kind, title }) => {
-                const count = family.files.filter((file) => kindOf(file) === kind).length;
-                return count ? (
-                  <li key={kind}>
-                    <strong>{count}</strong>
-                    <span>{title}</span>
+        <h3 className={page.family}>Famille complète</h3>
+        <p className={page.muted}>
+          Tous les styles de {family.name} en un seul téléchargement, à installer pour le travail de création.
+        </p>
+        {FILE_GROUPS.map(({ kind, title }) => {
+          const files = family.files
+            .map((file, index) => ({ file, index }))
+            .filter(({ file }) => kindOf(file) === kind);
+          if (!files.length) return null;
+          return (
+            <div key={kind} className={page.fileGroup}>
+              <h4 className={page.fileGroupTitle}>
+                {title} · {files.length}
+              </h4>
+              <ul className={page.chips} aria-label={title}>
+                {files.map(({ file, index }) => (
+                  <li key={file.url} className={page.chip}>
+                    {file.label.replace(`${family.name} `, '')}
+                    {canEdit && (
+                      <DeleteButton
+                        name={file.label}
+                        onDelete={() => {
+                          void removeResourceFile(file.url);
+                          update?.({ files: family.files.filter((_, i) => i !== index) });
+                        }}
+                      />
+                    )}
                   </li>
-                ) : null;
-              })}
-            </ul>
-            <button type="button" className={styles.primary} onClick={() => void downloadFamily(family)}>
-              <Icon name="arrow-inbox" size="sm" /> Télécharger la famille complète (.zip)
-            </button>
-          </>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+        {family.files.length > 0 && (
+          <button type="button" className={styles.primary} onClick={() => void downloadFamily(family)}>
+            <Icon name="arrow-inbox" size="sm" /> Télécharger la famille complète (.zip)
+          </button>
         )}
-        <details className={page.details} open={canEdit || undefined}>
-          <summary>Voir le détail des fichiers</summary>
-          {FILE_GROUPS.map(({ kind, title }) => {
-            const files = family.files
-              .map((file, index) => ({ file, index }))
-              .filter(({ file }) => kindOf(file) === kind);
-            if (!files.length) return null;
-            return (
-              <div key={kind} className={page.fileGroup}>
-                <h4 className={page.fileGroupTitle}>
-                  {title} · {files.length}
-                </h4>
-                <ul className={page.chips} aria-label={title}>
-                  {files.map(({ file, index }) => (
-                    <li key={file.url} className={page.chip}>
-                      {file.label.replace(`${family.name} `, '')}
-                      {canEdit && (
-                        <DeleteButton
-                          name={file.label}
-                          onDelete={() => {
-                            void removeResourceFile(file.url);
-                            update?.({ files: family.files.filter((_, i) => i !== index) });
-                          }}
-                        />
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </details>
         {canEdit && (
           <DropZone
             accept=".woff2,.woff,.otf,.ttf"
@@ -331,20 +289,20 @@ function FamilyCards({
 
 function LevelCard({
   level,
-  familyName,
+  fontFamily,
   editing,
   update,
   onDelete,
 }: {
   level: Level;
-  familyName: string;
+  fontFamily: string;
   editing: boolean;
   update: (patch: Partial<Level>) => void;
   onDelete: () => void;
 }) {
   return (
     <li className={page.level}>
-      <div className={page.levelMeta}>
+      <div className={page.levelHead}>
         <EditableText
           value={level.name}
           label="Nom du niveau"
@@ -352,40 +310,28 @@ function LevelCard({
           onSave={(name) => update({ name })}
           className={page.levelName}
         />
-        <dl className={page.specs}>
-          {NUMBER_FIELDS.map(({ key, label, unit }) => (
-            <div key={key} className={page.spec}>
-              <dt>{label}</dt>
-              <dd>
-                {editing ? (
-                  <EditableText
-                    value={String(level[key])}
-                    label={`${label} de ${level.name}`}
-                    editing
-                    onSave={(value) => {
-                      const n = Number(value.replace(',', '.'));
-                      if (Number.isFinite(n)) update({ [key]: n });
-                    }}
-                  />
-                ) : (
-                  `${level[key]}${unit}`
-                )}
-              </dd>
-            </div>
-          ))}
-        </dl>
-        {editing ? (
-          <DeleteButton name={level.name} onDelete={onDelete} />
-        ) : (
-          <button
-            type="button"
-            className={page.copyCss}
-            aria-label={`Copier le CSS de ${level.name}`}
-            onClick={() => copyText(levelCss(level, familyName), `CSS de ${level.name} copié.`)}
-          >
-            <Icon name="square-behind-square2" size="xs" /> CSS
-          </button>
+        {NUMBER_FIELDS.map(({ key, label, unit }) =>
+          editing ? (
+            <label key={key} className={page.tagField}>
+              <span>{label}</span>
+              <EditableText
+                value={String(level[key])}
+                label={`${label} de ${level.name}`}
+                editing
+                onSave={(value) => {
+                  const n = Number(value.replace(',', '.'));
+                  if (Number.isFinite(n)) update({ [key]: n });
+                }}
+              />
+            </label>
+          ) : (
+            <span key={key} className={page.tag}>
+              {label} {level[key]}
+              {unit}
+            </span>
+          ),
         )}
+        {editing && <DeleteButton name={level.name} onDelete={onDelete} />}
       </div>
       {editing ? (
         <EditableText
@@ -398,7 +344,7 @@ function LevelCard({
         <p
           className={page.sample}
           style={{
-            fontFamily: `'${familyName}', var(--font-sans)`,
+            fontFamily,
             fontWeight: level.weight,
             fontSize: level.size,
             letterSpacing: `${level.tracking / 100}em`,
@@ -418,6 +364,7 @@ export function TypographyPage() {
   const scale = useCollection<Level>('res-type-scale');
   const familyList: (Family | Entry<Family>)[] = families.items.length ? families.items : [DEFAULT_FAMILY];
   const levels: (Level | Entry<Level>)[] = scale.items.length ? scale.items : DEFAULT_SCALE;
+  const fontFamily = `'${familyList[0].name}', var(--font-sans)`;
   useFontFaces(familyList);
 
   useDownloadAll('Télécharger les familles complètes (.zip)', async () => {
@@ -436,7 +383,6 @@ export function TypographyPage() {
     <>
       <Section
         title="Famille de police"
-        description="La police de la marque, ses graisses et ses fichiers à installer."
         actions={
           unlocked &&
           (families.items.length ? (
@@ -469,7 +415,6 @@ export function TypographyPage() {
       </Section>
       <Section
         title="Échelle typographique"
-        description="Les tailles à utiliser, du plus grand titre à la légende. Chaque niveau se copie en CSS."
         actions={
           unlocked &&
           (scale.items.length ? (
@@ -494,7 +439,7 @@ export function TypographyPage() {
               <LevelCard
                 key={stored?.id ?? level.name}
                 level={level}
-                familyName={familyList[0].name}
+                fontFamily={fontFamily}
                 editing={unlocked && stored !== null}
                 update={(patch) => stored && scale.update(stored.id, patch)}
                 onDelete={() => stored && scale.remove(stored.id, `Niveau supprimé : ${level.name}`)}
