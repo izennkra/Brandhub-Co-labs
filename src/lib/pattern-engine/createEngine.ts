@@ -4,6 +4,7 @@
 import geistLatinUrl from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
 import * as THREE from 'three';
 import type { ControlEffect } from './controls';
+import { createExporter } from './exporter';
 import { createPresets } from './presets';
 import {
   runPrototypeEngine,
@@ -354,6 +355,8 @@ export type Engine = {
   actions: ReturnType<typeof createActions>;
   /** Préréglages partagés (section du panneau). */
   presets: ReturnType<typeof createPresets>;
+  /** Export du motif : image, SVG, vidéo, Figma (bloc Export du panneau). */
+  exporter: ReturnType<typeof createExporter>;
   canvas: HTMLCanvasElement;
   /** Événements du moteur : toast (message), settings (réglages), library (images), presets. */
   events: EventTarget;
@@ -399,6 +402,8 @@ async function createEngine(): Promise<Engine> {
     actions.loadTone(Math.min(core.selImg, core.imgList.length - 1)),
   );
 
+  const exporter = createExporter(core, env.toast, syncAll);
+
   // initPresets() : appelé au démarrage, comme à la fin du prototype (ligne 4411).
   void presets.init();
 
@@ -406,6 +411,7 @@ async function createEngine(): Promise<Engine> {
     core,
     actions,
     presets,
+    exporter,
     canvas,
     events: engineEvents,
     attach(host) {

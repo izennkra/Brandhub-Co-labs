@@ -77,7 +77,7 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 | `app-shell` (structure, navigation, design system) | ✅ terminée, fusionnée (PR n° 1) |
 | `pattern-engine` (Motif + Illustration) | ✅ **terminée, fusionnée dans `main` le 22/10/2026 (PR n° 2, commit `4fa7434`)**. Relecture : `docs/review-pattern-engine.md`. Plan archivé : `tasks/archive/pattern-engine-*.md` |
 | `data-store` (stockage partagé) | ✅ **terminée, testée par le porteur, fusionnée le 22/10/2026 (PR n° 3, commit `583eb8c`)**. Étapes Vercel données au porteur (projet, Upstash, Blob, redéploiement) |
-| `export` (bloc Export du Figma : Image, SVG, Vidéo, Figma) | 🟡 **en cours** (branche `feature/export`) |
+| `export` (bloc Export du Figma : Image, SVG, Vidéo, Figma) | 🟡 **codé et poussé** (branche `feature/export`) : le porteur teste, puis PR. Code : `exporter.ts` (recopié du prototype), `export-options.ts` (léger), `ExportPanel.tsx`. Tailles 1x à 6x de la scène (Figma) au lieu de HD/2K/4K/6K. Le Layout editor reste « Export » désactivé |
 | `resources` (pages Ressource) | ensuite (voir décisions ci-dessous) |
 | `layout-editor` | après les Ressources |
 | `editor-access` (profil éditeur, mot de passe) | plus tard ; un simple « code » protège déjà la modification des Ressources |
@@ -207,7 +207,7 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 - **Architecture des pages** (Figma + références) : Logo (groupes de cartes + Télécharger), Typographie (famille, fichiers, échelle), Couleur (marque, neutres, dégradés, copie du code), Iconographie (filtres + grille Central), Inspiration (mosaïque 4 colonnes). **Imagerie** : au choix de l'IA (mosaïque avec filtres). **Patterns prédéfinis** : une grille comme Inspiration, remplie de **layouts de patterns** faits dans le Layout editor, **filtrables par format**.
 
 
-1. `export` (en cours), puis `resources` (avec `/api/files` et Vercel Blob), puis `layout-editor`.
+1. `export` (test du porteur + PR), puis `resources` (avec `/api/files` et Vercel Blob), puis `layout-editor`.
 2. **Vercel** (étapes déjà données au porteur) et `editor-access`.
 3. **Export** (PNG, WebP, JPEG, SVG, vidéo, Figma) : à planifier (les réglages d'export du prototype ne sont pas dans `controls.ts`).
 4. **Temps 2** : `brand-settings`, `logo-variants`, `pattern-embed`.

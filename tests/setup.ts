@@ -27,7 +27,7 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
   ];
   const notify = () => actual.engineEvents.dispatchEvent(new Event('settings'));
   const fakeEngine = {
-    core: { S, PALETTE },
+    core: { S, PALETTE, loopList: () => [] },
     events: actual.engineEvents,
     actions: {
       togglePause: () => {
@@ -61,6 +61,13 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
         S[key] = value;
         actual.engineEvents.dispatchEvent(new Event('settings'));
       },
+    },
+    exporter: {
+      busy: false,
+      exportCurrent: async () => {
+        S.exported = Number(S.exported ?? 0) + 1;
+      },
+      copyForPlugin: async () => {},
     },
     presets: {
       list: () => [],

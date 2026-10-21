@@ -9,6 +9,7 @@ import { Toggle } from '../engine/Toggle';
 import { Icon } from '../Icon';
 import styles from './EditorPanel.module.css';
 import { EngineControls } from './EngineControls';
+import { ExportPanel } from './ExportPanel';
 import { PanelSection } from './PanelSection';
 import { useEngine } from './useEngine';
 
@@ -156,15 +157,7 @@ export function EditorPanel({
         ))}
       </div>
 
-      <button
-        type="button"
-        className={styles.export}
-        aria-disabled="true"
-        title="L’export arrive avec le moteur de motifs"
-      >
-        <span>Export</span>
-        <Icon name="chevron-down-small" size="xs" className={styles.exportChevron} />
-      </button>
+      <ExportPanel engine={engine} />
     </aside>
   );
 }

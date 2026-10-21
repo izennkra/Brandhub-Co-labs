@@ -44,6 +44,38 @@ const EXPORTS = [
   'selImg',
   'orbit',
   'storeReady',
+  // Export (dock d'export du prototype, lignes 3211-3440)
+  'VW',
+  'VH',
+  'camera',
+  'panelShift',
+  'pillMat',
+  'pillScene',
+  'quadMat',
+  'quadScene',
+  'quadCam',
+  'rt',
+  'lastInfo',
+  'drawInfoCanvas',
+  'infoSVG',
+  'infoGeom',
+  'bgCol',
+  'lastFog',
+  'LSTEP',
+  'sPos',
+  'sSeed',
+  'sCol',
+  'lastN',
+  'dSeed',
+  'dPos',
+  'dSize',
+  'dCol',
+  'HEX',
+  'imgDirty',
+  'imgSets',
+  'buildImageSets',
+  'imgLoopDur',
+  'loopList',
 ];
 
 // Variables du bloc que la couche d'adaptation doit pouvoir réaffecter, comme le faisait
@@ -60,6 +92,15 @@ const SETTERS = [
   'curImg',
   'selImg',
   'imgTr',
+  // Enregistrement vidéo (recordVideo, ligne 3489)
+  'recState',
+  'recording',
+  'drawP',
+  'lobes',
+  'syn',
+  'synAcc',
+  'spawnAcc',
+  'links',
 ];
 
 // Fonctions du navigateur que la couche d'adaptation remplace pour le bloc (sans toucher au bloc) :
@@ -132,7 +173,8 @@ function generate() {
   const names = [...new Set([...findFreeNames(block.text), ...SHADOWED])].sort();
   const declared = declaredNames(block.text);
   for (const name of [...EXPORTS, ...SETTERS]) {
-    if (!declared.has(name)) {
+    // Un nom fourni par la couche d'adaptation (ex. recState) peut aussi être réaffecté.
+    if (!declared.has(name) && !names.includes(name)) {
       throw new Error(`« ${name} » n'est pas défini dans le bloc moteur`);
     }
   }
