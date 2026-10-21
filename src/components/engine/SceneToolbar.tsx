@@ -35,7 +35,7 @@ export function SceneToolbar({
 
   const newLabel = illustration ? 'Rejouer' : 'Nouvelle forme';
   return (
-    <div className={styles.toolbar} role="toolbar" aria-label="Commandes de la scène">
+    <div className={styles.toolbar} role="group" aria-label="Commandes de la scène">
       <button
         type="button"
         className={styles.button}

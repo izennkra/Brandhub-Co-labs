@@ -121,15 +121,15 @@
   - Fichiers : `src/components/engine/SceneToolbar.tsx` (+ css), `src/components/Toaster.tsx`, `src/app/ToolLayout.tsx`, tests associés
   - Taille : M
 
-- [ ] **Tâche 12 : performance, accessibilité, références et relecture**
+- [x] **Tâche 12 : performance, accessibilité, références et relecture**
   - Description : vérifier que Three.js n'est pas chargé sur les pages Ressource et que la boucle s'arrête hors des pages Tool ; étendre les tests de contraste et de focus aux nouveaux contrôles ; mettre à jour les rendus de référence ; faire la relecture `/review` ; proposer la pull request.
   - Acceptation :
-    - [ ] Les 10 critères de `SPEC-pattern-engine.md` sont remplis
-    - [ ] La relecture ne laisse aucun problème important ouvert
+    - [x] Les 10 critères de `SPEC-pattern-engine.md` sont remplis
+    - [x] La relecture ne laisse aucun problème important ouvert (`docs/review-pattern-engine.md`)
   - Vérification : tous les contrôles, tests navigateur lancés 2 fois
   - Fichiers : `e2e/*.spec.ts`, captures de référence, `docs/review-pattern-engine.md`
   - Taille : M
 
 ### ✅ Point de contrôle final
-- [ ] Les 10 critères de réussite sont remplis
-- [ ] La branche est poussée et la pull request est proposée
+- [x] Les 10 critères de réussite sont remplis
+- [x] La branche est poussée et la pull request est proposée

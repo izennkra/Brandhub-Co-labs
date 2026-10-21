@@ -90,3 +90,15 @@ test('la scène quitte la page sur Ressource et revient sur Motif', async ({ pag
   await expect(scene(page)).toBeVisible();
   await expect.poll(async () => (await snapshot(page)).lit, { timeout: 15000 }).toBeGreaterThan(1000);
 });
+
+test('les pages Ressource ne chargent ni le moteur ni Three.js', async ({ page }) => {
+  const loaded: string[] = [];
+  page.on('request', (request) => {
+    if (/createEngine|prototype-engine|three/i.test(request.url())) loaded.push(request.url());
+  });
+  for (const path of ['/ressources/logo', '/ressources/couleur', '/ressources/patterns']) {
+    await page.goto(path);
+    await page.waitForLoadState('networkidle');
+  }
+  expect(loaded).toEqual([]);
+});

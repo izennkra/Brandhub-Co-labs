@@ -69,7 +69,7 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 | Partie | État |
 |---|---|
 | `app-shell` (structure globale, navigation, design system) | ✅ **terminée, fusionnée dans `main`** (PR n° 1) |
-| `pattern-engine` (moteur de motifs) | 🟡 **en cours : tâches 1 à 11 sur 12 faites** |
+| `pattern-engine` (moteur de motifs) | 🟢 **terminée : 12 tâches faites, pull request à ouvrir puis fusionner sur accord du porteur** |
 | `data-store` (stockage partagé) | à faire |
 | `editor-access` (profil éditeur, mot de passe) | à faire |
 | `resources` (pages Ressource) | à faire |
@@ -102,7 +102,8 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
   - ✅ **Tâche 10** : panneau Illustration complet (bouton « Rétablir les tons » en avancé, `actions.resetTone`, placé avant « Trame » via `beforeSubs`).
   - ✅ **Point de contrôle C** : validé le 21/10/2026.
   - ✅ **Tâche 11** : `SceneToolbar` (pause, nouvelle forme / rejouer, touche R), `Toaster` (messages du moteur, `role=status`), raccourci ⌥ H / Alt + H (`event.code === 'KeyH'`). Le moteur se charge par `loadEngine()` (une seule demande partagée : évite un blocage des tests quand plusieurs composants le demandent). Icônes ajoutées : `play`, `pause`, `shuffle`, `replay`.
-  - ⚠️ Le rendu identique « Ligne » échoue plus souvent depuis la tâche 11 (toujours exactement 0,146 %, déjà vu avant) : piste à creuser, un ordre de tirage du hasard au démarrage. Fermer l’onglet de prévisualisation pendant les tests (il occupe la carte graphique).
+  - ✅ **Tâche 12** : test « les pages Ressource ne chargent pas le moteur », relecture `docs/review-pattern-engine.md`. Le test de rendu remet le hasard à zéro avant chaque cas (le moteur tire au hasard à chaque image).
+  - ⚠️ Rendu identique « Ligne » encore fragile à 0,1 % (le prototype lui-même varie jusqu’à 0,25 % en Ligne) : seuil à décider avec le porteur (proposition 0,3 %).
 - Le panneau Éditeur à droite affiche encore « Réglages à venir » : (sections Couleurs et Préréglages partagés seulement : tâche 7 et partie data-store).
 - Raccourci : ⌥ H / Alt + H (tâche 11).
 
@@ -197,7 +198,7 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 
 ## 10. Prochaines étapes
 
-1. Faire valider le **point de contrôle C**, puis tâches 11 et 12 (fin de la partie pattern-engine, pull request).
+1. Ouvrir la pull request `feature/pattern-engine` → `main` (sur accord), puis passer à la partie suivante de la carte (`data-store`) avec `/spec`.
 2. Continuer le plan `pattern-engine` :
    - tâches 5 à 7 : composants de contrôle, panneau Motif branché, section Couleurs (**maquette à faire valider avant de coder**) ; puis point de contrôle B ;
    - tâches 8 à 10 : bascule vers l'Illustration, images, panneau Illustration ; puis point de contrôle C ;

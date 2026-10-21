@@ -177,6 +177,10 @@ test.describe('rendu identique au prototype', () => {
     test(testCase.name, async ({ browser }, testInfo) => {
       const app = await openPage(browser, '/outils/motif', false);
       const prototype = await openPage(browser, PROTOTYPE_URL, true);
+      // Le moteur tire au hasard à chaque image (renflements) et en rangeant les images de démo :
+      // l'ordre de ces tirages dépend de la vitesse de la machine. On repart du même hasard des
+      // deux côtés juste avant le cas testé.
+      for (const page of [app, prototype]) await page.evaluate(() => (window as any).__reseed()); // eslint-disable-line @typescript-eslint/no-explicit-any
       await testCase.app(app);
       await testCase.prototype(prototype);
 
