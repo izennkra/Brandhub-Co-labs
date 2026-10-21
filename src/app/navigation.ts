@@ -14,7 +14,8 @@ export type ToolPageDef = NavPage & {
 };
 
 export type ResourcePageDef = NavPage & {
-  description: string; // provisoire, à remplacer par les textes définitifs (partie resources)
+  description: string; // provisoire, à remplacer par les textes définitifs
+  editTips: string[]; // consignes du mode édition, dans le panneau latéral
 };
 
 export type SectionId = 'tool' | 'resource';
@@ -79,42 +80,70 @@ export const RESOURCE_PAGES: ResourcePageDef[] = [
     label: 'Logo',
     icon: 'vector-logo',
     description: 'Les logos de la marque, prêts à télécharger.',
+    editTips: [
+      'Crée un groupe (ex. « Logo », « Logo symbole »), puis dépose tes logos en SVG dans sa zone.',
+      'Clique sur un nom pour le renommer ; le PNG est fabriqué tout seul au téléchargement.',
+      'Glisse une carte pour changer l’ordre ; « Fond foncé » pour un logo clair.',
+    ],
   },
   {
     path: '/ressources/typographie',
     label: 'Typographie',
     icon: 'text1',
     description: 'Les polices de la marque, leurs graisses et leur hiérarchie.',
+    editTips: [
+      'Change le nom, le rôle, les graisses et le code CSS directement dans les cartes.',
+      'Dépose les fichiers de police (WOFF2, OTF, TTF) dans la carte Fichiers.',
+      'Ajoute ou retire des niveaux dans l’échelle typographique.',
+    ],
   },
   {
     path: '/ressources/couleur',
     label: 'Couleur',
     icon: 'color-palette',
     description: 'La palette de la marque et ses valeurs à copier.',
+    editTips: [
+      'Ajoute une couleur, donne-lui un nom et colle son code HEX : RVB et TSL sont calculés.',
+      'CMJN et Pantone sont facultatifs.',
+      'Glisse une carte pour changer l’ordre.',
+    ],
   },
   {
     path: '/ressources/iconographie',
     label: 'Iconographie',
     icon: 'shapes-plus-x-square-circle',
     description: 'Les icônes de la marque, à rechercher et à copier.',
+    editTips: [
+      'Dépose tes icônes en SVG dans la zone d’ajout.',
+      'Pour qu’une icône prenne la couleur choisie, son SVG doit utiliser « currentColor ».',
+    ],
   },
   {
     path: '/ressources/imagerie',
     label: 'Imagerie',
     icon: 'images1',
     description: 'Les images et la direction photo de la marque.',
+    editTips: [
+      'Dépose tes images dans la zone d’ajout.',
+      'Donne un thème à chaque image : il sert de filtre.',
+    ],
   },
   {
     path: '/ressources/patterns',
     label: 'Patterns prédéfinis',
     icon: 'dot-grid3x3',
     description: 'Les motifs prêts à l’emploi, générés avec l’outil.',
+    editTips: ['Les layouts arrivent depuis le Layout editor ; ici, tu peux les renommer ou les retirer.'],
   },
   {
     path: '/ressources/inspiration',
     label: 'Inspiration',
     icon: 'lightbulb-glow',
     description: 'Les références visuelles qui nourrissent la marque.',
+    editTips: [
+      'Dépose tes images d’inspiration dans la zone d’ajout.',
+      'Clique sur un nom pour le renommer.',
+    ],
   },
 ];
 

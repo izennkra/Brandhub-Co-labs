@@ -4,6 +4,11 @@
 // Les deux voient donc les mêmes données.
 
 export type StoreItem<T = unknown> = { id: string; data: T };
+
+// Code éditeur : envoyé avec chaque modification, vérifié par le service pour les collections « res-… ».
+export const EDITOR_HEADER = 'x-editor-code';
+// Sans service partagé (développement), les données ne quittent pas ce navigateur : un code local suffit.
+export const LOCAL_EDITOR_CODE = import.meta.env.VITE_EDITOR_CODE || 'colabs';
 export type StoreKind = 'api' | 'local';
 
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
@@ -13,6 +18,8 @@ export function createStore({
   storage = typeof localStorage === 'undefined' ? null : localStorage,
 }: { fetch?: Fetch; storage?: Storage | null } = {}) {
   let kind: StoreKind = 'local';
+  let editorCode: string | null = null;
+  const editorHeaders = (): Record<string, string> => (editorCode ? { [EDITOR_HEADER]: editorCode } : {});
 
   const localKey = (col: string) => `bhc.store.${col}`;
   const readLocal = (col: string): Record<string, unknown> => {
@@ -48,6 +55,22 @@ export function createStore({
     get kind() {
       return kind;
     },
+    /** Code éditeur joint aux modifications (null : aucun). */
+    setEditorCode(code: string | null) {
+      editorCode = code;
+    },
+    /** En-têtes à joindre à une requête de modification (envoi de fichier). */
+    editorHeaders,
+    /** Le code est-il le bon ? Vérifié par le service partagé, ou par le code local sans service. */
+    async checkCode(code: string): Promise<boolean> {
+      await ready;
+      if (kind !== 'api') return code === LOCAL_EDITOR_CODE;
+      const response = await request('/api/store?editor=1', {
+        cache: 'no-store',
+        headers: { [EDITOR_HEADER]: code },
+      });
+      return Boolean((await response.json().catch(() => ({})))?.valid);
+    },
     async list<T = unknown>(col: string): Promise<StoreItem<T>[]> {
       await ready;
       if (kind === 'api') {
@@ -70,7 +93,7 @@ export function createStore({
       if (kind === 'api') {
         const response = await request('/api/store', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...editorHeaders() },
           body: JSON.stringify({ col, id, data }),
         });
         const body = await response.json().catch(() => ({}));
@@ -84,7 +107,7 @@ export function createStore({
     async del(col: string, id: string): Promise<void> {
       await ready;
       if (kind === 'api') {
-        const response = await request(query(col, id), { method: 'DELETE' });
+        const response = await request(query(col, id), { method: 'DELETE', headers: editorHeaders() });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return;
       }

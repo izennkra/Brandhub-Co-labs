@@ -11,7 +11,7 @@ function renderAt(path: string) {
 }
 
 const sidePanel = () => screen.queryByRole('complementary', { name: 'Panneau latéral' });
-const panelToggle = () => screen.getByRole('button', { name: 'Panneau latéral' });
+const panelToggle = () => screen.getByRole('button', { name: 'Modifier les ressources' });
 
 describe('habillage des pages Ressource', () => {
   it('affiche le bouton de panneau, fermé au départ', () => {
@@ -38,14 +38,17 @@ describe('habillage des pages Ressource', () => {
     expect(sidePanel()).toBeVisible();
   });
 
-  it('affiche le bouton Télécharger, désactivé pour l’instant', () => {
+  it('désactive « Tout télécharger » quand la page est vide', async () => {
     renderAt('/ressources/couleur');
-    expect(screen.getByRole('button', { name: 'Télécharger' })).toHaveAttribute('aria-disabled', 'true');
+    expect(await screen.findByRole('button', { name: 'Rien à télécharger sur cette page' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it("n'apparaît pas sur les pages Tool", () => {
     renderAt('/outils/motif');
-    expect(screen.queryByRole('button', { name: 'Panneau latéral' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Télécharger' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Modifier les ressources' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /télécharger/i })).not.toBeInTheDocument();
   });
 });

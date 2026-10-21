@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 
 test('pages Ressource : panneau latéral et bouton Télécharger en bas à droite', async ({ page }) => {
   await page.goto('/ressources/logo');
-  const toggle = page.getByRole('button', { name: 'Panneau latéral' });
-  const download = page.getByRole('button', { name: 'Télécharger' });
+  const toggle = page.getByRole('button', { name: 'Modifier les ressources' });
+  const download = page.getByRole('button', { name: 'Rien à télécharger sur cette page' });
 
   // Le bouton Télécharger est en bas à droite de l'écran, sous le bouton de panneau.
   const viewport = page.viewportSize()!;

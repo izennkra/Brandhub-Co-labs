@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest';
 const ROOT = join(import.meta.dirname, '..');
 const SRC = join(ROOT, 'src');
 const TOKENS = join(SRC, 'styles', 'tokens.css');
+// Seule exception : le calcul des valeurs d'une couleur saisie sur la page Couleur (RVB, TSL).
+const COLOR_MATH = join(SRC, 'lib', 'resources', 'colors.ts');
 
 const COLOR_PATTERN = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/g;
 
@@ -37,7 +39,7 @@ describe('findHardcodedColors', () => {
 describe('design system', () => {
   it("n'a aucune couleur en dur hors de tokens.css", () => {
     const offenders = sourceFiles(SRC)
-      .filter((file) => file !== TOKENS)
+      .filter((file) => file !== TOKENS && file !== COLOR_MATH)
       .flatMap((file) =>
         findHardcodedColors(readFileSync(file, 'utf8')).map((color) => `${relative(ROOT, file)} : ${color}`),
       );
