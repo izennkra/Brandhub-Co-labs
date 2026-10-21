@@ -27,6 +27,13 @@
   --color-slider-fill: rgb(67 22 4 / 0.1);
   --color-overlay-light: rgb(255 255 255 / 0.28); /* bandeau d'images */
   --color-focus: #431604;
+  --color-backdrop: rgb(67 22 4 / 0.2); /* voile derrière le menu ouvert sur petit écran */
+
+  /* ---------- Superpositions ---------- */
+  --shadow-overlay: 0 0 var(--space-6) rgb(67 22 4 / 0.15);
+  --z-menu-button: 10;
+  --z-backdrop: 20;
+  --z-drawer: 30;
 
   /* ---------- Typographie ---------- */
   --font-sans: 'Geist Variable', 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;

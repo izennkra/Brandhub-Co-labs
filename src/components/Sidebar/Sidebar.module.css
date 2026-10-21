@@ -13,6 +13,34 @@
   gap: var(--space-2);
 }
 
+/* Petit écran : la colonne devient un tiroir posé par-dessus la page. */
+.drawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: var(--z-drawer);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-overlay);
+}
+
+.close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-icon-button);
+  height: var(--size-icon-button);
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--color-control);
+}
+
 /* Les capitales sont centrées en rognant l'interligne au-dessus des capitales et sous la ligne
  * de base (comme le « text-box-trim » du Figma) : les marges haut et bas deviennent égales. */
 .badge {

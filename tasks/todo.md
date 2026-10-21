@@ -100,14 +100,14 @@
   - Fichiers : `src/app/ResourceLayout.tsx`, `src/components/SidePanel/*`, `tests/ResourceLayout.test.tsx`, `e2e/resource-layout.spec.ts`
   - Taille : S
 
-- [ ] **Tâche 9 : petits écrans, clavier et accessibilité**
+- [x] **Tâche 9 : petits écrans, clavier et accessibilité**
   - Description : sous 1280 px, la colonne de gauche se replie derrière un bouton. Vérifier le parcours complet au clavier, les états de focus, de survol et de désactivation, et les contrastes.
   - Acceptation :
-    - [ ] Sous 1280 px, la colonne se replie et se rouvre ; le contenu reste utilisable
-    - [ ] Tout le parcours se fait au clavier, avec un focus visible partout
+    - [x] Sous 1280 px, la colonne se replie et se rouvre ; le contenu reste utilisable
+    - [x] Tout le parcours se fait au clavier, avec un focus visible partout
   - Vérification : `npm run test:e2e` (scénarios en 1440 px et en 1024 px)
   - Dépend de : 7, 8
-  - Fichiers : `src/components/Sidebar/*`, `src/styles/global.css`, `e2e/responsive.spec.ts`
+  - Fichiers : `src/app/AppLayout.tsx`, `src/app/useMediaQuery.ts`, `src/components/Sidebar/*`, `e2e/responsive.spec.ts`, `e2e/accessibility.spec.ts`
   - Taille : S
 
 - [ ] **Tâche 10 : comparaison avec le Figma et relecture**
