@@ -5,12 +5,12 @@
 
 ## Phase 1 : fondations
 
-- [ ] **Tâche 1 : projet de base qui démarre**
+- [x] **Tâche 1 : projet de base qui démarre**
   - Description : créer l'application Vite + React + TypeScript avec les commandes de la spec (`dev`, `build`, `test`, `test:e2e`, `lint`) et une page d'accueil minimale.
   - Acceptation :
-    - [ ] `npm run dev` affiche la page dans le navigateur, sans erreur dans la console
-    - [ ] `npm test` exécute un premier test unitaire qui passe
-    - [ ] `npm run test:e2e` exécute un premier parcours Playwright qui passe
+    - [x] `npm run dev` affiche la page dans le navigateur, sans erreur dans la console
+    - [x] `npm test` exécute un premier test unitaire qui passe
+    - [x] `npm run test:e2e` exécute un premier parcours Playwright qui passe
   - Vérification : `npm run build && npm test && npm run test:e2e && npm run lint`
   - Dépend de : aucune
   - Fichiers : `package.json`, `vite.config.ts`, `tsconfig.json`, `eslint.config.js`, `src/main.tsx`, `e2e/smoke.spec.ts`
