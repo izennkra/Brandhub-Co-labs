@@ -42,7 +42,7 @@ test('Logo : chaque déclinaison s’exporte en SVG, PNG et PDF', async ({ page 
 
 test('Typographie : toute la famille Geist en .zip, avec chaque variante', async ({ page }) => {
   await page.goto('/ressources/typographie');
-  const zip = await download(page, /Télécharger toute la famille/);
+  const zip = await download(page, /Télécharger la famille complète/);
   expect(zip.name).toBe('geist.zip');
   expect(zip.data.subarray(0, 2).toString()).toBe('PK');
   const content = zip.data.toString('latin1');

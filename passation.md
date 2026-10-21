@@ -189,7 +189,7 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 
 ### Ressources : ce qui est fait (22/10/2026)
 - **7 pages** dans `src/pages/resources/` : Logo (groupes, SVG → PNG au téléchargement, fond foncé), Typographie (Geist par défaut, fichiers, échelle), Couleur (marque, neutres, dégradés ; HEX → RVB/TSL ; CMJN/Pantone facultatifs), Iconographie (recherche, taille, couleur, copie du SVG, instructions pour agent), Imagerie (mosaïque + thèmes), Patterns prédéfinis (mosaïque filtrée par format, remplie plus tard par le Layout editor, collection `res-layouts`), Inspiration (mosaïque, agrandissement).
-- **Mode édition** : bouton du panneau latéral → code. En ligne, le code est la variable Vercel **`EDITOR_CODE`** (à créer) ; le service refuse toute modification des collections `res-…` sans lui. En local (sans service), le code est **`colabs`** (ou `VITE_EDITOR_CODE`).
+- **Mode édition** : bouton du panneau latéral → code. En ligne, le code est la variable Vercel **`EDITOR_CODE`** (à créer) ; le service refuse toute modification des collections `res-…` sans lui. En local (sans service), le code vient de `VITE_EDITOR_CODE` dans `.env.local` (réglé par le porteur ; `colabs` si le fichier manque).
 - **Fichiers** : `/api/files` (Vercel Blob, `BLOB_READ_WRITE_TOKEN`) ; sans Blob, les images sont réduites et gardées dans les données.
 - Bouton orange « Tout télécharger » : logos (SVG), palette (CSS), polices, images, icônes.
 - Code commun : `src/lib/resources/` (collections, code, fichiers, couleurs, téléchargements), `src/components/resources/`.
@@ -198,6 +198,8 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
   - Typographie : les 18 variantes statiques de Geist en **TTF** (à installer) + versions variables + WOFF2, famille en **.zip** (`public/fonts/geist/`, licence OFL jointe).
   - Iconographie : **toute la bibliothèque Central** depuis le service visual.systems (recherche en anglais avec synonymes, style trait/plein, arrondi, épaisseur, taille, couleur), copie en SVG / JSX / lien, **lien d'intégration** pour les développeurs. ⚠️ Licence Central commerciale : vérifier qu'on peut la montrer au client et aux visiteurs avant la mise en ligne.
   - Logo : sections « Logo principal » et « Symbole » (+ sections ajoutables), **un seul SVG par section**, décliné automatiquement dans chaque couleur de la marque (palettes + neutres extrêmes), export **SVG, PNG, PDF** (jsPDF + svg2pdf, vectoriel) et .zip par section.
+- **Retours du porteur, 2e passe** : cartes couleur au style de sa maquette (carte beige, grande pastille, nom, valeurs copiables) avec **HEX, RVB, CMJN (calculé) et Pantone le plus proche** (table libre `pantone-colors`, 907 teintes « C », approximation) ; CMJN et Pantone corrigeables à la main ; neutres affichés en cartes. Typographie : plus de téléchargement style par style, seulement **« Télécharger la famille complète (.zip) »** (styles listés pour information).
+- **Code éditeur local** : réglé par le porteur dans `.env.local` (non versionné, `VITE_EDITOR_CODE`). En ligne : le même code dans la variable Vercel `EDITOR_CODE`.
 - Pas encore fait : réordonner les images.
 
 ## 10. Prochaines étapes

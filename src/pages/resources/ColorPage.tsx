@@ -5,7 +5,7 @@ import { EditableText } from '../../components/resources/EditableText';
 import styles from '../../components/resources/resources.module.css';
 import { Empty, Section } from '../../components/resources/Section';
 import {
-  formatHsl,
+  formatCmyk,
   formatRgb,
   isLight,
   neutralScale,
@@ -16,12 +16,14 @@ import { copyToClipboard, downloadBlob } from '../../lib/resources/download';
 import { useDownloadAll } from '../../lib/resources/downloadAll';
 import { useEditor } from '../../lib/resources/editor';
 import { notify } from '../../lib/resources/events';
+import { nearestPantone } from '../../lib/resources/pantone';
 import { useCollection, type Entry } from '../../lib/resources/useCollection';
 import page from './ColorPage.module.css';
 
 // Page Couleur : palette principale, palette secondaire (couleurs d'accent), neutres construits
 // à partir de deux couleurs opposées, nuances de chaque couleur de la palette, dégradés.
-// On saisit un nom et un code HEX ; RVB et TSL sont calculés, CMJN et Pantone sont facultatifs.
+// On saisit un nom et un code HEX : RVB, CMJN et Pantone (le plus proche) sont calculés,
+// et peuvent être corrigés à la main (CMJN et Pantone).
 type Group = 'principale' | 'secondaire';
 // « marque » et « neutres » : groupes de la première version, repris dans les palettes.
 type Color = {
@@ -38,10 +40,10 @@ const groupOf = (color: Color): Group =>
   color.group === 'secondaire' || color.group === 'neutres' ? 'secondaire' : 'principale';
 
 const PALETTES: { id: Group; title: string; hint: string }[] = [
-  { id: 'principale', title: 'Palette principale', hint: 'Les couleurs qui portent la marque.' },
+  { id: 'principale', title: 'Palette de couleur principale', hint: 'Les couleurs qui portent la marque.' },
   {
     id: 'secondaire',
-    title: 'Palette secondaire',
+    title: 'Palette de couleur secondaire',
     hint: 'Les couleurs d’accent, en appui de la palette principale.',
   },
 ];
@@ -58,59 +60,66 @@ const cssName = (name: string) =>
 const copy = async (value: string) =>
   notify((await copyToClipboard(value)) ? `Copié : ${value}` : 'La copie n’a pas été autorisée.');
 
-function CopyValue({ label, value }: { label: string; value: string }) {
+/** Les valeurs d'une couleur, toutes copiables : HEX, RVB, CMJN, Pantone. */
+function Values({ hex, cmyk, pantone }: { hex: string; cmyk?: string; pantone?: string }) {
+  const rows = [
+    ['HEX', hex],
+    ['RVB', formatRgb(hex)],
+    ['CMJN', cmyk || formatCmyk(hex)],
+    ['Pantone', pantone || nearestPantone(hex)],
+  ];
   return (
-    <button
-      type="button"
-      className={page.value}
-      aria-label={`Copier ${label} ${value}`}
-      onClick={() => copy(value)}
-    >
-      <span className={page.valueLabel}>{label}</span>
-      <span>{value}</span>
-      <Icon name="square-behind-square2" size="xs" />
-    </button>
+    <div className={page.values}>
+      {rows.map(([label, value]) => (
+        <button
+          key={label}
+          type="button"
+          className={page.value}
+          aria-label={`Copier ${label} ${value}`}
+          title={
+            label === 'Pantone' && !pantone ? 'Pantone le plus proche (à valider sur nuancier)' : undefined
+          }
+          onClick={() => copy(value)}
+        >
+          <span>{value}</span>
+          <Icon name="square-behind-square2" size="xs" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  placeholder,
+  onSave,
+}: {
+  label: string;
+  value: string;
+  placeholder?: string;
+  onSave: (value: string) => void;
+}) {
+  return (
+    <label className={styles.fieldLabel}>
+      <span>{label}</span>
+      <EditableText value={value} label={label} editing onSave={onSave} placeholder={placeholder} />
+    </label>
   );
 }
 
 function HexField({ label, value, onSave }: { label: string; value: string; onSave: (hex: string) => void }) {
   return (
-    <label className={styles.fieldLabel}>
-      <span>{label}</span>
-      <EditableText
-        value={value}
-        label={label}
-        editing
-        onSave={(next) => {
-          const hex = normalizeHex(next);
-          if (hex) onSave(hex);
-          else notify(HEX_ERROR);
-        }}
-      />
-    </label>
-  );
-}
-
-/** Rangée de paliers (neutres, nuances) : un clic copie le code. */
-function Scale({ label, steps }: { label: string; steps: { step: number; hex: string }[] }) {
-  return (
-    <ul className={page.scale} aria-label={label}>
-      {steps.map(({ step, hex }) => (
-        <li key={step}>
-          <button
-            type="button"
-            className={page.step}
-            data-light={isLight(hex)}
-            style={{ background: hex }}
-            aria-label={`Copier ${label} ${step} ${hex}`}
-            onClick={() => copy(hex)}
-          >
-            <span>{step}</span>
-            <span>{hex}</span>
-          </button>
-        </li>
-      ))}
-    </ul>
+    <Field
+      label={label}
+      value={value}
+      placeholder="EC5F14"
+      onSave={(next) => {
+        const hex = normalizeHex(next);
+        if (hex) onSave(hex);
+        else notify(HEX_ERROR);
+      }}
+    />
   );
 }
 
@@ -145,36 +154,22 @@ function ColorCard({
             value={color.hex}
             onSave={(next) => update({ hex: next })}
           />
-          <label className={styles.fieldLabel}>
-            <span>CMJN (facultatif)</span>
-            <EditableText
-              value={color.cmyk ?? ''}
-              label={`CMJN de ${color.name}`}
-              editing
-              onSave={(cmyk) => update({ cmyk })}
-            />
-          </label>
-          <label className={styles.fieldLabel}>
-            <span>Pantone (facultatif)</span>
-            <EditableText
-              value={color.pantone ?? ''}
-              label={`Pantone de ${color.name}`}
-              editing
-              onSave={(pantone) => update({ pantone })}
-            />
-          </label>
+          <Field
+            label={`CMJN de ${color.name}`}
+            value={color.cmyk ?? ''}
+            placeholder={hex ? `Auto : ${formatCmyk(hex)}` : 'Calculé automatiquement'}
+            onSave={(cmyk) => update({ cmyk })}
+          />
+          <Field
+            label={`Pantone de ${color.name}`}
+            value={color.pantone ?? ''}
+            placeholder={hex ? `Auto : ${nearestPantone(hex)}` : 'Calculé automatiquement'}
+            onSave={(pantone) => update({ pantone })}
+          />
           <DeleteButton name={color.name} onDelete={onDelete} />
         </div>
       ) : (
-        hex && (
-          <div className={page.values}>
-            <CopyValue label="HEX" value={hex} />
-            <CopyValue label="RVB" value={formatRgb(hex)} />
-            <CopyValue label="TSL" value={formatHsl(hex)} />
-            {color.cmyk && <CopyValue label="CMJN" value={color.cmyk} />}
-            {color.pantone && <CopyValue label="Pantone" value={color.pantone} />}
-          </div>
-        )
+        hex && <Values hex={hex} cmyk={color.cmyk} pantone={color.pantone} />
       )}
     </li>
   );
@@ -216,25 +211,52 @@ function GradientCard({
             value={gradient.to}
             onSave={(hex) => update({ to: hex })}
           />
-          <label className={styles.fieldLabel}>
-            <span>Angle (degrés)</span>
-            <EditableText
-              value={String(gradient.angle)}
-              label={`Angle de ${gradient.name}`}
-              editing
-              onSave={(value) => update({ angle: Math.round(Number(value) || 0) % 360 })}
-            />
-          </label>
+          <Field
+            label={`Angle de ${gradient.name} (degrés)`}
+            value={String(gradient.angle)}
+            onSave={(value) => update({ angle: Math.round(Number(value) || 0) % 360 })}
+          />
           <DeleteButton name={gradient.name} onDelete={onDelete} />
         </div>
       ) : (
         css && (
           <div className={page.values}>
-            <CopyValue label="CSS" value={css} />
+            <button
+              type="button"
+              className={page.value}
+              aria-label={`Copier CSS ${css}`}
+              onClick={() => copy(css)}
+            >
+              <span>{css}</span>
+              <Icon name="square-behind-square2" size="xs" />
+            </button>
           </div>
         )
       )}
     </li>
+  );
+}
+
+/** Rangée de nuances : un clic copie le code. */
+function Scale({ label, steps }: { label: string; steps: { step: number; hex: string }[] }) {
+  return (
+    <ul className={page.scale} aria-label={label}>
+      {steps.map(({ step, hex }) => (
+        <li key={step}>
+          <button
+            type="button"
+            className={page.step}
+            data-light={isLight(hex)}
+            style={{ background: hex }}
+            aria-label={`Copier ${label} ${step} ${hex}`}
+            onClick={() => copy(hex)}
+          >
+            <span>{step}</span>
+            <span>{hex}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -300,7 +322,6 @@ export function ColorPage() {
               )
             }
           >
-            <p className={page.hint}>{p.hint}</p>
             {list.length ? (
               <ul className={page.grid} aria-label={p.title}>
                 {list.map((color) => (
@@ -315,7 +336,7 @@ export function ColorPage() {
                 ))}
               </ul>
             ) : (
-              <Empty>Aucune couleur dans cette palette.</Empty>
+              <Empty>{p.hint} Ajoute-les avec « Ajouter une couleur ».</Empty>
             )}
           </Section>
         );
@@ -323,27 +344,38 @@ export function ColorPage() {
 
       {(neutralSteps || unlocked) && (
         <Section title="Neutres">
-          <p className={page.hint}>
-            Construits à partir de deux couleurs opposées : la plus claire (50) et la plus foncée (950).
-          </p>
           {unlocked && (
-            <div className={page.pairFields}>
-              <HexField
-                label="Couleur claire des neutres"
-                value={neutral?.light ?? ''}
-                onSave={(hex) => saveNeutral({ light: hex })}
-              />
-              <HexField
-                label="Couleur foncée des neutres"
-                value={neutral?.dark ?? ''}
-                onSave={(hex) => saveNeutral({ dark: hex })}
-              />
-            </div>
+            <>
+              <p className={page.hint}>
+                Saisis tes deux couleurs opposées : la plus claire (50) et la plus foncée (950). Les paliers
+                entre les deux se construisent seuls.
+              </p>
+              <div className={page.pairFields}>
+                <HexField
+                  label="Couleur claire des neutres"
+                  value={neutral?.light ?? ''}
+                  onSave={(hex) => saveNeutral({ light: hex })}
+                />
+                <HexField
+                  label="Couleur foncée des neutres"
+                  value={neutral?.dark ?? ''}
+                  onSave={(hex) => saveNeutral({ dark: hex })}
+                />
+              </div>
+            </>
           )}
           {neutralSteps ? (
-            <Scale label="Neutre" steps={neutralSteps} />
+            <ul className={page.gridSmall} aria-label="Neutres">
+              {neutralSteps.map(({ step, hex }) => (
+                <li key={step} className={page.card}>
+                  <div className={page.swatch} data-small style={{ background: hex }} />
+                  <span className={page.name}>Neutre {step}</span>
+                  <Values hex={hex} />
+                </li>
+              ))}
+            </ul>
           ) : (
-            <Empty>Saisis la couleur claire et la couleur foncée : les neutres se construisent seuls.</Empty>
+            <Empty>Les neutres apparaîtront ici dès que les deux couleurs seront saisies.</Empty>
           )}
         </Section>
       )}

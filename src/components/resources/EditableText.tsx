@@ -9,6 +9,7 @@ export function EditableText({
   editing,
   onSave,
   className,
+  placeholder,
   multiline = false,
 }: {
   value: string;
@@ -16,6 +17,7 @@ export function EditableText({
   editing: boolean;
   onSave: (value: string) => void;
   className?: string;
+  placeholder?: string;
   multiline?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
@@ -27,6 +29,7 @@ export function EditableText({
   const props = {
     className: `${styles.field} ${className ?? ''}`,
     'aria-label': label,
+    placeholder,
     value: draft ?? value,
     onChange: (event: { target: { value: string } }) => setDraft(event.target.value),
     onBlur: commit,

@@ -86,6 +86,7 @@
   --size-thumb: 56px; /* vignette du bandeau d'images (Figma 85 ÷ 1,44, arrondi à la grille) */
   --size-content-max: 1320px; /* contenu des pages Ressource */
   --size-card-min: 240px; /* largeur mini d'une carte de ressource (4 colonnes sur grand écran) */
+  --size-card-min-sm: 140px; /* petite carte (neutres : 7 colonnes sur grand écran) */
   --size-text-max: 60ch; /* largeur de lecture confortable d'un paragraphe */
   --size-divider: 1px;
   --size-focus-ring: 2px;

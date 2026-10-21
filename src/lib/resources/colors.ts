@@ -29,6 +29,15 @@ export const formatRgb = (hex: string) => {
   return `rgb(${r} ${g} ${b})`;
 };
 
+/** CMJN calculé (conversion simple, sans profil d'impression : à valider avec l'imprimeur). */
+export function formatCmyk(hex: string) {
+  const { r, g, b } = hexToRgb(hex);
+  const k = 1 - Math.max(r, g, b) / 255;
+  if (k >= 1) return 'C0 M0 J0 N100';
+  const part = (c: number) => Math.round(((1 - c / 255 - k) / (1 - k)) * 100);
+  return `C${part(r)} M${part(g)} J${part(b)} N${Math.round(k * 100)}`;
+}
+
 export const formatHsl = (hex: string) => {
   const { h, s, l } = rgbToHsl(hexToRgb(hex));
   return `hsl(${h} ${s}% ${l}%)`;
@@ -58,7 +67,7 @@ const fromLinear = (v: number) => {
   return Math.round(Math.min(1, Math.max(0, c)) * 255);
 };
 
-function hexToOklab(hex: string): Lab {
+export function hexToOklab(hex: string): Lab {
   const { r, g, b } = hexToRgb(hex);
   const [R, G, B] = [toLinear(r), toLinear(g), toLinear(b)];
   const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);

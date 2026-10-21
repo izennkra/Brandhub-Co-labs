@@ -4,6 +4,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
 import { routes } from '../src/app/routes';
 import {
+  formatCmyk,
   formatHsl,
   formatRgb,
   isLight,
@@ -14,6 +15,7 @@ import {
 import { lockEditor } from '../src/lib/resources/editor';
 import { iconSvgUrl, variantId } from '../src/lib/resources/icons';
 import { logoVariants, recolorSvg, sanitizeSvg } from '../src/lib/resources/logo';
+import { nearestPantone } from '../src/lib/resources/pantone';
 import { LOCAL_EDITOR_CODE } from '../src/lib/store/store';
 
 const LOGO =
@@ -45,6 +47,15 @@ describe('calculs de couleur', () => {
     expect(isLight('#F1E2DA')).toBe(true);
     expect(isLight('#431604')).toBe(false);
   });
+
+  it('calcule le CMJN et le Pantone le plus proche', () => {
+    expect(formatCmyk('#EC5F14')).toBe('C0 M60 J92 N7');
+    expect(formatCmyk('#000000')).toBe('C0 M0 J0 N100');
+    expect(formatCmyk('#FFFFFF')).toBe('C0 M0 J0 N0');
+    // une teinte de la table donne son propre code
+    expect(nearestPantone('#DD4F05')).toBe('Pantone 1665 C');
+    expect(nearestPantone('#EC5F14')).toMatch(/^Pantone \S+ C$/);
+  });
 });
 
 describe('neutres et nuances', () => {
@@ -73,8 +84,10 @@ describe('neutres et nuances', () => {
       'F7F4ED{Enter}',
     );
     await user.type(screen.getByRole('textbox', { name: 'Couleur foncée des neutres' }), '1B1B1B{Enter}');
-    const list = await screen.findByRole('list', { name: 'Neutre' });
-    expect(within(list).getAllByRole('button')).toHaveLength(11);
+    const list = await screen.findByRole('list', { name: 'Neutres' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(11);
+    expect(within(list).getByText('Neutre 50')).toBeInTheDocument();
+    expect(within(list).getByRole('button', { name: 'Copier HEX #F7F4ED' })).toBeInTheDocument();
   });
 });
 
@@ -160,9 +173,15 @@ describe('mode édition des Ressources', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Verrouiller' }));
-    const list = await screen.findByRole('list', { name: 'Palette principale' });
+    const list = await screen.findByRole('list', { name: 'Palette de couleur principale' });
     expect(within(list).getByText('Orange')).toBeInTheDocument();
+    // HEX, RVB, CMJN et Pantone calculés et affichés sur la carte
+    expect(within(list).getByRole('button', { name: 'Copier HEX #EC5F14' })).toBeInTheDocument();
     expect(within(list).getByRole('button', { name: 'Copier RVB rgb(236 95 20)' })).toBeInTheDocument();
+    expect(within(list).getByRole('button', { name: 'Copier CMJN C0 M60 J92 N7' })).toBeInTheDocument();
+    expect(
+      within(list).getByRole('button', { name: `Copier Pantone ${nearestPantone('#EC5F14')}` }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Télécharger la palette (CSS)' })).toHaveAttribute(
       'aria-disabled',
       'false',
@@ -209,10 +228,12 @@ describe('mode édition des Ressources', () => {
   it('Typographie : Geist par défaut, avec son échelle', async () => {
     renderAt('/ressources/typographie');
     expect(await screen.findByText('Geist')).toBeInTheDocument();
-    // chaque variante à installer, les versions variables, et toute la famille en .zip
-    for (const name of ['Geist Regular', 'Geist Bold Italic', 'Geist Black', 'Geist Variable', 'Geist (web)'])
-      expect(screen.getByRole('button', { name: `Télécharger ${name}` })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Télécharger toute la famille/ })).toBeInTheDocument();
+    // la famille complète en un seul téléchargement, pas de style par style
+    expect(
+      within(screen.getByRole('list', { name: 'Styles (TTF / OTF)' })).getAllByRole('listitem'),
+    ).toHaveLength(18);
+    expect(screen.getByRole('button', { name: /Télécharger la famille complète/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Télécharger Geist Regular' })).not.toBeInTheDocument();
     expect(screen.getByText('Titre XXL')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copier le code CSS' })).toBeInTheDocument();
   });

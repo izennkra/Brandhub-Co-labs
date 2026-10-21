@@ -7,7 +7,7 @@ import { DropZone } from '../../components/resources/DropZone';
 import { EditableText } from '../../components/resources/EditableText';
 import styles from '../../components/resources/resources.module.css';
 import { Section } from '../../components/resources/Section';
-import { copyToClipboard, downloadFile, downloadZip, slug } from '../../lib/resources/download';
+import { copyToClipboard, downloadZip, slug } from '../../lib/resources/download';
 import { useDownloadAll } from '../../lib/resources/downloadAll';
 import { useEditor } from '../../lib/resources/editor';
 import { notify } from '../../lib/resources/events';
@@ -121,8 +121,8 @@ const NUMBER_FIELDS = [
 ] as const;
 
 const FILE_GROUPS: { kind: FontKind; title: string }[] = [
-  { kind: 'static', title: 'Variantes à installer (une graisse par fichier)' },
-  { kind: 'variable', title: 'Versions variables (toutes les graisses)' },
+  { kind: 'static', title: 'Styles (TTF / OTF)' },
+  { kind: 'variable', title: 'Versions variables' },
   { kind: 'web', title: 'Fichiers web (WOFF2)' },
 ];
 
@@ -237,8 +237,10 @@ function FamilyCards({
         {canEdit && onDelete && <DeleteButton name={`la police ${family.name}`} onDelete={onDelete} />}
       </article>
       <article className={page.card}>
-        <h3 className={page.family}>Fichiers de police</h3>
-        <p className={page.muted}>À installer pour le travail de création.</p>
+        <h3 className={page.family}>Famille complète</h3>
+        <p className={page.muted}>
+          Tous les styles de {family.name} en un seul téléchargement, à installer pour le travail de création.
+        </p>
         {FILE_GROUPS.map(({ kind, title }) => {
           const files = family.files
             .map((file, index) => ({ file, index }))
@@ -246,19 +248,13 @@ function FamilyCards({
           if (!files.length) return null;
           return (
             <div key={kind} className={page.fileGroup}>
-              <h4 className={page.fileGroupTitle}>{title}</h4>
-              <ul className={page.files}>
+              <h4 className={page.fileGroupTitle}>
+                {title} · {files.length}
+              </h4>
+              <ul className={page.chips} aria-label={title}>
                 {files.map(({ file, index }) => (
-                  <li key={file.url} className={page.file}>
-                    <button
-                      type="button"
-                      className={page.fileButton}
-                      onClick={() => void downloadFile(file.url, file.filename)}
-                      aria-label={`Télécharger ${file.label}`}
-                    >
-                      <Icon name="arrow-inbox" size="sm" />
-                      {file.label}
-                    </button>
+                  <li key={file.url} className={page.chip}>
+                    {file.label.replace(`${family.name} `, '')}
                     {canEdit && (
                       <DeleteButton
                         name={file.label}
@@ -276,7 +272,7 @@ function FamilyCards({
         })}
         {family.files.length > 0 && (
           <button type="button" className={styles.primary} onClick={() => void downloadFamily(family)}>
-            <Icon name="arrow-inbox" size="sm" /> Télécharger toute la famille (.zip)
+            <Icon name="arrow-inbox" size="sm" /> Télécharger la famille complète (.zip)
           </button>
         )}
         {canEdit && (
@@ -371,7 +367,7 @@ export function TypographyPage() {
   const fontFamily = `'${familyList[0].name}', var(--font-sans)`;
   useFontFaces(familyList);
 
-  useDownloadAll('Télécharger toutes les polices (.zip)', async () => {
+  useDownloadAll('Télécharger les familles complètes (.zip)', async () => {
     for (const family of familyList) await downloadFamily(family);
   });
 
