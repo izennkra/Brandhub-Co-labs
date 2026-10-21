@@ -3,7 +3,7 @@
 App web de hub de marque (logos, couleurs, typos, icônes, patterns) avec un moteur de génération de patterns.
 
 - Stack : React + TypeScript, hébergé sur Vercel (choix validé, détails dans la spec `app-shell`)
-- Figma : `[lien à fournir]`
+- Figma : https://www.figma.com/design/m5slgzL3STP1gMgceYKHog/Izenn-X-Elias-Studio?node-id=2337-6322 (fileKey `m5slgzL3STP1gMgceYKHog`, nœud de départ `2337:6322`)
 - Prototype HTML (outil complet + moteur) : `reference/prototype.html`
 - Carte des parties et ordre de construction : `CAPABILITY-MAP.md`
 
@@ -33,6 +33,8 @@ Les skills sont dans `.claude/skills/`, les commandes dans `.claude/commands/`.
 5. **En cas de doute, demander** plutôt que supposer. Faire valider un plan avant toute tâche non triviale.
 
 ## Icônes — VisualSystem Icon
+
+**Pour tout le produit, utiliser exclusivement cette base d'icônes.** Aucune autre librairie d'icônes, aucune icône dessinée à la main.
 
 Guide : https://visual.systems/modules/icon/llms.txt · Source : https://visual.systems/api/modules/icon/example.tsx
 

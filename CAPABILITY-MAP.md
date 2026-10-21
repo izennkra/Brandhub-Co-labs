@@ -34,7 +34,7 @@ La palette (Brun, Orange, Taupe, Grège, Lin, Sauge, Ciel) est **écrite en dur*
 | `pattern-engine` | Le moteur (Motif + Illustrations) intégré **tel quel** dans un emballage isolé, `src/lib/pattern-engine/`, avec un rendu identique au prototype | `app-shell` |
 | `data-store` | Le stockage partagé : préréglages, images, ressources, fichiers | `app-shell` |
 | `editor-access` | Le profil éditeur : mot de passe, mode lecture seule pour les autres, boutons d'édition visibles seulement en mode éditeur | `app-shell`, `data-store` |
-| `resources` | La partie Ressources, page par page : Logos, Couleurs, Typographies, Icônes, Patterns, Inspiration. En mode éditeur : import des logos, des images d'inspiration, etc. | `data-store`, `editor-access` |
+| `resources` | La partie Ressources, page par page (liste du Figma) : Logo, Typographie, Couleur, Iconographie, Imagerie, Patterne prédéfinie, Inspiration. En mode éditeur : import des logos, des images d'inspiration, etc. | `data-store`, `editor-access` |
 | `layout-editor` | L'ancien « Design libre », **entièrement repensé** : frames, calques, insertion de motifs, d'illustrations et de ressources (logos…), export | `pattern-engine`, `resources` |
 
 ### Briques futures (temps 2, une fois les pages Ressources construites)
@@ -43,6 +43,7 @@ La palette (Brun, Orange, Taupe, Grège, Lin, Sauge, Ciel) est **écrite en dur*
 |---|---|---|
 | `brand-settings` | Un menu Réglages unique pour remplir toute la partie Ressources depuis un seul endroit. Exemple : les couleurs saisies une fois alimentent la page Couleurs **et** les couleurs du moteur | `resources` |
 | `logo-variants` | Mini-outil : on dépose chaque logo une seule fois et il génère automatiquement toutes les déclinaisons de couleurs | `brand-settings` |
+| `pattern-embed` | Intégration sur le site du client : un pattern réglé dans l'outil (avec ses effets de survol) peut être placé sur un site internet, par exemple avec un code à copier-coller | `pattern-engine` |
 
 ## Ordre de construction
 
@@ -50,6 +51,7 @@ La palette (Brun, Orange, Taupe, Grège, Lin, Sauge, Ciel) est **écrite en dur*
 app-shell → pattern-engine, data-store → editor-access → resources → layout-editor
                                                         ↓ (temps 2)
                                          brand-settings → logo-variants
+                                         pattern-embed
 ```
 
 Pourquoi les Ressources avant le Layout editor ? Le Layout editor doit pouvoir insérer les logos et les images des Ressources. Si on les construit d'abord, il n'y a rien à refaire ensuite.
@@ -58,7 +60,7 @@ Chaque partie aura sa propre spec (`SPEC-app-shell.md`, `SPEC-resources.md`, etc
 
 ## Questions ouvertes
 
-1. **Lien Figma** de la nouvelle maquette : nécessaire pour écrire la spec `app-shell` (structure, navigation, tokens).
-2. Le Figma couvre-t-il les pages **Ressources** et le **Layout editor**, ou certaines pages viendront plus tard ?
-3. Hypothèse 2 : confirmes-tu que les panneaux de réglages du moteur peuvent être redessinés, du moment que le rendu reste identique ?
-4. Dans les Ressources, la liste Logos / Couleurs / Typographies / Icônes / Patterns / Inspiration est-elle complète ?
+1. ~~Lien Figma~~ : fourni, voir `CLAUDE.md`.
+2. ~~Couverture du Figma~~ : maquettés : Tool (Motif, Illustrations, Layout editor) et Ressource (Logo, Iconographie, Inspiration). Typographie et Couleur sont des références d'une autre marque, à redessiner. Imagerie, Patterne prédéfinie, profil éditeur et Réglages n'ont pas de maquette.
+3. Hypothèse 2 : le Figma redessine bien les panneaux de réglages du moteur (Motif, Illustrations). Le rendu du moteur reste identique.
+4. ~~Liste des Ressources~~ : reprise du Figma, voir le module `resources`.
