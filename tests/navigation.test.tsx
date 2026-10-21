@@ -117,6 +117,22 @@ describe('navigation : sélecteur Tool / Ressource et pages Ressource', () => {
     expect(router.state.location.pathname).toBe('/outils/layout-editor');
   });
 
+  it('ignore une page mémorisée inconnue et revient à la première page', async () => {
+    sessionStorage.setItem('bhc.lastPage.resource', '/ressources/inconnue');
+    const router = renderAt('/outils/motif');
+    await userEvent.click(within(sectionsNav()).getByRole('link', { name: 'Ressource' }));
+    expect(router.state.location.pathname).toBe('/ressources/logo');
+  });
+
+  it('l’onglet de la section courante pointe sur la page affichée', () => {
+    sessionStorage.setItem('bhc.lastPage.resource', '/ressources/logo');
+    renderAt('/ressources/couleur');
+    expect(within(sectionsNav()).getByRole('link', { name: 'Ressource' })).toHaveAttribute(
+      'href',
+      '/ressources/couleur',
+    );
+  });
+
   it("n'affiche pas d'entrée Feedback", () => {
     renderAt('/ressources/logo');
     expect(screen.queryByText(/feedback/i)).not.toBeInTheDocument();

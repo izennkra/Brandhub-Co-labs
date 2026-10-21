@@ -110,16 +110,16 @@
   - Fichiers : `src/app/AppLayout.tsx`, `src/app/useMediaQuery.ts`, `src/components/Sidebar/*`, `e2e/responsive.spec.ts`, `e2e/accessibility.spec.ts`
   - Taille : S
 
-- [ ] **Tâche 10 : comparaison avec le Figma et relecture**
+- [x] **Tâche 10 : comparaison avec le Figma et relecture**
   - Description : capturer les 10 pages à 1440 px avec Playwright, les comparer aux écrans Figma pour le cadre, corriger les écarts, puis faire une relecture complète (`/review`).
   - Acceptation :
-    - [ ] Les captures de référence sont enregistrées et le test de comparaison passe
-    - [ ] La relecture ne laisse aucun problème important ouvert
+    - [x] Les captures de référence sont enregistrées et le test de comparaison passe
+    - [x] La relecture ne laisse aucun problème important ouvert
   - Vérification : `npm run build && npm test && npm run test:e2e && npm run lint`
   - Dépend de : 9
   - Fichiers : `e2e/visual.spec.ts`, captures de référence, petites corrections de styles
   - Taille : M
 
 ### ✅ Point de contrôle final
-- [ ] Les 10 critères de réussite de `SPEC-app-shell.md` sont remplis
-- [ ] La branche est poussée sur GitHub et la pull request est proposée
+- [x] Les 10 critères de réussite de `SPEC-app-shell.md` sont remplis
+- [x] La branche est poussée sur GitHub et la pull request est proposée

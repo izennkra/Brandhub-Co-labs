@@ -1,5 +1,5 @@
 import type { Ref } from 'react';
-import type { EditorSection } from '../../app/editorSections';
+import type { EditorSection } from '../../app/navigation';
 import { Icon } from '../Icon';
 import styles from './EditorPanel.module.css';
 import { PanelSection } from './PanelSection';

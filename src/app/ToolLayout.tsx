@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { EDITOR_PANEL_ID, EditorPanel } from '../components/EditorPanel/EditorPanel';
 import { Icon } from '../components/Icon';
-import { EDITOR_SECTIONS } from './editorSections';
+import { TOOL_PAGES } from './navigation';
 import styles from './ToolLayout.module.css';
 
 // Gabarit des pages Tool : zone centrale + panneau Éditeur repliable (bouton ou touche H).
@@ -30,6 +30,8 @@ export function ToolLayout() {
       if (event.key.toLowerCase() !== 'h' || event.metaKey || event.ctrlKey || event.altKey) return;
       const target = event.target as HTMLElement;
       if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
+      // Menu ouvert sur petit écran : la page est inactive, le raccourci aussi.
+      if (document.querySelector('main[inert]')) return;
       event.preventDefault();
       togglePanel();
     };
@@ -58,7 +60,7 @@ export function ToolLayout() {
       </div>
       {panelOpen && (
         <EditorPanel
-          sections={EDITOR_SECTIONS[pathname] ?? []}
+          sections={TOOL_PAGES.find((page) => page.path === pathname)?.editorSections ?? []}
           pageKey={pathname}
           onHide={togglePanel}
           toggleRef={panelToggle}
