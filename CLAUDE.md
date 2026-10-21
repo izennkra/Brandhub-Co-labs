@@ -29,7 +29,7 @@ Les skills sont dans `.claude/skills/`, les commandes dans `.claude/commands/`.
 1. **Moteur de patterns : NE PAS TOUCHER.** Validé par le client. Ni modification, ni refactor, ni optimisation. L'intégrer tel quel (wrapper isolé dans `src/lib/pattern-engine/`), avec un rendu identique au prototype. En cas de blocage, s'arrêter et demander.
 2. **Le reste de l'outil est challengeable** (UX, fonctionnalités, architecture). Proposer les améliorations, mais ne rien implémenter sans validation.
 3. **Le Figma fait foi pour le design.** Utiliser le MCP Figma pour récupérer le design. Centraliser les tokens dans un seul fichier.
-4. **Pages absentes du Figma :** c'est à Claude de les concevoir, à partir des références déposées dans `reference/pages/<page>/` et dans le style du Figma (tokens, composants). Proposer le design et le faire valider avant de coder. S'il n'y a aucune référence pour une page, la demander ; en attendant, mettre un placeholder `TODO: design à venir`.
+4. **Pages absentes du Figma :** c'est à Claude de les concevoir, à partir des références et dans le style du Figma (tokens, composants). Les références sont de préférence dans le Figma, page « Références », un frame par page nommé `Section / Page` (ex. `Ressources / Typographie`) ; sinon dans `reference/pages/<page>/`. Proposer le design et le faire valider avant de coder. S'il n'y a aucune référence pour une page, la demander ; en attendant, mettre un placeholder `TODO: design à venir`.
 5. **En cas de doute, demander** plutôt que supposer. Faire valider un plan avant toute tâche non triviale.
 
 ## Icônes — VisualSystem Icon

@@ -1,6 +1,8 @@
 # Références pour les pages sans design Figma
 
-Un dossier par page. Dépose dedans tout ce qui aide à concevoir la page :
+**Méthode conseillée : dans le Figma.** Une page « Références », un frame par page nommé `Section / Page` (ex. `Ressources / Typographie`), avec dedans les captures, les notes et les liens.
+
+**Autre possibilité : ici,** un dossier par page. Dépose dedans tout ce qui aide à concevoir la page :
 
 - **Images** : captures d'écran de sites ou d'outils que tu aimes, croquis, photos (PNG, JPG, PDF…)
 - **Liens** : colle-les dans un fichier `liens.md` du dossier, une ligne par lien, avec un mot sur ce qui te plaît
