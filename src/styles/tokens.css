@@ -73,6 +73,7 @@
   --size-toggle-width: 32px;
   --size-toggle-height: 18px;
   --size-content-max: 1320px; /* contenu des pages Ressource */
+  --size-text-max: 60ch; /* largeur de lecture confortable d'un paragraphe */
   --size-divider: 1px;
   --size-focus-ring: 2px;
 

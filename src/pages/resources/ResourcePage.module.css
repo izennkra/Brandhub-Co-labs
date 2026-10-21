@@ -1,0 +1,40 @@
+.page {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  max-width: calc(var(--size-content-max) + 2 * var(--space-12));
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-12);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--size-text-max);
+}
+
+.title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-2xl);
+  letter-spacing: var(--tracking-title);
+  text-transform: uppercase;
+}
+
+.description {
+  line-height: var(--leading-body);
+  letter-spacing: 0;
+}
+
+.pending {
+  color: var(--color-text-secondary);
+}

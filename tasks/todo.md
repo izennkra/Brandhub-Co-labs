@@ -63,19 +63,19 @@
   - Fichiers : `src/app/router.tsx`, `src/app/AppLayout.tsx`, `src/components/Sidebar/*`, `src/pages/tool/ToolPage.tsx`, `src/app/routes.tsx`, `e2e/navigation.spec.ts`
   - Taille : M
 
-- [ ] **Tâche 6 : sélecteur Tool / Ressource et pages Ressource**
+- [x] **Tâche 6 : sélecteur Tool / Ressource et pages Ressource**
   - Description : sélecteur à deux onglets dans la colonne de gauche ; les 7 pages Ressource (Logo, Typographie, Couleur, Iconographie, Imagerie, Patterne prédéfinie, Inspiration) avec leur titre et un emplacement réservé. On revient sur la dernière page visitée dans chaque section.
   - Acceptation :
-    - [ ] Le sélecteur bascule la liste des pages, et l'onglet actif suit l'adresse
-    - [ ] Les 7 pages s'ouvrent par clic et par adresse directe ; le rafraîchissement garde la page
-    - [ ] Pas d'entrée Feedback
+    - [x] Le sélecteur bascule la liste des pages, et l'onglet actif suit l'adresse
+    - [x] Les 7 pages s'ouvrent par clic et par adresse directe ; le rafraîchissement garde la page
+    - [x] Pas d'entrée Feedback
   - Vérification : `npm test && npm run test:e2e`
   - Dépend de : 5
   - Fichiers : `src/components/Sidebar/ModeSwitch.tsx`, `src/pages/resources/*`, `src/app/router.tsx`, `e2e/navigation.spec.ts`
   - Taille : M
 
 ### ✅ Point de contrôle B
-- [ ] Tous les tests passent, le build est OK
+- [x] Tous les tests passent, le build est OK
 - [ ] Tu as testé la navigation sur ton ordinateur (`npm run dev`) et validé le rendu
 
 ## Phase 3 : panneaux et finitions
