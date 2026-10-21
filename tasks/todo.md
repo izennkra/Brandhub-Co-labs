@@ -54,7 +54,7 @@
 ## Phase 2 : navigation
 
 - [x] **Tâche 5 : colonne de gauche et pages Tool**
-  - Description : `AppLayout` + `Sidebar` (logo co-labs, badge BETA, liste des pages) et les 3 pages Tool (Motif, Illustrations iconographique, Layout editor) avec un emplacement réservé. L'accueil redirige vers Motif.
+  - Description : `AppLayout` + `Sidebar` (logo co-labs, badge BETA, liste des pages) et les 3 pages Tool (Motif, Illustration, Layout editor) avec un emplacement réservé. L'accueil redirige vers Motif.
   - Acceptation :
     - [x] Les 3 pages s'ouvrent par clic et par adresse directe, et le rafraîchissement garde la page
     - [x] La page active est surlignée et porte `aria-current="page"`

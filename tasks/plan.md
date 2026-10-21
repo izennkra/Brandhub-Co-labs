@@ -14,7 +14,7 @@ On construit le cadre de l'application en 10 petites étapes, dans un ordre où 
   - `ResourceLayout` pour `/ressources/*` : zone de contenu + icône de panneau + bouton de téléchargement.
   
   Les deux partagent la même colonne de gauche.
-- **Adresses en français** : `/outils/motif`, `/outils/illustrations`, `/outils/layout-editor`, `/ressources/logo`, `/ressources/typographie`, `/ressources/couleur`, `/ressources/iconographie`, `/ressources/imagerie`, `/ressources/patterns`, `/ressources/inspiration`. L'accueil redirige vers `/outils/motif`.
+- **Adresses en français** : `/outils/motif`, `/outils/illustration`, `/outils/layout-editor`, `/ressources/logo`, `/ressources/typographie`, `/ressources/couleur`, `/ressources/iconographie`, `/ressources/imagerie`, `/ressources/patterns`, `/ressources/inspiration`. L'accueil redirige vers `/outils/motif`.
 - **Passage Tool ↔ Ressource** : on revient sur la dernière page visitée dans chaque section (sinon sur la première).
 - **Styles** : CSS Modules + `tokens.css`, qui est le seul endroit contenant des valeurs.
 - **Icônes** : `Icon.tsx` avec un registre local d'icônes Central copiées une par une depuis l'API VisualSystem, et une échelle de tailles (`sm`, `md`, `lg`…) qui fixe aussi l'épaisseur du trait.

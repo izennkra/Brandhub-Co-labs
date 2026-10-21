@@ -13,8 +13,10 @@
   gap: var(--space-2);
 }
 
+/* Les capitales sont centrées en rognant l'interligne au-dessus des capitales et sous la ligne
+ * de base (comme le « text-box-trim » du Figma) : les marges haut et bas deviennent égales. */
 .badge {
-  padding: 0 var(--space-1);
+  padding: var(--space-1);
   border-radius: var(--radius-sm);
   background: var(--color-text-secondary);
   color: var(--color-text-inverse);
@@ -22,6 +24,7 @@
   font-weight: var(--weight-medium);
   line-height: var(--leading-xs);
   letter-spacing: 0;
+  text-box: trim-both cap alphabetic;
 }
 
 .divider {

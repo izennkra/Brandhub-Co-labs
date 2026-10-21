@@ -20,7 +20,7 @@ Poser la **coquille de l'application** : la vraie appli React qui remplace le fi
   - sur les pages **Tool**, un panneau **« Éditeur »** repliable, fait de sections en accordéon (Préréglages partagés, Réseau, Volume, Pastilles, Survol, Rotation, Couleurs…), avec un bouton orange **Export** en bas ;
   - sur les pages **Ressource**, une icône de panneau en haut à droite et un bouton orange flottant en bas à droite, qui sert à **télécharger / exporter** le contenu de la page (validé ; le contenu exact du téléchargement est défini dans `resources`).
 
-**Pages Tool** : Motif · Illustrations iconographique · Layout editor
+**Pages Tool** : Motif · Illustration · Layout editor
 
 **Pages Ressource**
 - Logo (maquettée)
@@ -39,7 +39,7 @@ Le design de l'intérieur des pages Ressource et Tool n'est **pas** dans cette p
 2. Les adresses des pages sont en français : `/outils/motif`, `/ressources/logo`… En ouvrant l'appli, on arrive sur `/outils/motif`.
 3. **Feedback est supprimé** (validé), comme dans le Figma.
 4. Le titre « COULEURS » de la page Logo dans le Figma est une coquille : la page s'appellera « Logo ».
-5. Les libellés du menu reprennent ceux du Figma (dont « Illustrations iconographique »), corrigés seulement pour l'orthographe.
+5. Les libellés du menu reprennent ceux du Figma, corrigés pour l'orthographe (« Patterns prédéfinis »). « Illustrations iconographique » est renommé **« Illustration »** (demande du 21/10/2026).
 
 ## Tech stack
 

@@ -19,7 +19,7 @@ const linkTexts = (nav: HTMLElement) =>
 
 const TOOL_PAGES = [
   { path: '/outils/motif', title: 'Motif' },
-  { path: '/outils/illustrations', title: 'Illustrations iconographiques' },
+  { path: '/outils/illustration', title: 'Illustration' },
   { path: '/outils/layout-editor', title: 'Layout editor' },
 ];
 
@@ -59,11 +59,11 @@ describe('navigation : colonne de gauche et pages Tool', () => {
   });
 
   it('marque une seule page comme active', () => {
-    renderAt('/outils/illustrations');
+    renderAt('/outils/illustration');
     const active = within(mainNav())
       .getAllByRole('link')
       .filter((link) => link.getAttribute('aria-current') === 'page');
-    expect(active.map((link) => link.textContent)).toEqual(['Illustrations iconographiques']);
+    expect(active.map((link) => link.textContent)).toEqual(['Illustration']);
   });
 
   it('change de page au clic', async () => {

@@ -7,7 +7,7 @@ export type Section = { id: SectionId; label: string; icon: IconName; pages: Nav
 
 export const TOOL_PAGES: NavPage[] = [
   { path: '/outils/motif', label: 'Motif', icon: 'circle-dashed' },
-  { path: '/outils/illustrations', label: 'Illustrations iconographiques', icon: 'circles-three' },
+  { path: '/outils/illustration', label: 'Illustration', icon: 'circles-three' },
   { path: '/outils/layout-editor', label: 'Layout editor', icon: 'bezier' },
 ];
 

@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const TOOL_PAGES = [
   { path: '/outils/motif', title: 'Motif' },
-  { path: '/outils/illustrations', title: 'Illustrations iconographiques' },
+  { path: '/outils/illustration', title: 'Illustration' },
   { path: '/outils/layout-editor', title: 'Layout editor' },
 ];
 

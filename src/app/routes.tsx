@@ -7,7 +7,7 @@ import { RESOURCE_PAGES, TOOL_PAGES } from './navigation';
 // Texte affiché en attendant le contenu de chaque page (parties suivantes de CAPABILITY-MAP.md).
 const TOOL_PENDING: Record<string, string> = {
   '/outils/motif': 'Le moteur de motifs arrive avec la partie pattern-engine.',
-  '/outils/illustrations': 'Les illustrations arrivent avec la partie pattern-engine.',
+  '/outils/illustration': 'Les illustrations arrivent avec la partie pattern-engine.',
   '/outils/layout-editor': 'Le Layout editor arrive avec la partie layout-editor.',
 };
 
