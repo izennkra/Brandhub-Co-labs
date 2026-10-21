@@ -41,10 +41,10 @@ Puis, plus tard :
 
 1. **`/spec`** : poser les questions de cadrage (choix cliquables), écrire `SPEC-<partie>.md`, **s'arrêter** et attendre la validation.
 2. **`/plan`** : écrire `tasks/plan.md` et `tasks/todo.md` (tâches de 5 fichiers maximum, critères d'acceptation, points de contrôle). L'ancien plan terminé va dans `tasks/archive/`. Attendre la validation.
-3. **`/build`** : **une tâche à la fois**, puis s'arrêter et demander « on enchaîne ? ». Dans chaque tâche :
+3. **`/build`** : les tâches s’enchaînent **sans demander « on enchaîne ? »**, un commit par tâche. On s’arrête seulement aux **points de contrôle** et quand une **maquette** doit être validée (décision du 21/10/2026). Dans chaque tâche :
    - écrire d'abord les tests (rouge), puis le code (vert) ;
-   - prouver que les tests attrapent vraiment les erreurs : introduire une erreur exprès (« mutation »), vérifier que le test échoue, puis remettre le code ;
-   - faire un contrôle visuel dans le navigateur ;
+   - prouver que les tests attrapent vraiment les erreurs : introduire **1 ou 2 erreurs ciblées** exprès (« mutation »), vérifier que le test échoue, puis remettre le code ;
+   - faire un contrôle visuel dans le navigateur (si la tâche change ce qui s’affiche) ;
    - commit + push.
 4. **Points de contrôle** : le porteur teste lui-même (l'appli s'ouvre dans le panneau navigateur via `.claude/launch.json`, configuration `brandhub-dev`).
 5. **`/review`** en fin de partie : 5 axes. Le compte rendu va dans `docs/review-<partie>.md`.
@@ -53,7 +53,7 @@ Puis, plus tard :
 **Git** : une branche par partie (`spec/…` pour les documents, `feature/…` pour le code), jamais de travail direct sur `main`. Messages de commit en français. Chaque commit se termine par :
 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
 
-**La porte de qualité : jamais de commit si un contrôle échoue.** Commande utilisée à chaque fin de tâche :
+**La porte de qualité : jamais de commit si un contrôle échoue.** Vérification du code, tests unitaires et build à chaque tâche. Tests navigateur (`E2E`) et rendu identique (`RENDER`) **seulement si la tâche change l’affichage ou touche au moteur / à `createEngine.ts`**. Le cas Ligne du rendu identique échoue parfois (≈ 1 fois sur 4, déjà le cas avant) : seuil gardé à 0,1 % (décision du porteur), relancer en cas d’échec à 0,146 %. Commande complète :
 ```bash
 npx prettier --write src tests e2e scripts playwright.config.ts >/dev/null
 LINT=$(npm run lint 2>&1); UNIT=$(npm test 2>&1); BUILD=$(npm run build 2>&1)
