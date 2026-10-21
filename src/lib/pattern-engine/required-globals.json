@@ -5,6 +5,7 @@
   "libreTick",
   "onLibraryChanged",
   "recState",
+  "requestAnimationFrame",
   "syncers",
   "toast"
 ]

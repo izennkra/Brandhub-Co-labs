@@ -14,6 +14,10 @@ const OUT_DIR = join(ROOT, 'src', 'lib', 'pattern-engine');
 // Ce que la couche d'adaptation lit dans le moteur. Ajouter un nom ici, puis relancer le script.
 const EXPORTS = ['S', 'canvas', 'renderer', 'regenerate', 'refreshColors', 'resetView', 'resize', 'frame'];
 
+// Fonctions du navigateur que la couche d'adaptation remplace pour le bloc (sans toucher au bloc) :
+// requestAnimationFrame permet de mettre la boucle en pause hors des pages Tool.
+const SHADOWED = ['requestAnimationFrame'];
+
 const BEGIN = '// ===== DÉBUT DU BLOC MOTEUR (identique au prototype, ne pas modifier) =====';
 const END = '// ===== FIN DU BLOC MOTEUR =====';
 
@@ -64,7 +68,7 @@ function generate() {
   const lines = readFileSync(PROTOTYPE, 'utf8').split('\n');
   const block = findBlock(lines);
   const sha = createHash('sha256').update(block.text, 'utf8').digest('hex');
-  const names = findFreeNames(block.text);
+  const names = [...new Set([...findFreeNames(block.text), ...SHADOWED])].sort();
   for (const name of EXPORTS) {
     if (!new RegExp(`(?:const|let|function)\\s+${name}\\b`).test(block.text)) {
       throw new Error(`« ${name} » n'est pas défini dans le bloc moteur`);
@@ -78,7 +82,7 @@ function generate() {
     '/* eslint-disable */',
     '// @ts-nocheck',
     'export function runPrototypeEngine(env) {',
-    '  // Noms que le reste du prototype fournissait ; ils viennent maintenant de la couche d’adaptation.',
+    '  // Noms que le reste du prototype (ou le navigateur) fournissait ; ils viennent de la couche d’adaptation.',
     `  let { ${names.join(', ')} } = env;`,
     BEGIN,
     block.text,

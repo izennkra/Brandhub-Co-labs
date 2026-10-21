@@ -2,9 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const panel = (page: Page) => page.getByRole('complementary', { name: 'Éditeur' });
 const stageWidth = (page: Page) =>
-  page
-    .getByText('Le moteur de motifs arrive avec la partie pattern-engine.')
-    .evaluate((el) => el.parentElement!.getBoundingClientRect().width);
+  page.locator('main [aria-busy]').evaluate((el) => el.getBoundingClientRect().width);
 
 test('le panneau Éditeur se masque, la zone centrale s’élargit, puis il revient', async ({ page }) => {
   await page.goto('/outils/motif');

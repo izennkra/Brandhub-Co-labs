@@ -15,14 +15,14 @@
   - Fichiers : `scripts/extract-engine.mjs`, `src/lib/pattern-engine/prototype-engine.js`, `src/lib/pattern-engine/required-globals.json`, `tests/engine-identity.test.ts`, `package.json`
   - Taille : S
 
-- [ ] **Tâche 2 : couche d'adaptation, le motif s'affiche dans Motif**
+- [x] **Tâche 2 : couche d'adaptation, le motif s'affiche dans Motif**
   - Description : ajouter `three@0.128.0`. `createEngine.ts` fournit les noms attendus (THREE, canvas, `#labels`, éléments cachés, `toast`, `syncers`, `requestAnimationFrame` contrôlé), exécute le bloc (module strict, comme le prototype), lance l'initialisation du prototype et expose l'API. `EngineStage` affiche le canvas dans la zone centrale de Motif. Le moteur est chargé à la demande.
   - Acceptation :
-    - [ ] `/outils/motif` affiche le motif d'ouverture du prototype, animé, sans erreur dans la console
-    - [ ] Rotation (glisser), zoom (molette), double-clic et survol fonctionnent
-    - [ ] Un test vérifie que chaque nom de `required-globals.json` est fourni
+    - [x] `/outils/motif` affiche le motif d'ouverture du prototype, animé, sans erreur dans la console
+    - [x] Rotation (glisser), zoom (molette), double-clic et survol fonctionnent
+    - [x] Un test vérifie que chaque nom de `required-globals.json` est fourni
   - Vérification : `npm test && npm run test:e2e`, puis contrôle visuel
-  - Fichiers : `package.json`, `src/lib/pattern-engine/createEngine.ts`, `src/components/engine/EngineStage.tsx` (+ css), `src/pages/tool/ToolPage.tsx`, `tests/engine-adapter.test.ts`
+  - Fichiers : `package.json`, `src/lib/pattern-engine/createEngine.ts`, `src/components/engine/EngineStage.tsx` (+ css), `src/pages/tool/ToolPage.tsx`, `src/types/three.d.ts`, `tests/engine-adapter.test.ts`, `e2e/engine.spec.ts`
   - Taille : M
 
 - [ ] **Tâche 3 : test « rendu identique au prototype » (Motif)**

@@ -8,7 +8,8 @@ export type NavPage = { path: string; label: string; icon: IconName };
 export type EditorSection = { title: string; open?: boolean };
 
 export type ToolPageDef = NavPage & {
-  pending: string; // texte d'attente, jusqu'aux parties pattern-engine / layout-editor
+  engine?: 'motif'; // page affichant le moteur de patterns dans la zone centrale
+  pending: string; // texte d'attente, tant que la page n'a pas son contenu
   editorSections: EditorSection[]; // dans l'ordre du Figma
 };
 
@@ -24,6 +25,7 @@ export const TOOL_PAGES: ToolPageDef[] = [
     path: '/outils/motif',
     label: 'Motif',
     icon: 'circle-dashed',
+    engine: 'motif',
     pending: 'Le moteur de motifs arrive avec la partie pattern-engine.',
     editorSections: [
       { title: 'Préréglages partagés', open: true },

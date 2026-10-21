@@ -4,8 +4,8 @@
 /* eslint-disable */
 // @ts-nocheck
 export function runPrototypeEngine(env) {
-  // Noms que le reste du prototype fournissait ; ils viennent maintenant de la couche d’adaptation.
-  let { DL, THREE, dlApplyView, libreTick, onLibraryChanged, recState, syncers, toast } = env;
+  // Noms que le reste du prototype (ou le navigateur) fournissait ; ils viennent de la couche d’adaptation.
+  let { DL, THREE, dlApplyView, libreTick, onLibraryChanged, recState, requestAnimationFrame, syncers, toast } = env;
 // ===== DÉBUT DU BLOC MOTEUR (identique au prototype, ne pas modifier) =====
 /* ------------------------------------------------------------------ */
 /*  Palette et associations (planche couleur)                          */
