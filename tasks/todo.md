@@ -1,125 +1,135 @@
-# Tâches : `app-shell`
+# Tâches : `pattern-engine`
 
-> Plan : `tasks/plan.md` · Spec : `SPEC-app-shell.md`
-> Chaque tâche se termine par : tests verts, build OK, commit clair sur la branche de la partie.
+> Plan : `tasks/plan.md` · Spec : `SPEC-pattern-engine.md`
+> Chaque tâche se termine par : tous les contrôles au vert (vérification du code, tests, build, tests navigateur lancés 2 fois), puis un commit. Pas de commit si un contrôle échoue.
 
-## Phase 1 : fondations
+## Phase 1 : le moteur à l'identique
 
-- [x] **Tâche 1 : projet de base qui démarre**
-  - Description : créer l'application Vite + React + TypeScript avec les commandes de la spec (`dev`, `build`, `test`, `test:e2e`, `lint`) et une page d'accueil minimale.
+- [ ] **Tâche 1 : extraire le bloc moteur et prouver qu'il est identique**
+  - Description : `scripts/extract-engine.mjs` copie les lignes du moteur (de « Palette et associations » jusqu'à la fin de `renderLayerTo`) dans `src/lib/pattern-engine/prototype-engine.js`, avec un en-tête « généré, ne pas modifier ». Le script liste aussi les noms que le bloc utilise sans les définir (analyse avec le compilateur TypeScript).
   - Acceptation :
-    - [x] `npm run dev` affiche la page dans le navigateur, sans erreur dans la console
-    - [x] `npm test` exécute un premier test unitaire qui passe
-    - [x] `npm run test:e2e` exécute un premier parcours Playwright qui passe
-  - Vérification : `npm run build && npm test && npm run test:e2e && npm run lint`
-  - Dépend de : aucune
-  - Fichiers : `package.json`, `vite.config.ts`, `tsconfig.json`, `eslint.config.js`, `src/main.tsx`, `e2e/smoke.spec.ts`
+    - [ ] Le test d'identité passe et échoue si on change un seul caractère du fichier généré
+    - [ ] L'empreinte SHA-256 du bloc est notée dans `SPEC-pattern-engine.md`
+    - [ ] La liste des noms à fournir est enregistrée (`src/lib/pattern-engine/required-globals.json`)
+  - Vérification : `npm run engine:extract && npm test`
+  - Fichiers : `scripts/extract-engine.mjs`, `src/lib/pattern-engine/prototype-engine.js`, `src/lib/pattern-engine/required-globals.json`, `tests/engine-identity.test.ts`, `package.json`
+  - Taille : S
+
+- [ ] **Tâche 2 : couche d'adaptation, le motif s'affiche dans Motif**
+  - Description : ajouter `three@0.128.0`. `createEngine.ts` fournit les noms attendus (THREE, canvas, `#labels`, éléments cachés, `toast`, `syncers`, `requestAnimationFrame` contrôlé), exécute le bloc en mode non strict, lance l'initialisation du prototype et expose l'API. `EngineStage` affiche le canvas dans la zone centrale de Motif. Le moteur est chargé à la demande.
+  - Acceptation :
+    - [ ] `/outils/motif` affiche le motif d'ouverture du prototype, animé, sans erreur dans la console
+    - [ ] Rotation (glisser), zoom (molette), double-clic et survol fonctionnent
+    - [ ] Un test vérifie que chaque nom de `required-globals.json` est fourni
+  - Vérification : `npm test && npm run test:e2e`, puis contrôle visuel
+  - Fichiers : `package.json`, `src/lib/pattern-engine/createEngine.ts`, `src/components/engine/EngineStage.tsx` (+ css), `src/pages/tool/ToolPage.tsx`, `tests/engine-adapter.test.ts`
   - Taille : M
 
-- [x] **Tâche 2 : relevé et harmonisation des valeurs du Figma**
-  - Description : avec le MCP Figma, relever espacements, tailles de texte, interlignages, graisses, polices, arrondis, couleurs et tailles d'icônes des 8 écrans. Les ramener aux échelles de la spec et vérifier les contrastes. **Aucun code d'interface.**
+- [ ] **Tâche 3 : test « rendu identique au prototype » (Motif)**
+  - Description : `e2e/engine-render.spec.ts` ouvre le prototype et l'appli avec la même graine de hasard et une horloge figée, à la même taille, puis compare les pixels du canvas. Cas testés : Quantique › Membrane, Quantique › Ligne, Aérée.
   - Acceptation :
-    - [x] `docs/design-tokens.md` contient le tableau « valeur Figma → valeur retenue » pour chaque famille
-    - [x] Chaque couleur de texte a son ratio de contraste ; ceux sous WCAG AA sont signalés avec une proposition
-    - [x] Les polices sont identifiées, avec leur source et leur licence d'usage web
-  - Vérification : relecture par toi
-  - Dépend de : 1
-  - Fichiers : `docs/design-tokens.md`
-  - Taille : S
+    - [ ] Les 3 cas passent avec au plus 0,1 % de pixels différents
+    - [ ] Le test échoue si on change volontairement un réglage d'un côté seulement
+  - Vérification : `npm run test:e2e -- engine-render --repeat-each=3`
+  - Fichiers : `e2e/engine-render.spec.ts`, éventuellement une petite aide de test dans `createEngine.ts`
+  - Taille : M
 
 ### ✅ Point de contrôle A
-- [x] Tu as validé le tableau d'harmonisation (ou demandé des ajustements)
+- [ ] Tu vois le motif tourner dans l'appli (`/outils/motif`)
+- [ ] Le rendu identique au prototype est prouvé par le test
 
-- [x] **Tâche 3 : fichier de tokens, polices et garde-fou**
-  - Description : traduire le tableau validé en variables dans `src/styles/tokens.css`, charger les polices, poser les styles de base. Ajouter un test qui échoue si une couleur en dur apparaît ailleurs.
-  - Acceptation :
-    - [x] Toutes les valeurs du tableau existent dans `tokens.css`, nommées par rôle
-    - [x] Le test « pas de couleur hexadécimale hors de `tokens.css` » passe et échoue si on en ajoute une
-  - Vérification : `npm test && npm run build`
-  - Dépend de : 2
-  - Fichiers : `src/styles/tokens.css`, `src/styles/global.css`, `index.html`, `tests/no-hardcoded-values.test.ts`
-  - Taille : S
+## Phase 2 : les réglages du Motif
 
-- [x] **Tâche 4 : composant `Icon.tsx` et premières icônes**
-  - Description : relever dans le catalogue VisualSystem l'ID exact de la variante Central Line, coins 2px Medium. Créer `Icon.tsx` d'après l'exemple officiel, avec une échelle de tailles (`sm`, `md`, `lg`…) qui fixe aussi le trait. Ajouter une par une les icônes de la navigation et du cadre.
+- [ ] **Tâche 4 : table des réglages reprise du prototype**
+  - Description : `controls.ts` liste chaque réglage : clé dans `S`, libellé, bornes, pas, format, effet, section, niveau (essentiel ou avancé) et mode (Motif, Illustration ou les deux). Un test compare la table aux appels `slider/toggle/seg` du prototype.
   - Acceptation :
-    - [x] L'ID de variante et l'échelle sont notés dans `CLAUDE.md`
-    - [x] Un nom d'icône inconnu provoque une erreur ; une icône seule est `aria-hidden` ; avec un libellé, elle a `role="img"`
-    - [x] Le test « aucune librairie d'icônes dans `package.json` » passe
-  - Vérification : `npm test`, puis contrôle visuel des icônes à côté de l'écran Figma
-  - Dépend de : 2
-  - Fichiers : `src/components/Icon.tsx`, `src/components/icons.registry.tsx`, `tests/Icon.test.tsx`, `CLAUDE.md`
+    - [ ] Les 68 curseurs, 13 interrupteurs et 2 sélecteurs sont présents, avec les bornes et les pas du prototype
+    - [ ] Chaque clé existe dans `S`. Les réglages du Figma sont « essentiels »
+  - Vérification : `npm test`
+  - Fichiers : `src/lib/pattern-engine/controls.ts`, `tests/engine-controls.test.ts`
   - Taille : M
 
-## Phase 2 : navigation
-
-- [x] **Tâche 5 : colonne de gauche et pages Tool**
-  - Description : `AppLayout` + `Sidebar` (logo co-labs, badge BETA, liste des pages) et les 3 pages Tool (Motif, Illustration, Layout editor) avec un emplacement réservé. L'accueil redirige vers Motif.
+- [ ] **Tâche 5 : composants de contrôle (style Figma)**
+  - Description : `Slider` (barre remplie, libellé à gauche, valeur à droite, `input type="range"` accessible), `Segmented` et `Toggle`, avec les tokens.
   - Acceptation :
-    - [x] Les 3 pages s'ouvrent par clic et par adresse directe, et le rafraîchissement garde la page
-    - [x] La page active est surlignée et porte `aria-current="page"`
-  - Vérification : `npm test && npm run test:e2e`
-  - Dépend de : 3, 4
-  - Fichiers : `src/app/router.tsx`, `src/app/AppLayout.tsx`, `src/components/Sidebar/*`, `src/pages/tool/ToolPage.tsx`, `src/app/routes.tsx`, `e2e/navigation.spec.ts`
+    - [ ] Clavier : flèches, Début et Fin sur le curseur ; Espace sur l'interrupteur ; valeur annoncée
+    - [ ] Rendu conforme aux contrôles du Figma, contrastes AA
+  - Vérification : `npm test`, contrôle visuel face au Figma
+  - Fichiers : `src/components/engine/Slider.tsx`, `Segmented.tsx`, `Toggle.tsx` (+ css), `tests/controls-components.test.tsx`
   - Taille : M
 
-- [x] **Tâche 6 : sélecteur Tool / Ressource et pages Ressource**
-  - Description : sélecteur à deux onglets dans la colonne de gauche ; les 7 pages Ressource (Logo, Typographie, Couleur, Iconographie, Imagerie, Patterne prédéfinie, Inspiration) avec leur titre et un emplacement réservé. On revient sur la dernière page visitée dans chaque section.
+- [ ] **Tâche 6 : panneau Motif branché**
+  - Description : les sections de l'Éditeur Motif affichent leurs réglages essentiels. L'interrupteur « Réglage avancé » (mémorisé) ajoute les autres, dont le tracé de ligne et l'infographie. Chaque changement passe par l'API (effet identique au prototype : régénérer, recolorer…).
   - Acceptation :
-    - [x] Le sélecteur bascule la liste des pages, et l'onglet actif suit l'adresse
-    - [x] Les 7 pages s'ouvrent par clic et par adresse directe ; le rafraîchissement garde la page
-    - [x] Pas d'entrée Feedback
+    - [ ] Bouger un réglage change `S` et le rendu (Membrane / Ligne, Renflements, Taille…)
+    - [ ] « Réglage avancé » affiche ou masque les bons réglages
   - Vérification : `npm test && npm run test:e2e`
-  - Dépend de : 5
-  - Fichiers : `src/components/Sidebar/ModeSwitch.tsx`, `src/pages/resources/*`, `src/app/router.tsx`, `e2e/navigation.spec.ts`
+  - Fichiers : `src/components/EditorPanel/*`, `src/app/navigation.ts`, `src/lib/pattern-engine/createEngine.ts`, `tests/EditorPanel.test.tsx`
+  - Taille : M
+
+- [ ] **Tâche 7 : section Couleurs**
+  - Description : d'abord une maquette de la section, reprenant les choix du prototype (fond, couleurs des pastilles, couleur de la ligne) dans le style du panneau, **montrée pour validation**. Ensuite le code.
+  - Acceptation :
+    - [ ] Maquette validée par toi
+    - [ ] Les couleurs changent le rendu comme dans le prototype ; contrastes et clavier OK
+  - Vérification : `npm test && npm run test:e2e`
+  - Fichiers : `src/components/engine/ColorPicker.tsx` (+ css), `tests/ColorPicker.test.tsx`
   - Taille : M
 
 ### ✅ Point de contrôle B
-- [x] Tous les tests passent, le build est OK
-- [x] Tu as testé la navigation sur ton ordinateur (`npm run dev`) et validé le rendu
+- [ ] Tu règles le motif depuis le panneau Éditeur
 
-## Phase 3 : panneaux et finitions
+## Phase 3 : l'Illustration
 
-- [x] **Tâche 7 : panneau « Éditeur » des pages Tool**
-  - Description : panneau droit repliable (bouton « Éditeur », raccourci H comme le prototype), composant de section en accordéon réutilisable et bouton Export (désactivé pour l'instant).
+- [ ] **Tâche 8 : bascule Motif ↔ Illustration**
+  - Description : passer d'une page à l'autre bascule le moteur de mode, en gardant les réglages de chaque mode (logique `setApp` du prototype reprise dans la couche). Le test de rendu identique est étendu à l'Illustration.
   - Acceptation :
-    - [x] Le panneau s'ouvre et se ferme au clic et au clavier ; la zone centrale s'élargit quand il est fermé
-    - [x] Les sections s'ouvrent et se ferment, avec `aria-expanded` à jour
-  - Vérification : `npm test && npm run test:e2e`
-  - Dépend de : 6
-  - Fichiers : `src/components/EditorPanel/*`, `src/app/ToolLayout.tsx`, `src/app/editorSections.ts`, `tests/EditorPanel.test.tsx`, `e2e/editor-panel.spec.ts`
+    - [ ] `/outils/illustration` affiche les images de démo en pastilles, identiques au prototype
+    - [ ] Aller et retour Motif ↔ Illustration : les réglages de chacun sont conservés
+  - Vérification : `npm run test:e2e -- engine-render --repeat-each=3`
+  - Fichiers : `src/lib/pattern-engine/createEngine.ts`, `src/pages/tool/ToolPage.tsx`, `e2e/engine-render.spec.ts`
   - Taille : M
 
-- [x] **Tâche 8 : habillage des pages Ressource**
-  - Description : `ResourceLayout` avec l'icône de panneau en haut à droite (ouvre un panneau latéral vide pour l'instant) et le bouton orange flottant « Télécharger » (désactivé pour l'instant, avec une infobulle).
+- [ ] **Tâche 9 : images de l'Illustration**
+  - Description : section « Images » (liste, glisser pour réordonner, croix pour retirer, image choisie encadrée) et bandeau de vignettes sous la scène, avec « + » pour ajouter. Les images ajoutées sont conservées dans le navigateur.
   - Acceptation :
-    - [x] Les deux boutons ont un libellé accessible et un focus visible
-    - [x] Le panneau latéral s'ouvre et se ferme
+    - [ ] Ajout, choix, retrait et ordre fonctionnent, à la souris et au clavier
+    - [ ] Les images ajoutées restent après un rafraîchissement
   - Vérification : `npm test && npm run test:e2e`
-  - Dépend de : 6
-  - Fichiers : `src/app/ResourceLayout.tsx`, `src/components/SidePanel/*`, `tests/ResourceLayout.test.tsx`, `e2e/resource-layout.spec.ts`
+  - Fichiers : `src/components/engine/ImageList.tsx`, `ImageStrip.tsx` (+ css), `tests/images.test.tsx`, `e2e/illustration.spec.ts`
+  - Taille : M
+
+- [ ] **Tâche 10 : panneau Illustration branché**
+  - Description : sections Animation, Lumière et tons de l'image, Pastilles, Survol, Rotation et Couleurs, depuis la table des réglages (filtrée sur le mode Illustration).
+  - Acceptation :
+    - [ ] Chaque réglage agit sur l'Illustration comme dans le prototype
+  - Vérification : `npm test && npm run test:e2e`
+  - Fichiers : `src/app/navigation.ts`, `src/components/EditorPanel/*`, `tests/EditorPanel.test.tsx`
   - Taille : S
 
-- [x] **Tâche 9 : petits écrans, clavier et accessibilité**
-  - Description : sous 1280 px, la colonne de gauche se replie derrière un bouton. Vérifier le parcours complet au clavier, les états de focus, de survol et de désactivation, et les contrastes.
-  - Acceptation :
-    - [x] Sous 1280 px, la colonne se replie et se rouvre ; le contenu reste utilisable
-    - [x] Tout le parcours se fait au clavier, avec un focus visible partout
-  - Vérification : `npm run test:e2e` (scénarios en 1440 px et en 1024 px)
-  - Dépend de : 7, 8
-  - Fichiers : `src/app/AppLayout.tsx`, `src/app/useMediaQuery.ts`, `src/components/Sidebar/*`, `e2e/responsive.spec.ts`, `e2e/accessibility.spec.ts`
-  - Taille : S
+### ✅ Point de contrôle C
+- [ ] Tu testes l'Illustration : images, réglages, aller-retour avec Motif
 
-- [x] **Tâche 10 : comparaison avec le Figma et relecture**
-  - Description : capturer les 10 pages à 1440 px avec Playwright, les comparer aux écrans Figma pour le cadre, corriger les écarts, puis faire une relecture complète (`/review`).
+## Phase 4 : finitions
+
+- [ ] **Tâche 11 : barre de scène, notifications et ⌥ H**
+  - Description : barre d'icônes en haut à gauche de la scène (lecture/pause, nouvelle forme / rejouer avec la touche R), notifications du moteur dans une zone annoncée (`aria-live`), et raccourci ⌥ H / Alt + H à la place de H.
   - Acceptation :
-    - [x] Les captures de référence sont enregistrées et le test de comparaison passe
-    - [x] La relecture ne laisse aucun problème important ouvert
-  - Vérification : `npm run build && npm test && npm run test:e2e && npm run lint`
-  - Dépend de : 9
-  - Fichiers : `e2e/visual.spec.ts`, captures de référence, petites corrections de styles
+    - [ ] Lecture/pause et nouvelle forme fonctionnent au clic et au clavier
+    - [ ] ⌥ H replie l'Éditeur ; H seul ne fait rien
+  - Vérification : `npm test && npm run test:e2e`
+  - Fichiers : `src/components/engine/SceneToolbar.tsx` (+ css), `src/components/Toaster.tsx`, `src/app/ToolLayout.tsx`, tests associés
+  - Taille : M
+
+- [ ] **Tâche 12 : performance, accessibilité, références et relecture**
+  - Description : vérifier que Three.js n'est pas chargé sur les pages Ressource et que la boucle s'arrête hors des pages Tool ; étendre les tests de contraste et de focus aux nouveaux contrôles ; mettre à jour les rendus de référence ; faire la relecture `/review` ; proposer la pull request.
+  - Acceptation :
+    - [ ] Les 10 critères de `SPEC-pattern-engine.md` sont remplis
+    - [ ] La relecture ne laisse aucun problème important ouvert
+  - Vérification : tous les contrôles, tests navigateur lancés 2 fois
+  - Fichiers : `e2e/*.spec.ts`, captures de référence, `docs/review-pattern-engine.md`
   - Taille : M
 
 ### ✅ Point de contrôle final
-- [x] Les 10 critères de réussite de `SPEC-app-shell.md` sont remplis
-- [x] La branche est poussée sur GitHub et la pull request est proposée
+- [ ] Les 10 critères de réussite sont remplis
+- [ ] La branche est poussée et la pull request est proposée

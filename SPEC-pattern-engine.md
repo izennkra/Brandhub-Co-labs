@@ -1,6 +1,6 @@
 # Spec : `pattern-engine` (moteur de motifs)
 
-> Statut : **à valider**. Deuxième partie de `CAPABILITY-MAP.md` (dépend de `app-shell`, terminée).
+> Statut : **validée le 21/10/2026**. Deuxième partie de `CAPABILITY-MAP.md` (dépend de `app-shell`, terminée).
 > Décisions prises le 21/10/2026 : copie du moteur à l'identique · périmètre « moteur + réglages » · réglages essentiels + « Réglage avancé » · raccourci ⌥ H.
 
 ## Objectif
@@ -132,8 +132,8 @@ e2e/engine-render.spec.ts                → rendu identique au prototype (compa
 9. ⌥ H / Alt + H replie et réaffiche l'Éditeur. H seul ne fait plus rien.
 10. Build, tests, tests navigateur et vérification du code au vert.
 
-## Questions ouvertes
+## Décisions sur les questions ouvertes (21/10/2026)
 
-1. **Commandes de scène absentes du Figma.** Le prototype a lecture/pause, « Nouvelle forme » (touche R), « Envoyer vers le Design libre », une bulle « Préréglage » et l'aide « Glisser pour tourner… ». Je propose une petite barre d'icônes en haut à gauche de la scène, avec lecture/pause et nouvelle forme. L'envoi vers le Layout editor et les préréglages viendront avec leurs parties. D'accord, ou as-tu une référence ?
-2. **Section Couleurs.** Elle est repliée dans le Figma, donc son contenu n'est pas dessiné. Je propose de reprendre les choix du prototype (fond, couleurs des pastilles, couleur de la ligne) dans le style du panneau, et de te les montrer avant de coder. D'accord ?
-3. **Tracé de ligne et infographie** (modes Données / Process, étiquettes sur la scène). Ils font partie du moteur, donc ils fonctionneront tels quels. Leurs réglages iront dans « Réglage avancé ». D'accord ?
+1. **Commandes de scène** : petite barre d'icônes en haut à gauche de la scène, avec lecture/pause et nouvelle forme (touche R). L'envoi vers le Layout editor et les préréglages viendront avec leurs parties.
+2. **Section Couleurs** : reprise des choix du prototype (fond, couleurs des pastilles, couleur de la ligne) dans le style du panneau. Le rendu est montré pour validation avant d'être codé.
+3. **Tracé de ligne et infographie** : ils fonctionnent tels quels, et leurs réglages vont dans « Réglage avancé ».
