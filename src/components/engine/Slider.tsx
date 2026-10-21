@@ -33,6 +33,7 @@ export function Slider({
   return (
     <div
       className={styles.row}
+      title={label}
       style={
         {
           '--progress': String(Number(progress.toFixed(4))),

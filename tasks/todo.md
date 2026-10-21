@@ -58,11 +58,11 @@
   - Fichiers : `src/components/engine/Slider.tsx`, `Segmented.tsx`, `Toggle.tsx` (+ css), `tests/controls-components.test.tsx`
   - Taille : M
 
-- [ ] **Tâche 6 : panneau Motif branché**
+- [x] **Tâche 6 : panneau Motif branché**
   - Description : les sections de l'Éditeur Motif affichent leurs réglages essentiels. L'interrupteur « Réglage avancé » (mémorisé) ajoute les autres, dont le tracé de ligne et l'infographie. Chaque changement passe par l'API (effet identique au prototype : régénérer, recolorer…).
   - Acceptation :
-    - [ ] Bouger un réglage change `S` et le rendu (Membrane / Ligne, Renflements, Taille…)
-    - [ ] « Réglage avancé » affiche ou masque les bons réglages
+    - [x] Bouger un réglage change `S` et le rendu (Membrane / Ligne, Renflements, Taille…)
+    - [x] « Réglage avancé » affiche ou masque les bons réglages (sous-menus repliables comme dans le prototype, libellés longs coupés avec infobulle)
   - Vérification : `npm test && npm run test:e2e`
   - Fichiers : `src/components/EditorPanel/*`, `src/app/navigation.ts`, `src/lib/pattern-engine/createEngine.ts`, `tests/EditorPanel.test.tsx`
   - Taille : M

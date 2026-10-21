@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { CONTROLS, type Control } from '../src/lib/pattern-engine/controls';
+import { CONTROLS, isVisible, type Control } from '../src/lib/pattern-engine/controls';
 
 // La table des réglages doit reprendre exactement l'interface du prototype.
 // Ce test relit le prototype (sans l'exécuter) et en déduit, pour chaque réglage :
@@ -397,5 +397,24 @@ describe('table des réglages : reprise du prototype', () => {
         const control = CONTROLS.find((c) => c.label === label && (c.mode === mode || c.mode === 'both'));
         expect(control?.level, `${mode} › ${label}`).toBe('essential');
       }
+  });
+
+  it('affiche les réglages selon l’état, comme le prototype (syncStruct, syncHov)', () => {
+    const shown = (key: string, settings: Record<string, unknown>) =>
+      isVisible(
+        CONTROLS.find((c) => c.key === key)!,
+        settings,
+      );
+    const membrane = { qStruct: 1, lineMode: 0, hoverMode: 0 };
+    const ligne = { qStruct: 2, lineMode: 0, hoverMode: 0 };
+    expect(shown('shapeMode', membrane)).toBe(true);
+    expect(shown('shapeMode', ligne)).toBe(false);
+    expect(shown('lineLen', membrane)).toBe(false);
+    expect(shown('lobeContrast', ligne)).toBe(true);
+    expect(shown('lobeContrast', { ...ligne, lineMode: 1 })).toBe(false);
+    expect(shown('dataContrast', { ...ligne, lineMode: 1 })).toBe(true);
+    expect(shown('infoGap', { ...ligne, lineMode: 2 })).toBe(true);
+    expect(shown('hoverRadius', { ...membrane, hoverMode: 1 })).toBe(false);
+    expect(shown('lobes', ligne)).toBe(true);
   });
 });

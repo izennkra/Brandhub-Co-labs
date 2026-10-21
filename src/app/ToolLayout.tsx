@@ -8,6 +8,7 @@ import styles from './ToolLayout.module.css';
 // Gabarit des pages Tool : zone centrale + panneau Éditeur repliable (bouton ou touche H).
 export function ToolLayout() {
   const { pathname } = useLocation();
+  const page = TOOL_PAGES.find((tool) => tool.path === pathname);
   const [panelOpen, setPanelOpen] = useState(true);
   const panelToggle = useRef<HTMLButtonElement>(null);
   const reopenButton = useRef<HTMLButtonElement>(null);
@@ -60,7 +61,8 @@ export function ToolLayout() {
       </div>
       {panelOpen && (
         <EditorPanel
-          sections={TOOL_PAGES.find((page) => page.path === pathname)?.editorSections ?? []}
+          sections={page?.editorSections ?? []}
+          engineMode={page?.engine}
           pageKey={pathname}
           onHide={togglePanel}
           toggleRef={panelToggle}

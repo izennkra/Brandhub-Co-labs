@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
@@ -104,5 +104,53 @@ describe('panneau Éditeur des pages Tool', () => {
     renderAt('/ressources/logo');
     expect(panel()).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Afficher l’éditeur' })).not.toBeInTheDocument();
+  });
+});
+
+describe('panneau Motif branché au moteur', () => {
+  it('affiche les réglages essentiels du Figma dans leur section', async () => {
+    renderAt('/outils/motif');
+    const volume = await screen.findByRole('region', { name: 'Volume' });
+    expect(within(volume).getByRole('group', { name: 'Structure' })).toBeInTheDocument();
+    expect(within(volume).getByRole('slider', { name: 'Renflements' })).toBeInTheDocument();
+    expect(
+      within(volume).queryByRole('slider', { name: 'Étirement des renflements' }),
+    ).not.toBeInTheDocument();
+    const dots = screen.getByRole('region', { name: 'Pastilles' });
+    expect(
+      within(dots)
+        .getAllByRole('slider')
+        .map((s) => s.getAttribute('aria-label')),
+    ).toEqual(['Taille']);
+  });
+
+  it('« Réglage avancé » ajoute les autres réglages et la section Circulation, et se mémorise', async () => {
+    const user = userEvent.setup();
+    renderAt('/outils/motif');
+    await screen.findByRole('slider', { name: 'Renflements' });
+    expect(screen.queryByRole('button', { name: 'Circulation' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('switch', { name: 'Réglage avancé' }));
+    expect(screen.getByRole('slider', { name: 'Étirement des renflements' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Circulation' })).toBeInTheDocument();
+    expect(localStorage.getItem('bhc.expert')).toBe('1');
+  });
+
+  it('bouger un réglage passe par le moteur ; la Ligne masque Réseau et montre ses réglages', async () => {
+    const user = userEvent.setup();
+    renderAt('/outils/motif');
+    const lobes = await screen.findByRole('slider', { name: 'Renflements' });
+    fireEvent.change(lobes, { target: { value: '7' } });
+    expect(lobes).toHaveAttribute('aria-valuetext', '7');
+    expect(screen.getByRole('button', { name: 'Réseau' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ligne' }));
+    expect(screen.queryByRole('button', { name: 'Réseau' })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Mode de la ligne' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Membrane' }));
+    expect(screen.getByRole('button', { name: 'Réseau' })).toBeInTheDocument();
+  });
+
+  it('les pages sans moteur n’ont pas d’interrupteur « Réglage avancé »', () => {
+    renderAt('/outils/layout-editor');
+    expect(screen.queryByRole('switch', { name: 'Réglage avancé' })).not.toBeInTheDocument();
   });
 });

@@ -2,6 +2,7 @@
 // (reference/prototype.html, lignes 2787 à 3168 : appels slider, toggle, seg et sélecteurs faits main).
 // Libellés, bornes, pas, formats et effets sont ceux du prototype : tests/engine-controls.test.ts le vérifie.
 // L'ordre est celui de l'affichage dans le panneau du prototype. Les réglages de l'export viendront plus tard.
+import type { EngineSettings } from './prototype-engine.js';
 
 // essential : affiché par défaut (réglages du Figma) ; advanced : derrière « Réglage avancé » ;
 // hidden : jamais affiché, comme dans le prototype (il ne sert qu'aux variantes Aérée et Dense, retirées).
@@ -27,6 +28,7 @@ type ControlBase = {
   level: ControlLevel;
   mode: ControlMode;
   effect?: ControlEffect;
+  when?: (settings: EngineSettings) => boolean; // affiché seulement si… (prototype)
 };
 
 export type SliderControl = ControlBase & {
@@ -225,4 +227,27 @@ const BOTH: Control[] = [
   choice(col, 'colorMode', 'Répartition', ['Zones', 'Brins', 'Hasard']),
 ];
 
-export const CONTROLS: Control[] = [...ILLUSTRATION, ...MOTIF, ...BOTH];
+// Conditions d'affichage du prototype : syncStruct (ligne 3064) et syncHov (ligne 3150).
+const isLine = (s: EngineSettings) => s.qStruct === 2;
+const VISIBLE_WHEN: Record<string, (s: EngineSettings) => boolean> = {
+  shapeMode: (s) => !isLine(s),
+  lineMode: isLine,
+  lobeContrast: (s) => isLine(s) && s.lineMode === 0,
+  dataContrast: (s) => isLine(s) && s.lineMode === 1,
+  procMin: (s) => isLine(s) && s.lineMode === 2,
+  procCurve: (s) => isLine(s) && s.lineMode === 2,
+  lineLabels: (s) => isLine(s) && Number(s.lineMode) >= 1,
+  infoScale: (s) => isLine(s) && Number(s.lineMode) >= 1,
+  infoGap: (s) => isLine(s) && Number(s.lineMode) >= 1,
+  lineLen: isLine,
+  lineWave: isLine,
+  lineFade: isLine,
+  hoverRadius: (s) => s.hoverMode === 0,
+};
+
+export const CONTROLS: Control[] = [...ILLUSTRATION, ...MOTIF, ...BOTH].map((control) =>
+  VISIBLE_WHEN[control.key] ? { ...control, when: VISIBLE_WHEN[control.key] } : control,
+);
+
+/** Le réglage est-il affiché, d'après l'état du moteur (comme dans le prototype) ? */
+export const isVisible = (control: Control, settings: EngineSettings) => control.when?.(settings) ?? true;

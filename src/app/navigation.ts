@@ -29,6 +29,7 @@ export const TOOL_PAGES: ToolPageDef[] = [
     pending: 'Le moteur de motifs arrive avec la partie pattern-engine.',
     editorSections: [
       { title: 'Préréglages partagés', open: true },
+      { title: 'Circulation' }, // absente du Figma : tous ses réglages sont avancés, elle n'apparaît qu'avec eux
       { title: 'Réseau' },
       { title: 'Volume', open: true },
       { title: 'Pastilles', open: true },

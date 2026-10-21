@@ -7,9 +7,25 @@ import { afterEach, vi } from 'vitest';
 // dans le navigateur (e2e).
 vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../src/lib/pattern-engine/createEngine')>();
+  const { CONTROLS } = await import('../src/lib/pattern-engine/controls');
   const canvas = document.createElement('canvas');
   canvas.id = 'scene';
+  // Réglages de départ : borne basse, interrupteur éteint, premier choix ; Membrane comme à l'ouverture.
+  const S: Record<string, unknown> = Object.fromEntries(
+    CONTROLS.map((c) => [
+      c.key,
+      c.kind === 'slider' ? c.min : c.kind === 'toggle' ? false : c.options[0].value,
+    ]),
+  );
+  S.qStruct = 1;
   const fakeEngine = {
+    core: { S },
+    actions: {
+      change: (key: string, value: unknown) => {
+        S[key] = value;
+        actual.engineEvents.dispatchEvent(new Event('settings'));
+      },
+    },
     attach: (host: HTMLElement) => host.append(canvas),
     detach: (host: HTMLElement) => canvas.parentElement === host && canvas.remove(),
   };
@@ -38,5 +54,6 @@ Object.defineProperty(window, 'matchMedia', {
 afterEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   narrowScreen = false;
 });

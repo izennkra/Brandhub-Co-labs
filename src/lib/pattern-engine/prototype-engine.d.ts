@@ -28,7 +28,10 @@ export type PrototypeEngine = {
   readonly MEMBRANE_BASE: EngineSettings;
   readonly mulberry32: (seed: number) => () => number;
   readonly loadLibrary: () => Promise<void>;
+  readonly isLine: () => boolean;
+  readonly buildLine: (keep: boolean) => void;
   rng: () => number;
+  lineLobes: unknown[];
 };
 
 export function runPrototypeEngine(env: EngineEnv): PrototypeEngine;

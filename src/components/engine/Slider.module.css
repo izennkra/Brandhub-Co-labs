@@ -41,10 +41,16 @@
 }
 
 .label {
+  flex: 0 1 auto; /* rétrécit (…) si besoin, sans grandir : la barre se cale sur sa largeur */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--color-text-secondary);
 }
 
 .value {
+  flex-shrink: 0;
+  padding-left: var(--space-2);
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
 }

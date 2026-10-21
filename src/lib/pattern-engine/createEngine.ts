@@ -3,9 +3,10 @@
 // Cette couche lui fournit ce que le reste du prototype lui donnait, puis expose une API à l'appli.
 import geistLatinUrl from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
 import * as THREE from 'three';
+import type { ControlEffect } from './controls';
 import { runPrototypeEngine, type EngineEnv, type PrototypeEngine } from './prototype-engine.js';
 
-// Messages du moteur (toast), demandes de mise à jour des réglages (sync), bibliothèque d'images.
+// Messages du moteur (toast), réglages modifiés (settings), bibliothèque d'images (library).
 export const engineEvents = new EventTarget();
 
 // La boucle du moteur se relance à chaque image via requestAnimationFrame : on la retient quand
@@ -112,7 +113,8 @@ function createActions(core: PrototypeEngine, syncAll: () => void) {
   const newSeed = () => {
     core.rng = core.mulberry32((Math.random() * 1e9) | 0);
   };
-  return {
+  let regenTimer: ReturnType<typeof setTimeout> | undefined;
+  const actions = {
     // Bouton « Membrane / Ligne » (prototype ligne 2954).
     setStructure(structure: Structure) {
       core.S.qStruct = structure;
@@ -128,7 +130,29 @@ function createActions(core: PrototypeEngine, syncAll: () => void) {
       core.regenerate();
       core.resetView();
     },
+    // Boutons « Aléatoire / Données / Process » (prototype ligne 2968).
+    setLineMode(mode: number) {
+      core.S.lineMode = mode;
+      core.lineLobes = [];
+    },
+    /** Change un réglage de la table controls.ts, puis fait ce que faisait le prototype après ce changement. */
+    change(key: string, value: number | boolean, effect?: ControlEffect) {
+      if (effect === 'setStructure') return actions.setStructure(value as Structure);
+      if (effect === 'setShape') actions.setShape(value as Shape);
+      else if (effect === 'setLineMode') actions.setLineMode(value as number);
+      else core.S[key] = value;
+      // regenSoon (ligne 2671) : nouvelle forme 250 ms après le dernier mouvement.
+      if (effect === 'regenSoon') {
+        clearTimeout(regenTimer);
+        regenTimer = setTimeout(core.regenerate, 250);
+      }
+      // Longueur et ondulation de la ligne (ligne 3057).
+      if (effect === 'buildLine' && core.isLine()) core.buildLine(true);
+      // toneChanged, dirtyImg, restartLoop : propres à l'Illustration, branchés avec elle (tâche 10).
+      syncAll();
+    },
   };
+  return actions;
 }
 
 // Points d'accroche réservés aux tests navigateur (rendu identique au prototype) : sans effet sinon.
@@ -161,6 +185,9 @@ async function createEngine(): Promise<Engine> {
   core.resetView();
   void core.loadLibrary();
   gate.requestAnimationFrame(core.frame);
+
+  // Chaque mise à jour des réglages (par le moteur ou par le panneau) prévient l'appli.
+  env.syncers.push(() => engineEvents.dispatchEvent(new Event('settings')));
 
   const ready: Engine = {
     core,
