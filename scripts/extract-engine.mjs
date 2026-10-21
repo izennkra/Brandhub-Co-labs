@@ -42,6 +42,8 @@ const EXPORTS = [
   'toneFromS',
   'curImg',
   'selImg',
+  'orbit',
+  'storeReady',
 ];
 
 // Variables du bloc que la couche d'adaptation doit pouvoir réaffecter, comme le faisait

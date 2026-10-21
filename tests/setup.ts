@@ -62,6 +62,15 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
         actual.engineEvents.dispatchEvent(new Event('settings'));
       },
     },
+    presets: {
+      list: () => [],
+      defaultId: null,
+      note: () => 'Enregistrés dans ce navigateur seulement.',
+      save: async () => true,
+      apply: () => {},
+      toggleDefault: () => {},
+      remove: async () => {},
+    },
     attach: (host: HTMLElement) => host.append(canvas),
     detach: (host: HTMLElement) => canvas.parentElement === host && canvas.remove(),
   };

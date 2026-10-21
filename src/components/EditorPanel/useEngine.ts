@@ -3,7 +3,7 @@ import type { Engine } from '../../lib/pattern-engine/createEngine';
 import { loadEngine } from '../../lib/pattern-engine/loadEngine';
 
 // Le moteur partagé (chargé à la demande, comme la scène), et un nouveau rendu à chaque
-// changement de réglage : les valeurs sont lues dans engine.core.S au moment du rendu.
+// changement de réglage ou de préréglages : les valeurs sont lues dans engine.core.S au moment du rendu.
 export function useEngine(enabled: boolean): Engine | null {
   const [engine, setEngine] = useState<Engine | null>(null);
   const [, setVersion] = useState(0);
@@ -19,6 +19,7 @@ export function useEngine(enabled: boolean): Engine | null {
         if (cancelled) return;
         events = ready.events;
         events.addEventListener('settings', refresh);
+        events.addEventListener('presets', refresh);
         setEngine(ready);
       })
       .catch((error: unknown) => console.error(error));
@@ -26,6 +27,7 @@ export function useEngine(enabled: boolean): Engine | null {
     return () => {
       cancelled = true;
       events?.removeEventListener('settings', refresh);
+      events?.removeEventListener('presets', refresh);
     };
   }, [enabled]);
 

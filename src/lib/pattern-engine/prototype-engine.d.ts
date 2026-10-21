@@ -48,7 +48,16 @@ export type PrototypeEngine = {
   readonly addImages: (files: FileList | File[]) => Promise<void>;
   readonly showImage: (index: number) => void;
   readonly saveImageMeta: (image: EngineImage) => void;
-  readonly Store: { del: (collection: string, id: string) => Promise<void> };
+  // Stockage du moteur : service partagé /api/store s'il répond, sinon ce navigateur.
+  readonly Store: {
+    readonly kind: 'claude' | 'api' | 'local';
+    readonly readOnly: boolean;
+    list: (collection: string) => Promise<Array<{ id: string; data: EngineSettings }>>;
+    put: (collection: string, id: string, data: unknown) => Promise<void>;
+    del: (collection: string, id: string) => Promise<void>;
+  };
+  readonly storeReady: Promise<void>;
+  readonly orbit: { theta: number; phi: number; radius: number };
   readonly TONE_KEYS: readonly string[];
   readonly toneFromS: () => EngineSettings;
   curImg: number;
