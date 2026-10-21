@@ -46,9 +46,11 @@ Guide : https://visual.systems/modules/icon/llms.txt · Source : https://visual.
 
 | Composant | Famille | Variante | Trait |
 |---|---|---|---|
-| `Icon.tsx` | Central | Line, coins 2px Medium (ID exact de variante à relever dans le catalogue) | 1,5 px de base, adapté à la taille |
+| `src/components/Icon.tsx` | Central | `round-outlined-radius-2-stroke-1.5` et `round-outlined-radius-2-stroke-2` | 1,5 de base ; variante choisie selon la taille |
 
-Taille et épaisseur du trait suivent une échelle fixe liée à l'usage (tokens d'icônes dans `tokens.css`). On appelle `<Icon size="sm">`, jamais une taille en pixels.
+- **Registre** : `src/components/icons.registry.tsx`. Ajouter une icône = la chercher (`/api/modules/icon/search?set=central&q=…&variant=round-outlined-radius-2-stroke-1.5`), puis copier ses deux variantes (trait 1,5 et 2) sous son nom Central. Garder la mention de licence en tête du fichier.
+- **Tailles** : `<Icon size="xs|sm|md|lg">` (12 / 16 / 20 / 24 px, tokens `--icon-*`), jamais une taille en pixels. Central n'a pas de trait réglable : `xs` et `sm` utilisent la variante trait 2, `md` et `lg` la variante trait 1,5. Le trait affiché reste ainsi entre 1 et 1,5 px.
+- **Licence** : Central Icons est une licence commerciale (iconists). Izenn possède ou achète la licence (confirmé le 21/10/2026). À vérifier avant la mise en ligne (`/ship`).
 
 ## Autres modules VisualSystem (seulement si besoin, sur proposition)
 

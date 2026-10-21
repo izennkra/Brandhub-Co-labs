@@ -40,15 +40,15 @@
   - Fichiers : `src/styles/tokens.css`, `src/styles/global.css`, `index.html`, `tests/no-hardcoded-values.test.ts`
   - Taille : S
 
-- [ ] **Tâche 4 : composant `Icon.tsx` et premières icônes**
+- [x] **Tâche 4 : composant `Icon.tsx` et premières icônes**
   - Description : relever dans le catalogue VisualSystem l'ID exact de la variante Central Line, coins 2px Medium. Créer `Icon.tsx` d'après l'exemple officiel, avec une échelle de tailles (`sm`, `md`, `lg`…) qui fixe aussi le trait. Ajouter une par une les icônes de la navigation et du cadre.
   - Acceptation :
-    - [ ] L'ID de variante et l'échelle sont notés dans `CLAUDE.md`
-    - [ ] Un nom d'icône inconnu provoque une erreur ; une icône seule est `aria-hidden` ; avec un libellé, elle a `role="img"`
-    - [ ] Le test « aucune librairie d'icônes dans `package.json` » passe
+    - [x] L'ID de variante et l'échelle sont notés dans `CLAUDE.md`
+    - [x] Un nom d'icône inconnu provoque une erreur ; une icône seule est `aria-hidden` ; avec un libellé, elle a `role="img"`
+    - [x] Le test « aucune librairie d'icônes dans `package.json` » passe
   - Vérification : `npm test`, puis contrôle visuel des icônes à côté de l'écran Figma
   - Dépend de : 2
-  - Fichiers : `src/components/Icon.tsx`, `src/components/icons.registry.ts`, `tests/Icon.test.tsx`, `CLAUDE.md`
+  - Fichiers : `src/components/Icon.tsx`, `src/components/icons.registry.tsx`, `tests/Icon.test.tsx`, `CLAUDE.md`
   - Taille : M
 
 ## Phase 2 : navigation

@@ -152,6 +152,14 @@ Set **Central**, style Line, coins 2px Medium (validé). La taille et l'épaisse
 
 Dans le code, on écrit toujours `<Icon size="sm">`, jamais une taille en pixels.
 
+> **Ajustement technique (tâche 4).** Le set Central n'a pas de trait réglable. Il existe seulement en variantes dessinées en 24 px avec un trait de 1, 1,5 ou 2 px. Le trait réellement affiché devient donc :
+> - `xs` : 1 px (variante trait 2) ;
+> - `sm` : 1,33 px (variante trait 2) ;
+> - `md` : 1,25 px (variante trait 1,5) ;
+> - `lg` : 1,5 px (variante trait 1,5).
+>
+> L'objectif est tenu : un poids visuel régulier, proche du trait du texte en 14 px.
+
 ## 8. Points à arbitrer
 
 1. **Base de 14 px** (Figma ÷ 1,44) : oui, ou option B à 13 px ?

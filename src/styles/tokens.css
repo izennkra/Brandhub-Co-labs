@@ -81,13 +81,11 @@
   --radius-md: 8px; /* groupes de contrôles, bouton Export, cartes */
   --radius-lg: 16px; /* grandes zones centrales */
 
-  /* ---------- Icônes : taille + trait affiché ---------- */
+  /* ---------- Icônes ----------
+   * Le trait n'est pas un token : Icon.tsx choisit la variante Central (trait 1,5 ou 2)
+   * adaptée à chaque taille. */
   --icon-xs: 12px; /* chevrons, croix, « + » */
-  --icon-xs-stroke: 1.25px;
   --icon-sm: 16px; /* menu, onglets, champs */
-  --icon-sm-stroke: 1.5px;
   --icon-md: 20px; /* boutons icône seule */
-  --icon-md-stroke: 1.5px;
   --icon-lg: 24px; /* actions mises en avant */
-  --icon-lg-stroke: 1.5px;
 }
