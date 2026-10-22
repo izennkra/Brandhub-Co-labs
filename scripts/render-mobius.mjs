@@ -27,8 +27,8 @@ const dataUrl = await page.evaluate((SIZE) => {
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 100);
-  camera.position.set(0, 4.6, 13.5);
-  camera.lookAt(0, -0.1, 0);
+  camera.position.set(0, 10.5, 8.2);
+  camera.lookAt(0, 0, 0.15);
 
   // Ruban : un huit couché (lemniscate de Bernoulli) ; au croisement, un brin passe au-dessus de
   // l'autre. La largeur reste dressée sur les boucles et fait un demi-tour au croisement (Möbius).
@@ -39,7 +39,7 @@ const dataUrl = await page.evaluate((SIZE) => {
     const s = Math.sin(t),
       c = Math.cos(t),
       d = 1 + s * s;
-    return new THREE.Vector3((A * c) / d, 0.32 * s, (A * s * c) / d);
+    return new THREE.Vector3((-A * c) / d, 0.32 * s, (A * s * c) / d); // croisement en « / »
   };
   const smooth = (e0, e1, x) => {
     const k = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
@@ -56,7 +56,7 @@ const dataUrl = await page.evaluate((SIZE) => {
       .normalize();
     const side = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
     const vertical = new THREE.Vector3().crossVectors(side, tangent).normalize();
-    const angle = Math.PI * smooth(Math.PI / 2 - 0.65, Math.PI / 2 + 0.65, t);
+    const angle = Math.PI * smooth(Math.PI / 2 - 1.05, Math.PI / 2 + 1.05, t);
     const width = vertical.multiplyScalar(Math.cos(angle)).add(side.multiplyScalar(Math.sin(angle)));
     for (const k of [-1, 1]) {
       const q = p.clone().addScaledVector(width, (k * W) / 2);
@@ -89,15 +89,15 @@ const dataUrl = await page.evaluate((SIZE) => {
       vec3 studio(vec3 d){
         float y = d.y;
         float az = atan(d.z, d.x);
-        vec3 col = mix(vec3(0.07), vec3(0.5), smoothstep(-0.9, 0.7, y));
+        vec3 col = mix(vec3(0.05), vec3(0.3), smoothstep(-1.0, 0.7, y));
         // panneaux lumineux tout autour (boîtes à lumière) : le ruban passe du sombre au clair
         float p = 0.0;
         p += 1.4 * exp(-pow((az - 0.6) * 2.2, 2.0));
         p += 0.9 * exp(-pow((az + 1.9) * 2.6, 2.0));
         p += 1.1 * exp(-pow((az - 2.6) * 2.4, 2.0));
         p += 0.6 * exp(-pow((az + 0.5) * 3.0, 2.0));
-        col += vec3(p * 0.95) * smoothstep(-0.75, -0.1, y) * (1.0 - smoothstep(0.6, 0.9, y));
-        col += vec3(1.0) * smoothstep(0.7, 0.95, y);
+        col += vec3(p * 0.85) * smoothstep(-1.3, -0.7, y) * (1.0 - smoothstep(0.6, 0.9, y));
+        col += vec3(0.45) * smoothstep(0.75, 0.98, y);
         return col;
       }
       void main(){
@@ -107,12 +107,12 @@ const dataUrl = await page.evaluate((SIZE) => {
         vec3 r = reflect(v, n);
         vec3 col = studio(r) * vec3(0.86, 0.88, 0.91);
         // léger brossé : stries le long du ruban
-        col *= 0.975 + 0.025 * sin(vW.y * 220.0);
+        col *= 0.985 + 0.015 * sin(vAcross * 40.0);
         col = col / (col + vec3(0.55)) * 1.42;
         // métal clair, jamais blanc pur, et un fin liseré sombre sur les bords du ruban :
         // la forme reste lisible une fois traduite en pastilles
-        col = mix(vec3(0.22), vec3(0.86), clamp(col, 0.0, 1.0));
-        col *= 1.0 - 0.55 * smoothstep(0.86, 1.0, abs(vAcross));
+        col = mix(vec3(0.1), vec3(0.92), clamp(col, 0.0, 1.0));
+        col *= 1.0 - 0.3 * smoothstep(0.88, 1.0, abs(vAcross));
         gl_FragColor = vec4(pow(clamp(col, 0.0, 1.0), vec3(1.0 / 1.1)), 1.0);
       }`,
     uniforms: { uCam: { value: camera.position } },
