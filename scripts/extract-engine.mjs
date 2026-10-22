@@ -76,6 +76,10 @@ const EXPORTS = [
   'buildImageSets',
   'imgLoopDur',
   'loopList',
+  // Layout editor : rendu d'un calque de motif dans son cadre (moteur multi-calques, ligne 2561)
+  'renderLayerTo',
+  'settingsGet',
+  'settingsSet',
 ];
 
 // Variables du bloc que la couche d'adaptation doit pouvoir réaffecter, comme le faisait

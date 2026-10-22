@@ -9,6 +9,7 @@ export type EditorSection = { title: string; open?: boolean };
 
 export type ToolPageDef = NavPage & {
   engine?: 'motif' | 'illustration'; // page affichant le moteur de patterns dans la zone centrale
+  layout?: boolean; // Layout editor : un frame et ses calques, avec son propre panneau
   pending: string; // texte d'attente, tant que la page n'a pas son contenu
   editorSections: EditorSection[]; // dans l'ordre du Figma
 };
@@ -60,7 +61,8 @@ export const TOOL_PAGES: ToolPageDef[] = [
     path: '/outils/layout-editor',
     label: 'Layout editor',
     icon: 'bezier',
-    pending: 'Le Layout editor arrive avec la partie layout-editor.',
+    layout: true,
+    pending: 'Chargement du Layout editor…',
     editorSections: [
       { title: 'Layout', open: true },
       { title: 'Format' },

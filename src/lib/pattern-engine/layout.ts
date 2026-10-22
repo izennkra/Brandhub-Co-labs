@@ -1,0 +1,282 @@
+// Layout editor côté moteur : le mode « Design libre » du prototype (lignes 3604 à 4365), réduit à
+// un frame. Le moteur dessine chaque calque de motif avec son propre état (renderLayerTo, ligne 2608) ;
+// on lui prête les réglages du calque choisi (setLive, ligne 3688), puis on rend ceux de l'outil.
+import type { LayoutDoc, PatternLayer } from '../layout/doc';
+import { EXPORT_FMTS } from './export-options';
+import { pickVideoMime, saveFile } from './exporter';
+import type { EngineLayer, EngineSettings, PrototypeEngine } from './prototype-engine.js';
+
+/** Échelles de l'export d'un frame (dock du Design libre, ligne 4371). */
+export const LAYOUT_SCALES = [1, 2, 3] as const;
+
+type Gate = { setActive: (active: boolean) => void };
+export type LayoutTick = (dt: number, now: number) => void;
+
+// Copie sans lien avec l'original ; les ensembles (pastilles) deviennent des tableaux.
+const clone = (o: unknown) =>
+  JSON.parse(JSON.stringify(o, (_k, v: unknown) => (v instanceof Set ? [...v] : v))) as EngineSettings;
+
+const fileSlug = (name: string) =>
+  name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'frame';
+
+// imgEl (ligne 4303) : images des calques, chargées une fois.
+const images = new Map<string, HTMLImageElement>();
+function imageOf(src: string) {
+  let img = images.get(src);
+  if (!img) {
+    img = new Image();
+    img.src = src;
+    images.set(src, img);
+  }
+  return img;
+}
+
+export function createLayoutBridge(
+  core: PrototypeEngine,
+  dl: { live: EngineLayer | null },
+  libre: { tick: LayoutTick | null },
+  gate: Gate,
+  toast: (message: string) => void,
+  syncAll: () => void,
+) {
+  let main: EngineSettings | null = null; // réglages de l'outil, rendus en sortant
+  let exporting = false;
+  let busy = false;
+
+  // composeFrame (ligne 4304) : fond, puis chaque calque à sa place, tourné, à l'échelle sc.
+  async function compose(
+    doc: LayoutDoc,
+    sc: number,
+    dt: number,
+    ctx: CanvasRenderingContext2D,
+    fill: boolean,
+  ) {
+    const tmp = new Map<string, HTMLCanvasElement>();
+    const W = Math.round(doc.w * sc),
+      H = Math.round(doc.h * sc);
+    ctx.clearRect(0, 0, W, H);
+    if (fill && doc.fill) {
+      ctx.fillStyle = core.HEX[doc.fill];
+      ctx.fillRect(0, 0, W, H);
+    }
+    ctx.save();
+    if (doc.clip) {
+      ctx.beginPath();
+      ctx.rect(0, 0, W, H);
+      ctx.clip();
+    }
+    for (const L of doc.layers) {
+      if (L.hidden) continue;
+      ctx.save();
+      ctx.translate((L.x + L.w / 2) * sc, (L.y + L.h / 2) * sc);
+      ctx.rotate(((L.r || 0) * Math.PI) / 180);
+      const dw = L.w * sc,
+        dh = L.h * sc;
+      if (L.type === 'image') {
+        const img = imageOf(L.src);
+        if (!img.complete) await new Promise((r) => ((img.onload = r), (img.onerror = r)));
+        ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+      } else {
+        const cap = core.renderer.capabilities.maxTextureSize;
+        const k = Math.min(1, cap / Math.max(dw, dh));
+        const t = tmp.get(L.id) ?? document.createElement('canvas');
+        tmp.set(L.id, t);
+        t.width = Math.max(2, Math.round(dw * k));
+        t.height = Math.max(2, Math.round(dh * k));
+        core.renderLayerTo(L, L === dl.live, t.width, t.height, dt, t.getContext('2d')!);
+        ctx.drawImage(t, -dw / 2, -dh / 2, dw, dh);
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // Pendant un export, l'aperçu s'arrête ; ensuite tous les calques sont redessinés.
+  async function run<T>(doc: LayoutDoc, task: () => Promise<T>) {
+    if (busy) return null;
+    busy = exporting = true;
+    syncAll();
+    try {
+      return await task();
+    } catch (error) {
+      console.error(error);
+      toast('L’export n’a pas abouti. Réessaie avec une taille plus petite.');
+      return null;
+    } finally {
+      busy = exporting = false;
+      for (const L of doc.layers) if (L.type === 'pattern') L.dirty = true;
+      syncAll();
+    }
+  }
+
+  async function canvasOf(doc: LayoutDoc, sc: number, transparent: boolean, opaque: boolean) {
+    const c = document.createElement('canvas');
+    c.width = Math.round(doc.w * sc);
+    c.height = Math.round(doc.h * sc);
+    const ctx = c.getContext('2d')!;
+    ctx.imageSmoothingQuality = 'high';
+    if (opaque && (transparent || !doc.fill)) {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, c.width, c.height);
+    }
+    await compose(doc, sc, 0, ctx, !transparent);
+    return c;
+  }
+
+  const bridge = {
+    get busy() {
+      return busy;
+    },
+    get exporting() {
+      return exporting;
+    },
+    get live() {
+      return dl.live;
+    },
+    get maxTexture() {
+      return core.renderer.capabilities.maxTextureSize as number;
+    },
+    palette: core.PALETTE,
+    hex: core.HEX,
+
+    /** Entrée dans le Layout editor : le moteur passe en mode « libre » et appelle tick à chaque image. */
+    enter(tick: LayoutTick) {
+      main ??= core.settingsGet();
+      core.S.app = 'libre';
+      libre.tick = tick;
+      gate.setActive(true);
+    },
+    /** Sortie : l'outil retrouve ses réglages. */
+    leave() {
+      bridge.setLive(null);
+      libre.tick = null;
+      gate.setActive(false);
+      if (main) {
+        core.settingsSet(main);
+        main = null;
+        core.refreshColors();
+        syncAll();
+      }
+    },
+    /** Calque de motif réglé dans le panneau (ses réglages passent dans S), ou aucun. */
+    setLive(L: PatternLayer | null) {
+      if (dl.live === L) return;
+      if (dl.live) dl.live.settings = core.settingsGet();
+      dl.live = L;
+      if (L) {
+        core.settingsSet(L.settings);
+        core.S.app = 'libre';
+        core.refreshColors();
+      }
+      syncAll();
+    },
+    /** Range les réglages du calque en cours d'édition dans le calque (avant d'enregistrer). */
+    syncLive() {
+      if (dl.live) dl.live.settings = core.settingsGet();
+    },
+    /** Réglages d'un nouveau calque : ceux de l'outil (Motif ou Illustration) tels que laissés. */
+    baseSettings(app: 'motif' | 'image') {
+      const m = main ?? core.settingsGet();
+      const own = m.app === app;
+      const stash = app === 'image' ? core.imageStash : core.motifStash;
+      const fallback =
+        app === 'image'
+          ? core.IMAGE_DEFAULTS
+          : Object.fromEntries(core.IMG_KEYS.map((k) => [k, core.MEMBRANE_BASE[k]]));
+      const settings = own ? clone(m) : Object.assign(clone(m), clone(stash ?? fallback));
+      delete settings._wr;
+      return Object.assign(settings, { app, paused: false });
+    },
+    render(L: PatternLayer, canvas: HTMLCanvasElement, dt: number) {
+      // trame de l'image à recalculer pendant le réglage (libreTick, ligne 3784)
+      if (L === dl.live && core.imgDirty && L.eng) {
+        (L.eng as { imgDirty: boolean }).imgDirty = true;
+        core.imgDirty = false;
+      }
+      core.renderLayerTo(L, L === dl.live, canvas.width, canvas.height, dt, canvas.getContext('2d')!);
+    },
+
+    // exportFrameImage (ligne 4324)
+    exportImage(doc: LayoutDoc, scale: number, fmt: number, transparent: boolean) {
+      const sc = LAYOUT_SCALES[scale] ?? 1;
+      const [label, ext, type] = EXPORT_FMTS[fmt] ?? EXPORT_FMTS[0];
+      if (Math.max(doc.w, doc.h) * sc > bridge.maxTexture * 1.5) {
+        toast('Taille trop grande pour cet appareil : choisis une échelle plus petite.');
+        return Promise.resolve(null);
+      }
+      return run(doc, async () => {
+        const c = await canvasOf(doc, sc, transparent, ext === 'jpg');
+        let blob = await new Promise<Blob | null>((r) => c.toBlob(r, type, ext === 'png' ? undefined : 0.92));
+        let real: string = ext;
+        if (!blob || (ext === 'webp' && blob.type !== 'image/webp')) {
+          blob = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/png'));
+          real = 'png';
+        }
+        if (!blob) throw new Error('image vide');
+        await saveFile(`brand-hub-co-labs-${fileSlug(doc.name)}-${c.width}x${c.height}.${real}`, blob);
+        toast(`${label} ${c.width}×${c.height} · ${(blob.size / 1048576).toFixed(1)} Mo`);
+      });
+    },
+
+    // exportFrameVideo (ligne 4341) : les motifs animés du frame, 1920 px de côté au plus.
+    exportVideo(doc: LayoutDoc, seconds: number) {
+      const mime = pickVideoMime();
+      if (!mime) {
+        toast('La vidéo n’est pas disponible dans ce navigateur.');
+        return Promise.resolve(null);
+      }
+      return run(doc, async () => {
+        const sc = Math.min(1, 1920 / Math.max(doc.w, doc.h));
+        const c = document.createElement('canvas');
+        c.width = Math.round((doc.w * sc) / 2) * 2;
+        c.height = Math.round((doc.h * sc) / 2) * 2;
+        const ctx = c.getContext('2d')!;
+        const rec = new MediaRecorder(c.captureStream(30), {
+          mimeType: mime,
+          videoBitsPerSecond: Math.round(Math.min(40e6, Math.max(12e6, c.width * c.height * 10))),
+        });
+        const chunks: Blob[] = [];
+        rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+        const done = new Promise((r) => (rec.onstop = r));
+        const fps = 30,
+          total = Math.round(seconds * fps);
+        rec.start();
+        for (let i = 0; i < total; i++) {
+          const t0 = performance.now();
+          if (doc.fill) {
+            ctx.fillStyle = core.HEX[doc.fill];
+            ctx.fillRect(0, 0, c.width, c.height);
+          }
+          await compose(doc, sc, 1 / fps, ctx, true);
+          if (i % fps === 0) toast(`Enregistrement… ${Math.round(i / fps)} / ${seconds} s`);
+          await new Promise((r) => setTimeout(r, Math.max(0, 1000 / fps - (performance.now() - t0))));
+        }
+        rec.stop();
+        await done;
+        const mp4 = mime.startsWith('video/mp4');
+        await saveFile(
+          `brand-hub-co-labs-${fileSlug(doc.name)}.${mp4 ? 'mp4' : 'webm'}`,
+          new Blob(chunks, { type: mp4 ? 'video/mp4' : 'video/webm' }),
+        );
+      });
+    },
+
+    /** Aperçu PNG du frame (Patterns prédéfinis), 1600 px de côté au plus. */
+    preview(doc: LayoutDoc) {
+      return run(doc, async () => {
+        const c = await canvasOf(doc, Math.min(1, 1600 / Math.max(doc.w, doc.h)), false, false);
+        const blob = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/png'));
+        if (!blob) throw new Error('aperçu vide');
+        return blob;
+      });
+    },
+  };
+  return bridge;
+}
+
+export type LayoutBridge = ReturnType<typeof createLayoutBridge>;

@@ -78,11 +78,51 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
       toggleDefault: () => {},
       remove: async () => {},
     },
+    // Layout editor : le frame est exporté tel quel, les calques ne sont pas dessinés (pas de WebGL).
+    layout: {
+      busy: false,
+      exporting: false,
+      live: null as unknown,
+      maxTexture: 4096,
+      palette: PALETTE,
+      hex: Object.fromEntries(PALETTE.map((p) => [p.id, p.hex])),
+      enter: () => {},
+      leave: () => {},
+      setLive(layer: unknown) {
+        this.live = layer;
+      },
+      syncLive: () => {},
+      baseSettings: (app: string) => ({ app }),
+      render: () => {},
+      exportImage: async (doc: { w: number; h: number }, scale: number, fmt: number) => {
+        S.layoutExport = { w: doc.w, h: doc.h, scale, fmt };
+      },
+      exportVideo: async (_doc: unknown, seconds: number) => {
+        S.layoutVideo = seconds;
+      },
+      preview: async () => new Blob(),
+    },
     attach: (host: HTMLElement) => host.append(canvas),
     detach: (host: HTMLElement) => canvas.parentElement === host && canvas.remove(),
   };
   return { ...actual, getEngine: () => Promise.resolve(fakeEngine) };
 });
+
+// jsdom ne connaît pas ResizeObserver (scène du Layout editor) : une taille d'écran fixe.
+globalThis.ResizeObserver ??= class {
+  callback: ResizeObserverCallback;
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+  }
+  observe(target: Element) {
+    this.callback(
+      [{ target, contentRect: { width: 1000, height: 800 } } as unknown as ResizeObserverEntry],
+      this as unknown as ResizeObserver,
+    );
+  }
+  unobserve() {}
+  disconnect() {}
+};
 
 // jsdom ne connaît pas matchMedia : on simule la largeur d'écran (large par défaut).
 let narrowScreen = false;

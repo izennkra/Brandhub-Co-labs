@@ -35,7 +35,9 @@ export const routes: RouteObject[] = [
         element: <ToolLayout />,
         children: TOOL_PAGES.map((page) => ({
           path: toRoute(page.path),
-          element: <ToolPage title={page.label} pending={page.pending} engine={page.engine} />,
+          element: (
+            <ToolPage title={page.label} pending={page.pending} engine={page.engine} layout={page.layout} />
+          ),
         })),
       },
       {

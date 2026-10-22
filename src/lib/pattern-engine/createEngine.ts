@@ -5,6 +5,7 @@ import geistLatinUrl from '@fontsource-variable/geist/files/geist-latin-wght-nor
 import * as THREE from 'three';
 import type { ControlEffect } from './controls';
 import { createExporter } from './exporter';
+import { createLayoutBridge, type LayoutTick } from './layout';
 import { createPresets } from './presets';
 import {
   runPrototypeEngine,
@@ -40,6 +41,9 @@ export function createAnimationGate(schedule: (callback: FrameRequestCallback) =
 
 type AnimationGate = ReturnType<typeof createAnimationGate>;
 
+// Image suivante du Layout editor : fournie par la scène quand la page est ouverte.
+export const libre: { tick: LayoutTick | null } = { tick: null };
+
 export function buildEnv(gate: AnimationGate): EngineEnv {
   const syncers: Array<() => void> = [];
   return {
@@ -49,9 +53,9 @@ export function buildEnv(gate: AnimationGate): EngineEnv {
     onLibraryChanged: () => engineEvents.dispatchEvent(new Event('library')),
     recState: null,
     requestAnimationFrame: gate.requestAnimationFrame,
-    DL: undefined,
-    dlApplyView: undefined,
-    libreTick: undefined,
+    DL: { live: null },
+    dlApplyView: () => undefined, // la scène du Layout editor se recadre seule (ResizeObserver)
+    libreTick: (dt, now) => libre.tick?.(dt, now),
   };
 }
 
@@ -358,6 +362,8 @@ export type Engine = {
   /** Export du motif : image, SVG, vidéo, Figma (bloc Export du panneau). */
   exporter: ReturnType<typeof createExporter>;
   canvas: HTMLCanvasElement;
+  /** Layout editor : calques de motif dans un frame, export du frame. */
+  layout: ReturnType<typeof createLayoutBridge>;
   /** Événements du moteur : toast (message), settings (réglages), library (images), presets. */
   events: EventTarget;
   /** Affiche la scène dans `host` (zone centrale) et relance l'animation. */
@@ -403,6 +409,7 @@ async function createEngine(): Promise<Engine> {
   );
 
   const exporter = createExporter(core, env.toast, syncAll);
+  const layout = createLayoutBridge(core, env.DL, libre, gate, env.toast, syncAll);
 
   // initPresets() : appelé au démarrage, comme à la fin du prototype (ligne 4411).
   void presets.init();
@@ -412,6 +419,7 @@ async function createEngine(): Promise<Engine> {
     actions,
     presets,
     exporter,
+    layout,
     canvas,
     events: engineEvents,
     attach(host) {

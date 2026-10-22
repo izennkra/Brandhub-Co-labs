@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { EDITOR_PANEL_ID, EditorPanel } from '../components/EditorPanel/EditorPanel';
 import { Icon } from '../components/Icon';
+import { LayoutPanel } from '../components/layout/LayoutPanel';
 import { TOOL_PAGES } from './navigation';
 import styles from './ToolLayout.module.css';
 
@@ -60,7 +61,8 @@ export function ToolLayout() {
           </button>
         )}
       </div>
-      {panelOpen && (
+      {panelOpen && page?.layout && <LayoutPanel onHide={togglePanel} toggleRef={panelToggle} />}
+      {panelOpen && !page?.layout && (
         <EditorPanel
           sections={page?.editorSections ?? []}
           engineMode={page?.engine}

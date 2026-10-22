@@ -5,7 +5,7 @@ import { Icon } from '../Icon';
 import styles from './ExportPanel.module.css';
 
 // Choix segmenté du bloc Export (Figma : groupe clair, choix actif sur fond taupe).
-function Choice({
+export function Choice({
   label,
   options,
   value,
@@ -33,7 +33,7 @@ function Choice({
   );
 }
 
-function Switch({
+export function Switch({
   label,
   checked,
   onChange,

@@ -10,10 +10,24 @@ export type EngineEnv = {
   onLibraryChanged: () => void;
   recState: unknown;
   requestAnimationFrame: (callback: FrameRequestCallback) => number;
-  // Design libre : sans effet tant que le moteur n'est pas en mode « libre ».
-  DL: undefined;
-  dlApplyView: undefined;
-  libreTick: undefined;
+  // Design libre (Layout editor) : utilisés seulement quand le moteur est en mode « libre ».
+  DL: { live: EngineLayer | null };
+  dlApplyView: () => void;
+  libreTick: (dt: number, now: number) => void;
+};
+
+// Calque de motif d'un layout (moteur multi-calques, prototype ligne 2561) : le moteur y range
+// son propre état (eng, cam) ; settings = réglages du calque, app = Motif ou Illustration.
+export type EngineLayer = {
+  app: 'motif' | 'image';
+  settings: EngineSettings;
+  imgIndex: number;
+  w: number;
+  cam?: unknown;
+  eng?: unknown;
+  dirty?: boolean;
+  zoom?: number;
+  pan?: [number, number];
 };
 
 // Image de l'Illustration (bibliothèque du moteur).
@@ -118,6 +132,18 @@ export type PrototypeEngine = {
   readonly buildImageSets: () => void;
   readonly imgLoopDur: () => number;
   readonly loopList: () => unknown[];
+  /** Dessine le calque L (pw × ph pixels) dans ctx ; live : ses réglages sont ceux de S. */
+  readonly renderLayerTo: (
+    L: EngineLayer,
+    live: boolean,
+    pw: number,
+    ph: number,
+    dt: number,
+    ctx: CanvasRenderingContext2D,
+  ) => void;
+  /** Copie des réglages S (les ensembles deviennent des tableaux). */
+  readonly settingsGet: () => EngineSettings;
+  readonly settingsSet: (settings: EngineSettings) => void;
   recState: EngineRecState | null;
   recording: boolean;
   drawP: number;

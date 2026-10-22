@@ -1,0 +1,228 @@
+/* Panneau du Layout editor : champs X / Y / W / H du Figma (gris, préfixe pâle), alignements, calques. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.number,
+.text,
+.select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-control-compact);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  color: var(--color-text-secondary);
+}
+
+.number:focus-within,
+.text:focus-within,
+.select:focus-within {
+  outline: var(--size-focus-ring) solid var(--color-focus);
+}
+
+.number input,
+.text input,
+.select select {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.aligns {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+}
+
+.iconButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-control-compact);
+  min-height: var(--size-control-compact);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--color-control-active);
+}
+
+.iconButton:disabled {
+  color: var(--color-text-disabled);
+  cursor: default;
+}
+
+.formats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--color-control-group);
+}
+
+.format {
+  min-height: var(--size-control-compact);
+  padding: 0 var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.format:hover,
+.format[aria-pressed='true'] {
+  background: var(--color-control-active);
+}
+
+/* calques : le frame, puis ses calques en retrait, du dessus vers le dessous */
+.layers {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layers li {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+}
+
+.child {
+  padding-left: var(--space-4);
+}
+
+.child[data-hidden] .layerName {
+  color: var(--color-text-secondary);
+}
+
+.layerName {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: var(--size-control-compact);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layerName span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layerName:hover {
+  background: var(--color-control);
+}
+
+/* calque choisi : orange pâle du Figma */
+.layerName[aria-pressed='true'] {
+  background: var(--color-selection);
+}
+
+.layerActions {
+  display: flex;
+  opacity: 0;
+}
+
+.layers li:hover .layerActions,
+.layers li:focus-within .layerActions {
+  opacity: 1;
+}
+
+.addRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.add {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--size-control-compact);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  color: var(--color-text);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.add:hover:not(:disabled) {
+  background: var(--color-control-active);
+}
+
+.add:disabled {
+  color: var(--color-text-secondary);
+  cursor: progress;
+}
+
+/* pas de fond : barre en travers */
+.none {
+  background: linear-gradient(
+    to top right,
+    var(--color-surface-raised) calc(50% - 1px),
+    var(--color-accent) 50%,
+    var(--color-surface-raised) calc(50% + 1px)
+  );
+}
+
+.hint {
+  color: var(--color-text-secondary);
+}
+
+.unlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fieldLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.input {
+  min-height: var(--size-control-compact);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}

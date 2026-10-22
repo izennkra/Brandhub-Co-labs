@@ -1,0 +1,388 @@
+import { useState, type ReactNode, type Ref } from 'react';
+import { layoutStore, useLayout, type Layer } from '../../lib/layout/doc';
+import { CONTROLS, isVisible } from '../../lib/pattern-engine/controls';
+import { LAYOUT_FORMATS } from '../../lib/resources/formats';
+import { formatName } from '../../lib/layout/doc';
+import { EDITOR_PANEL_ID } from '../EditorPanel/EditorPanel';
+import panel from '../EditorPanel/EditorPanel.module.css';
+import { EngineControls } from '../EditorPanel/EngineControls';
+import { PanelSection } from '../EditorPanel/PanelSection';
+import { useEngine } from '../EditorPanel/useEngine';
+import { ColorPicker } from '../engine/ColorPicker';
+import swatches from '../engine/ColorPicker.module.css';
+import { Toggle } from '../engine/Toggle';
+import { Icon, type IconName } from '../Icon';
+import { AddLayerButtons } from './AddLayerButtons';
+import { LayoutExport } from './LayoutExport';
+import styles from './LayoutPanel.module.css';
+
+// Panneau du Layout editor (Figma « Tool / Layout editor Motif ») : Layout, Format, Calques, Fill,
+// puis les réglages du motif choisi (Pastilles, Survol, Rotation, Couleurs) et le bloc Export.
+const ENGINE_SECTIONS = ['Pastilles', 'Survol', 'Rotation', 'Couleurs'];
+const ADVANCED_KEY = 'bhc.expert'; // même clé que l'Éditeur des autres outils
+
+const ALIGN: { edge: Parameters<typeof layoutStore.align>[1]; label: string; icon: IconName }[] = [
+  { edge: 'left', label: 'Aligner à gauche', icon: 'layout-align-left' },
+  { edge: 'center', label: 'Centrer horizontalement', icon: 'align-horizontal-center' },
+  { edge: 'right', label: 'Aligner à droite', icon: 'layout-align-right' },
+  { edge: 'top', label: 'Aligner en haut', icon: 'layout-align-top' },
+  { edge: 'middle', label: 'Centrer verticalement', icon: 'align-vertical-center' },
+  { edge: 'bottom', label: 'Aligner en bas', icon: 'layout-align-bottom' },
+];
+
+const layerIcon = (layer: Layer): IconName =>
+  layer.type === 'image' ? 'images1' : layer.app === 'image' ? 'circles-three' : 'circle-dashed';
+
+/** Champ numérique du Figma : préfixe (X, Y, W, H, °), Entrée ou sortie du champ pour valider. */
+function NumberField({
+  prefix,
+  label,
+  value,
+  onChange,
+}: {
+  prefix: ReactNode;
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    const n = Number((draft ?? '').replace(',', '.'));
+    if (draft !== null && draft.trim() !== '' && Number.isFinite(n)) onChange(n);
+    setDraft(null);
+  };
+  return (
+    <label className={styles.number}>
+      <span aria-hidden="true">{prefix}</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        aria-label={label}
+        value={draft ?? String(value)}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') commit();
+          if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            event.preventDefault();
+            onChange(value + (event.key === 'ArrowUp' ? 1 : -1) * (event.shiftKey ? 10 : 1));
+          }
+        }}
+      />
+    </label>
+  );
+}
+
+export function LayoutPanel({
+  onHide,
+  toggleRef,
+}: {
+  onHide: () => void;
+  toggleRef: Ref<HTMLButtonElement>;
+}) {
+  const engine = useEngine(true);
+  const { doc, selected, layer } = useLayout();
+  const [advanced, setAdvanced] = useState(() => {
+    try {
+      return localStorage.getItem(ADVANCED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const pattern = layer?.type === 'pattern' ? layer : null;
+  const live = pattern && engine?.layout.live === pattern ? pattern : null;
+  const mode = pattern?.app === 'image' ? 'illustration' : 'motif';
+  const controlsOf = (section: string) =>
+    engine && live
+      ? CONTROLS.filter(
+          (c) =>
+            c.section === section &&
+            (c.mode === 'both' || c.mode === mode) &&
+            (c.level === 'essential' || (advanced && c.level === 'advanced')) &&
+            isVisible(c, engine.core.S),
+        )
+      : [];
+
+  return (
+    <aside id={EDITOR_PANEL_ID} className={panel.panel} aria-label="Éditeur">
+      <button
+        ref={toggleRef}
+        type="button"
+        className={panel.header}
+        aria-expanded="true"
+        aria-controls={EDITOR_PANEL_ID}
+        title="Masquer l’éditeur (⌥ H)"
+        onClick={onHide}
+      >
+        <Icon name="sidebar-simple-right-wide" size="md" />
+        <span>Éditeur</span>
+      </button>
+
+      <div className={panel.sections}>
+        <PanelSection title="Layout" defaultOpen>
+          {layer ? (
+            <>
+              <div className={styles.grid}>
+                <NumberField
+                  prefix="X"
+                  label="Position X"
+                  value={layer.x}
+                  onChange={(x) => layoutStore.updateLayer(layer.id, { x })}
+                />
+                <NumberField
+                  prefix="Y"
+                  label="Position Y"
+                  value={layer.y}
+                  onChange={(y) => layoutStore.updateLayer(layer.id, { y })}
+                />
+                <NumberField
+                  prefix="W"
+                  label="Largeur"
+                  value={layer.w}
+                  onChange={(w) => layoutStore.updateLayer(layer.id, { w })}
+                />
+                <NumberField
+                  prefix="H"
+                  label="Hauteur"
+                  value={layer.h}
+                  onChange={(h) => layoutStore.updateLayer(layer.id, { h })}
+                />
+                <NumberField
+                  prefix="↻"
+                  label="Rotation en degrés"
+                  value={layer.r}
+                  onChange={(r) => layoutStore.updateLayer(layer.id, { r: ((r % 360) + 360) % 360 })}
+                />
+              </div>
+              <div className={styles.aligns} role="group" aria-label="Alignement dans le frame">
+                {ALIGN.map(({ edge, label, icon }) => (
+                  <button
+                    key={edge}
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label={label}
+                    title={label}
+                    onClick={() => layoutStore.align(layer.id, edge)}
+                  >
+                    <Icon name={icon} size="sm" />
+                  </button>
+                ))}
+              </div>
+              {pattern && (
+                <Toggle
+                  label="Animé"
+                  checked={pattern.anim}
+                  onChange={(anim) => layoutStore.updatePattern(pattern.id, { anim })}
+                />
+              )}
+              {pattern?.app === 'image' && engine && engine.actions.images().length > 1 && (
+                <label className={styles.select}>
+                  <span>Image</span>
+                  <select
+                    value={pattern.imgIndex}
+                    onChange={(event) =>
+                      layoutStore.updatePattern(pattern.id, { imgIndex: Number(event.target.value) })
+                    }
+                  >
+                    {engine.actions.images().map((image, index) => (
+                      <option key={index} value={index}>
+                        {image.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </>
+          ) : (
+            <>
+              <label className={styles.text}>
+                <span>Nom</span>
+                <input
+                  type="text"
+                  value={doc.name}
+                  onChange={(event) => layoutStore.setFrame({ name: event.target.value })}
+                  onBlur={(event) => !event.target.value.trim() && layoutStore.setFrame({ name: 'Frame 1' })}
+                />
+              </label>
+              <div className={styles.grid}>
+                <NumberField
+                  prefix="W"
+                  label="Largeur du frame"
+                  value={doc.w}
+                  onChange={(w) => layoutStore.resize(w, doc.h)}
+                />
+                <NumberField
+                  prefix="H"
+                  label="Hauteur du frame"
+                  value={doc.h}
+                  onChange={(h) => layoutStore.resize(doc.w, h)}
+                />
+              </div>
+            </>
+          )}
+          <Toggle
+            label="Rogner au frame"
+            checked={doc.clip}
+            onChange={(clip) => layoutStore.setFrame({ clip })}
+          />
+        </PanelSection>
+
+        <PanelSection title="Format" defaultOpen>
+          <div className={styles.formats} role="group" aria-label="Format du frame">
+            {LAYOUT_FORMATS.map((name) => (
+              <button
+                key={name}
+                type="button"
+                className={styles.format}
+                aria-pressed={formatName(doc) === name}
+                onClick={() => layoutStore.setFormat(name)}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </PanelSection>
+
+        <PanelSection title="Calques" defaultOpen>
+          <ul className={styles.layers} aria-label="Calques">
+            <li>
+              <button
+                type="button"
+                className={styles.layerName}
+                aria-pressed={selected === null}
+                onClick={() => layoutStore.select(null)}
+              >
+                <Icon name="dot-grid3x3" size="xs" />
+                <span>{doc.name}</span>
+              </button>
+            </li>
+            {[...doc.layers].reverse().map((l, i, list) => (
+              <li key={l.id} className={styles.child} data-hidden={l.hidden || undefined}>
+                <button
+                  type="button"
+                  className={styles.layerName}
+                  aria-pressed={selected === l.id}
+                  onClick={() => layoutStore.select(l.id)}
+                >
+                  <Icon name={layerIcon(l)} size="xs" />
+                  <span>{l.name}</span>
+                </button>
+                <span className={styles.layerActions}>
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label={`Monter ${l.name}`}
+                    disabled={i === 0}
+                    onClick={() => layoutStore.moveLayer(l.id, 1)}
+                  >
+                    <Icon name="arrow-up" size="xs" />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label={`Descendre ${l.name}`}
+                    disabled={i === list.length - 1}
+                    onClick={() => layoutStore.moveLayer(l.id, -1)}
+                  >
+                    <Icon name="arrow-down" size="xs" />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label={`${l.hidden ? 'Afficher' : 'Masquer'} ${l.name}`}
+                    aria-pressed={!l.hidden}
+                    onClick={() => layoutStore.updateLayer(l.id, { hidden: !l.hidden })}
+                  >
+                    <Icon name={l.hidden ? 'eye-slash' : 'eye-open'} size="xs" />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label={`Supprimer ${l.name}`}
+                    onClick={() => layoutStore.removeLayer(l.id)}
+                  >
+                    <Icon name="trash-can" size="xs" />
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <AddLayerButtons engine={engine} />
+        </PanelSection>
+
+        <PanelSection title="Fill">
+          {engine ? (
+            <div role="radiogroup" aria-label="Fond du frame" className={swatches.swatches}>
+              <label className={swatches.swatch} title="Aucun (transparent)">
+                <input
+                  type="radio"
+                  name="layout-fill"
+                  className={swatches.input}
+                  aria-label="Aucun (transparent)"
+                  checked={!doc.fill}
+                  onChange={() => layoutStore.setFrame({ fill: null })}
+                />
+                <span className={`${swatches.chip} ${swatches.square} ${styles.none}`} />
+              </label>
+              {engine.layout.palette.map((swatch) => (
+                <label key={swatch.id} className={swatches.swatch} title={swatch.name}>
+                  <input
+                    type="radio"
+                    name="layout-fill"
+                    className={swatches.input}
+                    aria-label={swatch.name}
+                    checked={doc.fill === swatch.id}
+                    onChange={() => layoutStore.setFrame({ fill: swatch.id })}
+                  />
+                  <span
+                    className={`${swatches.chip} ${swatches.square}`}
+                    style={{ '--swatch': swatch.hex } as React.CSSProperties}
+                  />
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p>Chargement…</p>
+          )}
+        </PanelSection>
+
+        {live && (
+          <Toggle
+            label="Réglage avancé"
+            checked={advanced}
+            onChange={(on) => {
+              setAdvanced(on);
+              try {
+                localStorage.setItem(ADVANCED_KEY, on ? '1' : '0');
+              } catch {
+                // le choix vaut pour cette visite
+              }
+            }}
+          />
+        )}
+        {ENGINE_SECTIONS.map((section) => (
+          <PanelSection key={section} title={section}>
+            {!engine || !live ? (
+              <p className={styles.hint}>Choisis un motif ou une illustration dans Calques pour le régler.</p>
+            ) : (
+              <>
+                {section === 'Couleurs' && (
+                  <ColorPicker
+                    palette={engine.core.PALETTE}
+                    background={String(engine.core.S.bg)}
+                    dots={engine.core.S.dots as Set<string>}
+                    onBackground={engine.actions.setBackground}
+                    onToggleDot={engine.actions.toggleDot}
+                  />
+                )}
+                <EngineControls engine={engine} controls={controlsOf(section)} />
+              </>
+            )}
+          </PanelSection>
+        ))}
+      </div>
+
+      <LayoutExport engine={engine} />
+    </aside>
+  );
+}
