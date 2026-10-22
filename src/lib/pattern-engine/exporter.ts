@@ -90,8 +90,55 @@ function downscale(src: HTMLCanvasElement, W: number, H: number) {
   return c;
 }
 
+// Le Motif s'exporte toujours en 16:9, quel que soit le format de l'écran (choix du porteur).
+export const MOTIF_RATIO = 16 / 9;
+
+/**
+ * Cadre d'export du Motif : 16:9 à la hauteur de la scène, centré sur elle. Le motif garde sa taille ;
+ * ce qui dépasse de l'écran sur les côtés (scène plus étroite que 16:9) se retrouve dans l'export.
+ */
+export function motifFrame(width: number, height: number) {
+  const w = Math.round(height * MOTIF_RATIO);
+  return { width: w, height, left: Math.round((width - w) / 2) };
+}
+
+// Prochaine image du moteur (100 ms au plus : un onglet caché n'en dessine pas).
+const nextFrame = () =>
+  new Promise((resolve) => {
+    requestAnimationFrame(resolve);
+    setTimeout(resolve, 100);
+  });
+
 export function createExporter(core: PrototypeEngine, toast: (message: string) => void, syncAll: () => void) {
   const S = core.S;
+
+  // Pendant un export du Motif, la scène passe en 16:9 (motifFrame) : le moteur la mesure à cette
+  // taille (resize), l'écran n'en montre que la partie visible, sans changer d'échelle.
+  async function inMotifFrame(fn: () => Promise<unknown>) {
+    const canvas = core.canvas as HTMLCanvasElement;
+    const host = canvas.parentElement;
+    if (S.app !== 'motif' || !host) return fn();
+    const frame = motifFrame(host.clientWidth, host.clientHeight);
+    const before = canvas.style.cssText;
+    Object.assign(canvas.style, {
+      position: 'absolute',
+      top: '0',
+      left: `${frame.left}px`,
+      width: `${frame.width}px`,
+      height: `${frame.height}px`,
+      maxWidth: 'none',
+    });
+    core.resize();
+    // une image du moteur à la nouvelle taille (infographie replacée)
+    await nextFrame();
+    await nextFrame();
+    try {
+      return await fn();
+    } finally {
+      canvas.style.cssText = before;
+      core.resize();
+    }
+  }
 
   // exportPNG (ligne 3332) : rendu de la scène à k fois sa taille, fond transparent.
   async function exportPNG(
@@ -519,7 +566,7 @@ export function createExporter(core: PrototypeEngine, toast: (message: string) =
     busy = true;
     syncAll();
     try {
-      await fn();
+      await inMotifFrame(fn);
     } catch (e) {
       console.error(e);
       toast('L’export a échoué : ' + ((e as Error)?.message || e));
