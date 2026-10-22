@@ -3,7 +3,8 @@ import { Icon } from '../Icon';
 import { useArmedDelete } from './imageHooks';
 import styles from './PresetList.module.css';
 
-export type PresetItem = { id: string; name: string; detail: string };
+// locked : préréglage de l'équipe, que seul le mode édition peut supprimer.
+export type PresetItem = { id: string; name: string; detail: string; locked?: boolean };
 
 // Section « Préréglages partagés » (prototype, lignes 2677 à 2745) : nom + Enregistrer, puis la liste
 // (appliquer, étoile = ouvert au démarrage sur cet appareil, retrait en deux temps) et une note.
@@ -90,18 +91,24 @@ export function PresetList({
                 >
                   <Icon name="star" size="sm" />
                 </button>
-                <button
-                  type="button"
-                  className={styles.icon}
-                  data-armed={armed}
-                  aria-label={
-                    armed ? `Confirmer la suppression de ${preset.name}` : `Supprimer ${preset.name}`
-                  }
-                  title="Supprimer pour tout le monde"
-                  onClick={() => remove.request(index)}
-                >
-                  {armed ? 'Supprimer ?' : <Icon name="cross-medium" size="xs" />}
-                </button>
+                {!preset.locked && (
+                  <button
+                    type="button"
+                    className={styles.icon}
+                    data-armed={armed}
+                    aria-label={
+                      armed ? `Confirmer la suppression de ${preset.name}` : `Supprimer ${preset.name}`
+                    }
+                    title={
+                      preset.id.startsWith('moi-')
+                        ? 'Supprimer de cet appareil'
+                        : 'Supprimer pour tout le monde'
+                    }
+                    onClick={() => remove.request(index)}
+                  >
+                    {armed ? 'Supprimer ?' : <Icon name="cross-medium" size="xs" />}
+                  </button>
+                )}
               </li>
             );
           })}

@@ -39,6 +39,9 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
       },
       images: () => [],
       pickImage: () => {},
+      saveIllustration: async () => {
+        S.savedIllustrations = Number(S.savedIllustrations ?? 0) + 1;
+      },
       moveImage: () => {},
       deleteImage: async () => {},
       toggleLoop: () => {},
@@ -77,6 +80,12 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
       apply: () => {},
       toggleDefault: () => {},
       remove: async () => {},
+      canRemove: () => true,
+    },
+    library: {
+      saveLabel: () => 'Enregistrer l’illustration',
+      note: () => 'Tes changements ne sont visibles que par toi, le temps de ta visite.',
+      isSaved: () => false,
     },
     // Layout editor : le frame est exporté tel quel, les calques ne sont pas dessinés (pas de WebGL).
     layout: {

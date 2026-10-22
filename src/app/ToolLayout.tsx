@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router';
 import { EDITOR_PANEL_ID, EditorPanel } from '../components/EditorPanel/EditorPanel';
 import { Icon } from '../components/Icon';
 import { LayoutPanel } from '../components/layout/LayoutPanel';
+import { restoreEditor } from '../lib/resources/editor';
 import { TOOL_PAGES } from './navigation';
 import styles from './ToolLayout.module.css';
 
@@ -14,6 +15,9 @@ export function ToolLayout() {
   const panelToggle = useRef<HTMLButtonElement>(null);
   const reopenButton = useRef<HTMLButtonElement>(null);
   const toggledByUser = useRef(false);
+
+  // Mode édition ouvert dans cet onglet (page rechargée) : il vaut aussi pour les outils.
+  useEffect(restoreEditor, []);
 
   const togglePanel = useCallback(() => {
     toggledByUser.current = true;

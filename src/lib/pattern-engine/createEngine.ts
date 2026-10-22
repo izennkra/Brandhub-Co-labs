@@ -3,9 +3,12 @@
 // Cette couche lui fournit ce que le reste du prototype lui donnait, puis expose une API à l'appli.
 import geistLatinUrl from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
 import * as THREE from 'three';
+import { isEditorUnlocked } from '../resources/editor';
+import { getStore } from '../store/store';
 import type { ControlEffect } from './controls';
 import { createExporter } from './exporter';
 import { createLayoutBridge, type LayoutTick } from './layout';
+import { createLibrary, type Library } from './library';
 import { createPresets } from './presets';
 import {
   runPrototypeEngine,
@@ -121,7 +124,13 @@ export type Shape = 0 | 1 | 2 | 3; // Nœud, Ample, Simple, Hasard
 
 // Actions de l'interface du prototype, reprises à l'identique pour la partie moteur
 // (la mise à jour des boutons du prototype, elle, est remplacée par le panneau Éditeur).
-function createActions(core: PrototypeEngine, syncAll: () => void, toast: (message: string) => void) {
+// La bibliothèque d'illustrations (library.ts) est créée après les actions : on la lit au moment de l'appel.
+function createActions(
+  core: PrototypeEngine,
+  syncAll: () => void,
+  toast: (message: string) => void,
+  library: () => Library,
+) {
   const newSeed = () => {
     core.rng = core.mulberry32((Math.random() * 1e9) | 0);
   };
@@ -198,13 +207,14 @@ function createActions(core: PrototypeEngine, syncAll: () => void, toast: (messa
       core.regenerate();
     },
     // ---------- Images de l'Illustration (interface du prototype, lignes 2800 à 2890) ----------
-    /** Liste à afficher : nom, vignette, boucle, image choisie. */
+    /** Liste à afficher : nom, vignette, boucle, image choisie, enregistrée pour tous ou non. */
     images() {
       return core.imgList.map((image, index) => ({
         name: image.name,
         thumb: thumbnail(image),
         inLoop: image.inLoop !== false,
         selected: index === core.selImg,
+        saved: library().isSaved(index),
       }));
     },
     // loadTone (ligne 2802) : les curseurs de tons montrent ceux de l'image choisie.
@@ -238,10 +248,13 @@ function createActions(core: PrototypeEngine, syncAll: () => void, toast: (messa
       syncAll();
       actions.saveTone();
     },
-    // pick (ligne 2861).
+    // pick (ligne 2861) : l'illustration reprend aussi ses propres réglages (library.ts).
     pickImage(index: number) {
-      core.showImage(index);
-      actions.loadTone(index);
+      library().pick(index);
+    },
+    /** Bouton « Enregistrer l'illustration » : pour tous, avec tous ses réglages. */
+    saveIllustration() {
+      return library().save();
     },
     // moveImage (ligne 2836).
     moveImage(from: number, to: number) {
@@ -254,7 +267,7 @@ function createActions(core: PrototypeEngine, syncAll: () => void, toast: (messa
       const base = Date.now();
       list.forEach((image, i) => {
         image.t = base + i;
-        core.saveImageMeta(image);
+        library().persistMeta(image);
       });
       core.curImg = Math.max(0, list.indexOf(current));
       core.selImg = Math.max(0, list.indexOf(selected));
@@ -263,17 +276,9 @@ function createActions(core: PrototypeEngine, syncAll: () => void, toast: (messa
       syncAll();
     },
     // deleteImage (ligne 2845) ; la double confirmation est gérée par le panneau.
+    // Pour tous en mode édition, sinon pour cette visite seulement (library.ts).
     async deleteImage(index: number) {
-      const image = core.imgList[index];
-      if (!image) return;
-      if (image.id) {
-        try {
-          await core.Store.del('images', image.id);
-          await core.Store.del('imagesrc', image.id);
-        } catch {
-          // comme le prototype : l'image est retirée de la liste même si le stockage échoue
-        }
-      }
+      if (!(await library().remove(index))) return;
       core.imgList.splice(index, 1);
       if (!core.imgList.length) core.imgList = core.demoImages();
       core.curImg = Math.min(core.curImg, core.imgList.length - 1);
@@ -287,7 +292,7 @@ function createActions(core: PrototypeEngine, syncAll: () => void, toast: (messa
       const image = core.imgList[index];
       if (!image) return;
       image.inLoop = !(image.inLoop !== false);
-      core.saveImageMeta(image);
+      library().persistMeta(image);
       syncAll();
     },
     /** Ajout d'images (fichiers choisis ou déposés) : le moteur les lit, les enregistre et affiche la dernière. */
@@ -359,6 +364,8 @@ export type Engine = {
   actions: ReturnType<typeof createActions>;
   /** Préréglages partagés (section du panneau). */
   presets: ReturnType<typeof createPresets>;
+  /** Illustrations enregistrées pour tous, et changements de la visite. */
+  library: Library;
   /** Export du motif : image, SVG, vidéo, Figma (bloc Export du panneau). */
   exporter: ReturnType<typeof createExporter>;
   canvas: HTMLCanvasElement;
@@ -383,24 +390,42 @@ async function createEngine(): Promise<Engine> {
   // Démarrage repris de la fin du prototype (lignes 4405-4414), pour la partie moteur et dans le
   // même ordre : refreshColors() ; regenerate() ; resetView() ; loadLibrary() ;
   // requestAnimationFrame(frame). resize() est appelé quand la scène est placée dans la page.
+  // loadLibrary() passe par la bibliothèque (library.load), créée juste avant, sans attente entre les deux.
   core.refreshColors();
   core.regenerate();
   core.resetView();
-  void core.loadLibrary();
-  gate.requestAnimationFrame(core.frame);
 
   // Chaque mise à jour des réglages (par le moteur ou par le panneau) prévient l'appli.
   env.syncers.push(() => engineEvents.dispatchEvent(new Event('settings')));
 
   const syncAll = () => env.syncers.forEach((sync) => sync());
-  const actions = createActions(core, syncAll, env.toast);
-  const presets = createPresets(core, actions, syncAll, env.toast, () =>
-    engineEvents.dispatchEvent(new Event('presets')),
+  const store = getStore();
+  const actions = createActions(core, syncAll, env.toast, () => library);
+  const presets = createPresets(
+    core,
+    actions,
+    syncAll,
+    env.toast,
+    () => engineEvents.dispatchEvent(new Event('presets')),
+    { store, isEditor: isEditorUnlocked },
   );
-  // Le préréglage de démarrage d'un outil s'applique quand cet outil s'ouvre.
+  const library = createLibrary(core, store, {
+    snapshot: presets.snapshot,
+    apply: presets.applySnapshot,
+    loadTone: actions.loadTone,
+    isEditor: isEditorUnlocked,
+    toast: env.toast,
+    changed: syncAll,
+  });
+  void library.load();
+  gate.requestAnimationFrame(core.frame);
+
+  // Le préréglage de démarrage d'un outil s'applique quand cet outil s'ouvre, après les réglages
+  // propres à la première illustration.
   const setApp = actions.setApp;
   actions.setApp = (mode) => {
     setApp(mode);
+    library.onAppChanged();
     presets.onAppChanged();
   };
   // onLibraryChanged (ligne 2888) : bibliothèque d'images chargée ou modifiée par le moteur.
@@ -423,6 +448,7 @@ async function createEngine(): Promise<Engine> {
     core,
     actions,
     presets,
+    library,
     exporter,
     layout,
     canvas,

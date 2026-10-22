@@ -2,6 +2,7 @@ import { useState, type Ref } from 'react';
 import type { EditorSection, ToolPageDef } from '../../app/navigation';
 import { CONTROLS, isVisible, type Control } from '../../lib/pattern-engine/controls';
 import { fmtDate } from '../../lib/pattern-engine/presets';
+import { useEditor } from '../../lib/resources/editor';
 import { ColorPicker } from '../engine/ColorPicker';
 import { ImageList } from '../engine/ImageList';
 import { PresetList } from '../engine/PresetList';
@@ -57,6 +58,7 @@ export function EditorPanel({
 }) {
   const [advanced, setAdvanced] = useState(readAdvanced);
   const engine = useEngine(engineMode !== undefined);
+  useEditor(); // mode édition ouvert ou fermé : les textes et les droits changent
   const modeControls = CONTROLS.filter((c) => c.mode === engineMode || (engineMode && c.mode === 'both'));
   const shown = (control: Control) =>
     (control.level === 'essential' || (advanced && control.level === 'advanced')) &&
@@ -110,9 +112,12 @@ export function EditorPanel({
               <>
                 {presets && (
                   <PresetList
-                    presets={engine.presets
-                      .list()
-                      .map((p) => ({ id: p.id, name: p.name, detail: fmtDate(p) }))}
+                    presets={engine.presets.list().map((p) => ({
+                      id: p.id,
+                      name: p.name,
+                      detail: fmtDate(p),
+                      locked: !engine.presets.canRemove(p.id),
+                    }))}
                     defaultId={engine.presets.defaultId}
                     note={engine.presets.note()}
                     onSave={engine.presets.save}
@@ -127,6 +132,11 @@ export function EditorPanel({
                     onPick={engine.actions.pickImage}
                     onMove={engine.actions.moveImage}
                     onDelete={(index) => void engine.actions.deleteImage(index)}
+                    save={{
+                      label: engine.library.saveLabel(),
+                      note: engine.library.note(),
+                      onSave: engine.actions.saveIllustration,
+                    }}
                   />
                 )}
                 {colors && (

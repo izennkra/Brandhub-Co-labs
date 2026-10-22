@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 // Outils partagés par la liste d'images du panneau et le bandeau sous la scène.
-export type ImageItem = { name: string; thumb: string; inLoop: boolean; selected: boolean };
+// saved : enregistrée pour tous ; sinon, l'image ne vit que le temps de la visite.
+export type ImageItem = { name: string; thumb: string; inLoop: boolean; selected: boolean; saved?: boolean };
 
 // Retrait en deux temps, comme dans le prototype (deleteImage, ligne 2845) : le premier clic
 // demande confirmation pendant 3 secondes, le second retire l'image.

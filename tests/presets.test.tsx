@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PresetList } from '../src/components/engine/PresetList';
 import { createPresets, fmtDate, slugName } from '../src/lib/pattern-engine/presets';
 import type { PrototypeEngine } from '../src/lib/pattern-engine/prototype-engine.js';
+import { handleStore, memoryDb } from '../api/store';
 import { createStore } from '../src/lib/store/store';
 
 // Moteur simulé : réglages, vue et Store du navigateur (le module de l'appli, mêmes clés que le moteur).
@@ -174,6 +175,69 @@ describe('préréglages partagés (recopiés du prototype)', () => {
     expect(presets.note()).toBe('Chargement des préréglages…');
     await presets.init();
     expect(presets.note()).toMatch(/^Enregistrés dans ce navigateur seulement/);
+  });
+});
+
+describe('préréglages en ligne : partagés en mode édition, personnels sinon', () => {
+  const CODE = 'colabs-2026';
+  function online(editor: boolean) {
+    const db = memoryDb();
+    const store = createStore({
+      fetch: (input, init) => handleStore(new Request(`http://localhost${input}`, init), db, CODE),
+    });
+    if (editor) store.setEditorCode(CODE);
+    const core = {
+      S: { app: 'motif', variant: 2, qStruct: 1, dots: new Set(['orange']) },
+      orbit: { theta: 0, phi: 1, radius: 50 },
+      Store: store,
+      storeReady: Promise.resolve(),
+      mulberry32: () => () => 0.5,
+      regenerate: vi.fn(),
+      resetView: vi.fn(),
+      refreshColors: vi.fn(),
+    } as unknown as PrototypeEngine & { S: Record<string, unknown> };
+    const toasts: string[] = [];
+    const presets = createPresets(
+      core,
+      { setApp: vi.fn() },
+      () => {},
+      (m) => toasts.push(m),
+      () => {},
+      { store, isEditor: () => editor },
+    );
+    return { db, presets, toasts };
+  }
+
+  it('un visiteur garde ses préréglages dans son navigateur, sans toucher ceux de l’équipe', async () => {
+    localStorage.clear();
+    const { db, presets, toasts } = online(false);
+    await db.set('presets', 'equipe', { name: 'Équipe', t: 1, s: { app: 'motif' } });
+    await presets.init();
+    expect(presets.note()).toMatch(/Les tiens restent dans ce navigateur/);
+    expect(await presets.save('Perso')).toBe(true);
+    expect(toasts.at(-1)).toBe('Préréglage enregistré dans ce navigateur : Perso');
+    expect(await db.all('presets')).toEqual({ equipe: expect.anything() });
+    expect(JSON.parse(localStorage.getItem('bhc.mesPresets')!)[0]).toMatchObject({ name: 'Perso' });
+    expect(presets.list().map((p) => [p.name, Boolean(p.mine)])).toEqual([
+      ['Perso', true],
+      ['Équipe', false],
+    ]);
+    expect(presets.canRemove('equipe')).toBe(false);
+    await presets.remove('equipe');
+    expect(await db.get('presets', 'equipe')).not.toBeNull();
+    await presets.remove('moi-perso');
+    expect(presets.list().map((p) => p.name)).toEqual(['Équipe']);
+  });
+
+  it('en mode édition, le préréglage est partagé avec tous', async () => {
+    localStorage.clear();
+    const { db, presets } = online(true);
+    await presets.init();
+    expect(presets.note()).toMatch(/^Mode édition/);
+    expect(await presets.save('Équipe')).toBe(true);
+    expect(await db.get('presets', 'equipe')).toMatchObject({ name: 'Équipe' });
+    expect(localStorage.getItem('bhc.mesPresets')).toBeNull();
+    expect(presets.canRemove('equipe')).toBe(true);
   });
 });
 

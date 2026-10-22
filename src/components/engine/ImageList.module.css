@@ -62,3 +62,42 @@
   background: var(--color-control-active);
   color: var(--color-text);
 }
+
+/* image ajoutée pendant la visite, pas encore enregistrée pour tous */
+.tag {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.save {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.saveButton {
+  min-height: var(--size-control);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--color-control-active);
+}
+
+.saveButton:disabled {
+  color: var(--color-text-secondary);
+  cursor: default;
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
