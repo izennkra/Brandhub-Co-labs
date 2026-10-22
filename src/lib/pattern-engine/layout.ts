@@ -1,7 +1,7 @@
 // Layout editor côté moteur : le mode « Design libre » du prototype (lignes 3604 à 4365), réduit à
 // un frame. Le moteur dessine chaque calque de motif avec son propre état (renderLayerTo, ligne 2608) ;
 // on lui prête les réglages du calque choisi (setLive, ligne 3688), puis on rend ceux de l'outil.
-import type { LayoutDoc, PatternLayer, Shape } from '../layout/doc';
+import { RADIUS, type LayoutDoc, type PatternLayer, type Shape } from '../layout/doc';
 import { EXPORT_FMTS } from './export-options';
 import { pickVideoMime, saveFile } from './exporter';
 import type { EngineImage, EngineLayer, EngineSettings, PrototypeEngine } from './prototype-engine.js';
@@ -118,6 +118,8 @@ export function createLayoutBridge(
     const width = L.w,
       library = core.imgList,
       own = libraryFor(L);
+    // rotation 360° en boucle : un tour exact en L.spin secondes
+    if (L.spin > 0 && dt > 0 && L.cam) (L.cam as { theta: number }).theta += (dt * 2 * Math.PI) / L.spin;
     L.w = ref;
     if (own) core.imgList = own;
     try {
@@ -361,12 +363,14 @@ export function createLayoutBridge(
         pan0 = L.pan;
       const eng = L.eng as { imgTime: number } | undefined,
         time0 = eng?.imgTime;
-      const turns = settingOf(L, 'autoRotate') ? 8 : 1;
+      const turns = settingOf(L, 'autoRotate') || L.spin > 0 ? 8 : 1;
       const images = libraryFor(L)?.length ?? 1;
       const cycle = Number(settingOf(L, 'imgHold')) + Number(settingOf(L, 'imgTrans'));
       let shape: Shape | null = null;
       try {
-        for (let k = 1.8; k < 8 && !shape; k *= 2) {
+        // recul de la caméra pour voir toute la forme, dans la limite du moteur (180)
+        const kMax = RADIUS[1] / cam0.radius;
+        for (let k = Math.min(1.8, kMax); !shape; k = Math.min(k * 2, kMax)) {
           let box: Omit<Shape, 'k' | 'fov'> | null = null;
           for (let image = 0; image < images; image++)
             for (let turn = 0; turn < turns; turn++) {
@@ -386,9 +390,9 @@ export function createLayoutBridge(
                   : b;
             }
           if (!box) break;
-          // la forme touche le bord de la vue : on recule davantage
+          // la forme touche le bord de la vue : on recule davantage (sauf au recul maximal)
           const edge = 1 / size;
-          if (box.x0 > edge && box.y0 > edge && box.x1 < 1 - edge && box.y1 < 1 - edge)
+          if ((box.x0 > edge && box.y0 > edge && box.x1 < 1 - edge && box.y1 < 1 - edge) || k >= kMax)
             shape = { ...box, k, fov: Number(settingOf(L, 'fov')) || 35 };
         }
       } finally {

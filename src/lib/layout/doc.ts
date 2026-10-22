@@ -27,6 +27,8 @@ export type PatternLayer = Box &
     camScale: number;
     /** Boucle de l'illustration : images de la bibliothèque, dans l'ordre choisi. */
     loop: string[];
+    /** Rotation 360° en boucle : durée d'un tour en secondes ; 0 : pas de rotation. */
+    spin: number;
     /** Aperçu dessiné par le moteur (élément de la page). */
     _cv?: HTMLCanvasElement;
     _acc?: number;
@@ -53,7 +55,7 @@ export type LayoutDoc = {
 const newId = () => 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 export const emptyDoc = (): LayoutDoc => ({
-  name: 'Frame 1',
+  name: 'Visuel',
   w: LAYOUT_SIZES['9:16'][0],
   h: LAYOUT_SIZES['9:16'][1],
   fill: 'lin',
@@ -83,6 +85,8 @@ type Cam = { theta: number; phi: number; radius: number; tx: number; ty: number;
 const TOOL_HEIGHT = 900; // hauteur de la scène de l'outil (px) : les traits gardent leur épaisseur relative
 const HEADROOM = 1.5; // recul de la caméra à l'ajout : la forme peut tourner sans sortir de l'image
 const MARGIN = 1.03;
+/** Distance de caméra permise par le moteur (updateCamera, prototype ligne 1166). */
+export const RADIUS = [5, 180] as const;
 
 /**
  * Le calque prend la proportion de sa forme, et la caméra vise le centre de la forme.
@@ -122,17 +126,19 @@ export function fitToShape(
     keepH = h * pxPerView;
   const offset = [cx * pxPerView, cy * pxPerView];
 
-  // recul : de la marge pour tourner à l'ajout, et un zoom entre 1 et 8
+  // recul : de la marge pour tourner à l'ajout, et un zoom entre 1 et 8 ; le moteur garde la
+  // caméra entre 5 et 180 de distance
   let back = mode === 'cover' ? HEADROOM : 1;
   if (h / back > 1) back = h;
   if (h / back < 1 / 8) back = h * 8;
+  back = Math.min(Math.max(back, RADIUS[0] / cam.radius), RADIUS[1] / cam.radius);
   cam.radius *= back;
   L.camScale = (L.camScale || 1) * back;
   w /= back;
   h /= back;
   const aspect = w / h;
   L.cam = cam;
-  L.zoom = 1 / h;
+  L.zoom = Math.min(8, Math.max(1, 1 / h));
   L.pan = [0, 0];
 
   if (mode === 'cover') {
@@ -222,7 +228,7 @@ export const layoutStore = {
     emit();
   },
   /** Options d'un calque de motif : animé ou fixe, image de l'illustration, fond, boucle. */
-  updatePattern(id: string, patch: Partial<Pick<PatternLayer, 'anim' | 'imgIndex' | 'loop'>>) {
+  updatePattern(id: string, patch: Partial<Pick<PatternLayer, 'anim' | 'imgIndex' | 'loop' | 'spin'>>) {
     const layer = layoutStore.layer(id);
     if (layer?.type !== 'pattern') return;
     Object.assign(layer, patch, { dirty: true });
@@ -330,6 +336,7 @@ export function newPatternLayer(app: 'motif' | 'image', settings: EngineSettings
     ref: doc.w,
     camScale: 1,
     loop: [],
+    spin: 0,
     zoom: 1,
     pan: [0, 0],
   };

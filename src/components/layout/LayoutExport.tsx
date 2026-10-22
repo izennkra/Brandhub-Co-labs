@@ -22,6 +22,8 @@ export function LayoutExport({ engine }: { engine: Engine | null }) {
   const [seconds, setSeconds] = useState(8);
   const bodyId = useId();
   const busy = !engine || engine.layout.busy;
+  // rotation 360° en boucle : la vidéo boucle si elle dure un tour (ou plusieurs)
+  const spin = Math.max(0, ...doc.layers.map((l) => (l.type === 'pattern' && !l.hidden ? l.spin : 0)));
   const factor = [1, 2, 3][scale];
 
   return (
@@ -77,7 +79,10 @@ export function LayoutExport({ engine }: { engine: Engine | null }) {
                 s
               </span>
             </label>
-            <p className={styles.note}>Les motifs animés du frame, 1920 px de côté au plus.</p>
+            <p className={styles.note}>
+              Les motifs animés du frame, 1920 px de côté au plus.
+              {spin > 0 && ` Pour une boucle parfaite : ${spin} s (un tour complet).`}
+            </p>
           </>
         )}
 

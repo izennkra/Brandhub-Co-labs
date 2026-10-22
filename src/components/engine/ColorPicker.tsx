@@ -26,29 +26,31 @@ export function ColorPicker({
   const id = useId();
   return (
     <>
-      <div className={styles.row} hidden={!showBackground}>
-        <span id={`${id}-bg`} className={styles.label}>
-          Fond
-        </span>
-        <div role="radiogroup" aria-labelledby={`${id}-bg`} className={styles.swatches}>
-          {palette.map((swatch) => (
-            <label key={swatch.id} className={styles.swatch} title={swatch.name}>
-              <input
-                type="radio"
-                name={`${id}-bg`}
-                className={styles.input}
-                aria-label={swatch.name}
-                checked={background === swatch.id}
-                onChange={() => onBackground(swatch.id)}
-              />
-              <span
-                className={`${styles.chip} ${styles.square}`}
-                style={{ '--swatch': swatch.hex } as React.CSSProperties}
-              />
-            </label>
-          ))}
+      {showBackground && (
+        <div className={styles.row}>
+          <span id={`${id}-bg`} className={styles.label}>
+            Fond
+          </span>
+          <div role="radiogroup" aria-labelledby={`${id}-bg`} className={styles.swatches}>
+            {palette.map((swatch) => (
+              <label key={swatch.id} className={styles.swatch} title={swatch.name}>
+                <input
+                  type="radio"
+                  name={`${id}-bg`}
+                  className={styles.input}
+                  aria-label={swatch.name}
+                  checked={background === swatch.id}
+                  onChange={() => onBackground(swatch.id)}
+                />
+                <span
+                  className={`${styles.chip} ${styles.square}`}
+                  style={{ '--swatch': swatch.hex } as React.CSSProperties}
+                />
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <div className={styles.row}>
         <span id={`${id}-dots`} className={styles.label}>
           Pastilles

@@ -163,7 +163,7 @@ test('export du frame en PNG, à la taille du format', async ({ page }) => {
     page.waitForEvent('download', { timeout: 30000 }),
     page.getByRole('button', { name: 'Exporter', exact: true }).click(),
   ]);
-  expect(file.suggestedFilename()).toBe('brand-hub-co-labs-frame-1-2160x3840.png');
+  expect(file.suggestedFilename()).toBe('brand-hub-co-labs-visuel-2160x3840.png');
   const data = await readFile((await file.path())!);
   expect({ w: data.readUInt32BE(16), h: data.readUInt32BE(20) }).toEqual({ w: 2160, h: 3840 });
 });
@@ -220,4 +220,19 @@ test('export 3x : dessiné par morceaux, sans jamais saturer la carte graphique'
   await page.evaluate(() => ((window as Window & { __measure?: boolean }).__measure = false));
   // l'aperçu dessine toujours après l'export
   await expect.poll(() => drawn(page)).toBeGreaterThan(500);
+});
+
+test('rotation 360° en boucle : un tour exact dans la durée choisie, calque mesuré sur tout le tour', async ({
+  page,
+}) => {
+  await add(page, 'Illustration');
+  await page.getByText('Rotation 360° en boucle').click();
+  await expect(page.getByRole('slider', { name: 'Durée d’un tour' })).toHaveValue('12');
+  const t0 = await engine(page, (e) => e.layout.live?.cam?.theta ?? 0);
+  await page.waitForTimeout(2000);
+  const turned = (await engine(page, (e) => e.layout.live?.cam?.theta ?? 0)) - t0;
+  // 2 s sur un tour de 12 s : un sixième de tour (marge pour le rythme d'affichage)
+  expect(turned).toBeGreaterThan(((2 * Math.PI) / 6) * 0.7);
+  expect(turned).toBeLessThan(((2 * Math.PI) / 6) * 1.4);
+  await expect(page.getByRole('textbox', { name: 'Rotation en degrés' })).toHaveValue('0');
 });

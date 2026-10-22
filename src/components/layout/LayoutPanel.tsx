@@ -10,6 +10,7 @@ import { EngineControls } from '../EditorPanel/EngineControls';
 import { PanelSection } from '../EditorPanel/PanelSection';
 import { useEngine } from '../EditorPanel/useEngine';
 import { ColorPicker } from '../engine/ColorPicker';
+import { Slider } from '../engine/Slider';
 import swatches from '../engine/ColorPicker.module.css';
 import { Toggle } from '../engine/Toggle';
 import { Icon, type IconName } from '../Icon';
@@ -176,6 +177,25 @@ function PatternOptions({
         checked={layer.anim}
         onChange={(anim) => layoutStore.updatePattern(layer.id, { anim })}
       />
+      <Toggle
+        label="Rotation 360° en boucle"
+        checked={layer.spin > 0}
+        onChange={(on) => {
+          layoutStore.updatePattern(layer.id, { spin: on ? 12 : 0, anim: on || layer.anim });
+          refit(engine, layer); // le calque couvre la forme sur tout le tour
+        }}
+      />
+      {layer.spin > 0 && (
+        <Slider
+          label="Durée d’un tour"
+          min={2}
+          max={60}
+          step={1}
+          value={layer.spin}
+          format={(v) => `${v} s`}
+          onChange={(spin) => layoutStore.updatePattern(layer.id, { spin })}
+        />
+      )}
       <button
         type="button"
         className={styles.action}
@@ -336,7 +356,7 @@ export function LayoutPanel({
                   type="text"
                   value={doc.name}
                   onChange={(event) => layoutStore.setFrame({ name: event.target.value })}
-                  onBlur={(event) => !event.target.value.trim() && layoutStore.setFrame({ name: 'Frame 1' })}
+                  onBlur={(event) => !event.target.value.trim() && layoutStore.setFrame({ name: 'Visuel' })}
                 />
               </label>
               <div className={styles.grid}>

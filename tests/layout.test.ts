@@ -13,9 +13,24 @@ import { formatOf } from '../src/lib/resources/formats';
 beforeEach(() => layoutStore.reset(emptyDoc()));
 
 describe('Layout editor : le frame et ses calques', () => {
-  it('démarre en 9:16, 1080 × 1920, sans calque', () => {
+  it('démarre en 9:16, 1080 × 1920, sans calque, nommé « Visuel »', () => {
     const { doc } = layoutStore;
-    expect([doc.w, doc.h, formatName(doc), doc.layers.length]).toEqual([1080, 1920, '9:16', 0]);
+    expect([doc.name, doc.w, doc.h, formatName(doc), doc.layers.length]).toEqual([
+      'Visuel',
+      1080,
+      1920,
+      '9:16',
+      0,
+    ]);
+  });
+
+  it('le recul de la caméra reste dans la limite du moteur (180)', () => {
+    const layer = newPatternLayer('image', { app: 'image' });
+    layer.cam = { theta: 0, phi: Math.PI / 2, radius: 150, tx: 0, ty: 0, tz: 0 };
+    layoutStore.addLayer(layer);
+    layoutStore.fit(layer.id, { x0: 0.2, x1: 0.8, y0: 0.2, y1: 0.8, k: 1.2, fov: 35 }, 'cover');
+    expect((layer.cam as { radius: number }).radius).toBeLessThanOrEqual(180);
+    expect(layer.zoom).toBeGreaterThanOrEqual(1);
   });
 
   it('un motif remplit le frame et il le remplit encore après un changement de format', () => {
