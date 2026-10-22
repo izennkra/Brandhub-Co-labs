@@ -118,8 +118,8 @@ const ILLUSTRATION: Control[] = [
 const circ: Common = { section: 'Circulation', mode: 'motif', level: 'advanced' };
 const net: Common = { section: 'Réseau', mode: 'motif' };
 const vol: Common = { section: 'Volume', mode: 'motif' };
-const info: Common = { ...vol, sub: 'Infographie', level: 'advanced' };
-const trace: Common = { ...vol, sub: 'Tracé de la ligne', level: 'advanced' };
+const info: Common = { ...vol, sub: 'Infographie' };
+const trace: Common = { ...vol, sub: 'Forme de la ligne' };
 const particles: Common = { ...vol, sub: 'Particules', level: 'advanced' };
 const depth: Common = { ...vol, sub: 'Profondeur et relief', level: 'advanced' };
 const motion: Common = { ...vol, sub: 'Mouvement des particules', level: 'advanced' };
@@ -161,27 +161,33 @@ const MOTIF: Control[] = [
   slider(vol, 'lobeContrast', 'Contraste des tailles', 0, 1, 0.01, (v) =>
     v < 0.02 ? 'égales' : v.toFixed(2),
   ),
+  // Membrane et Ligne. Taille de la forme visible d'office (refonte validée le 22/10/2026) :
+  // Épaisseur = hauteur, Gonflement des renflements, Finesse des cols.
+  slider(vol, 'lobes', 'Renflements', 1, 12, 1, fx(0)),
+  slider(vol, 'lobeLen', 'Étirement des renflements', 2.5, 10, 0.1, fx(1), ADV),
+  slider(vol, 'tubeR', 'Épaisseur de la forme', 0.3, 6, 0.05, fx(2)),
+  slider(vol, 'junction', 'Épaisseur des renflements', 0.4, 2, 0.01, fx(2)),
+  slider(vol, 'thin', 'Finesse des cols', 0.02, 0.6, 0.01, fx(2)),
+  slider(vol, 'pinchSpeed', 'Vitesse des renflements', 0, 4, 0.05, unit(2, '×'), ADV),
+  // Ligne : longueur (largeur) et bouts, puis l'infographie
+  slider(trace, 'lineLen', 'Longueur de la ligne', 12, 400, 1, fx(0), line),
+  slider(trace, 'lineWave', 'Ondulation de la ligne', 0, 1, 0.01, fx(2), { ...line, ...ADV }),
+  slider(trace, 'lineFade', 'Fondu des extrémités', 0, 1, 0.01, (v) => (v < 0.01 ? 'net' : v.toFixed(2))),
+  toggle(info, 'lineLabels', 'Afficher l’infographie'),
   slider(info, 'dataContrast', 'Contraste des tailles', 0.3, 3, 0.01, (v) =>
     Math.abs(v - 1) < 0.01 ? 'proportionnel' : v.toFixed(2),
   ),
   slider(info, 'procMin', 'Taille de la première étape', 0.03, 0.9, 0.01, (v) => Math.round(v * 100) + ' %'),
-  slider(info, 'procCurve', 'Progression', 0.4, 3, 0.01, (v) =>
-    v < 0.95 ? 'rapide au début' : v > 1.05 ? 'rapide à la fin' : 'régulière',
-  ),
-  toggle(info, 'lineLabels', 'Afficher l’infographie'),
+  // trois rythmes nommés plutôt qu'un curseur aux valeurs en mots (refonte du 22/10/2026) ;
+  // « à la fin » = 1,3, la valeur de départ du moteur
+  choice(info, 'procCurve', 'Progression', [
+    ['au début', 0.75],
+    ['partout', 1],
+    ['à la fin', 1.3],
+  ]),
   slider(info, 'infoScale', 'Taille de l’infographie', 0.6, 2, 0.01, fx(2)),
   slider(info, 'infoGap', 'Écart de la légende', 0.5, 2.5, 0.01, fx(2)),
-  slider(trace, 'lineLen', 'Longueur de la ligne', 12, 400, 1, fx(0), line),
-  slider(trace, 'lineWave', 'Ondulation de la ligne', 0, 1, 0.01, fx(2), line),
-  slider(trace, 'lineFade', 'Fondu des extrémités', 0, 1, 0.01, (v) => (v < 0.01 ? 'net' : v.toFixed(2))),
-  // Membrane et Ligne
-  slider(vol, 'lobes', 'Renflements', 1, 12, 1, fx(0)),
-  slider(vol, 'lobeLen', 'Étirement des renflements', 2.5, 10, 0.1, fx(1), ADV),
-  slider(vol, 'junction', 'Épaisseur des renflements', 0.4, 2, 0.01, fx(2), ADV),
-  slider(vol, 'thin', 'Finesse des cols', 0.02, 0.6, 0.01, fx(2), ADV),
-  slider(vol, 'pinchSpeed', 'Vitesse des renflements', 0, 4, 0.05, unit(2, '×'), ADV),
   slider(particles, 'qCount', 'Particules', 2000, 120000, 1000, (v) => Math.round(v / 1000) + ' 000'),
-  slider(particles, 'tubeR', 'Épaisseur de la forme', 0.3, 6, 0.05, fx(2)),
   slider(particles, 'fill', 'Remplissage (surface → plein)', 0, 1, 0.01, fx(2)),
   slider(particles, 'neckDensity', 'Particules dans les cols', 0, 1, 0.01, fx(2)),
   slider(depth, 'relief', 'Effet de relief', 0, 4, 0.01, fx(2)),
@@ -233,6 +239,10 @@ const VISIBLE_WHEN: Record<string, (s: EngineSettings) => boolean> = {
   shapeMode: (s) => !isLine(s),
   lineMode: isLine,
   lobeContrast: (s) => isLine(s) && s.lineMode === 0,
+  // en Données et en Process, un renflement par valeur ou par étape : ces réglages n'y font rien
+  lobes: (s) => !(isLine(s) && Number(s.lineMode) >= 1),
+  lobeLen: (s) => !(isLine(s) && Number(s.lineMode) >= 1),
+  pinchSpeed: (s) => !(isLine(s) && Number(s.lineMode) >= 1),
   dataContrast: (s) => isLine(s) && s.lineMode === 1,
   procMin: (s) => isLine(s) && s.lineMode === 2,
   procCurve: (s) => isLine(s) && s.lineMode === 2,
@@ -265,9 +275,10 @@ const SHORT_LABELS: Record<string, string> = {
   dataContrast: 'Contraste',
   procMin: 'Taille de départ',
   infoScale: 'Échelle',
+  procCurve: 'Les étapes grandissent surtout',
   infoGap: 'Écart légende',
   lineLen: 'Longueur',
-  lineWave: 'Ondulation',
+  lineWave: 'Ondulation (profondeur)',
   lineFade: 'Fondu des bouts',
   lobeLen: 'Étirement',
   junction: 'Gonflement',

@@ -30,3 +30,16 @@ export const writeData = (rows: { value: string; text: string }[]) => ({
   lineData: rows.map((row) => row.value || '0').join(', '),
   lineTexts: rows.map((row) => row.text.replace(/\n/g, ' ')).join('\n'),
 });
+
+/** Étapes : titre libre (procTitles, vide = « Étape 01 ») et texte (procTexts), au moins deux. */
+export const readStepRows = (S: Record<string, unknown>) => {
+  const texts = readSteps(S.procTexts, S.procSteps);
+  const titles = String(S.procTitles ?? '').split('\n');
+  return texts.map((text, k) => ({ title: titles[k] ?? '', text }));
+};
+
+/** Réglages à écrire pour une liste d'étapes (titres et textes). */
+export const writeStepRows = (rows: { title: string; text: string }[]) => ({
+  ...writeSteps(rows.map((row) => row.text)),
+  procTitles: rows.map((row) => row.title.replace(/\n/g, ' ')).join('\n'),
+});

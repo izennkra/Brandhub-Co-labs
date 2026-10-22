@@ -49,7 +49,7 @@ export type EngineInfoItem = {
   y: number;
   text: string;
   topText: string;
-  top: { fs: number; fw: number; padX: number; h: number };
+  top: { fs: number; fw: number; padX: number; h: number; w: number };
   bot: { kind: 'card' | 'text'; w: number; padX: number; padY: number; fs: number; fw: number; lh: number };
 };
 export type EngineInfo = {

@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { slug } from '../resources/download';
 import { EXPORT_FMTS, EXPORT_SCALES } from './export-options';
+import { withTitles } from './infoTitles';
 import type { EngineRecState, PrototypeEngine } from './prototype-engine.js';
 
 // stamp (ligne 3330).
@@ -126,6 +127,8 @@ export function createExporter(
   },
 ) {
   const S = core.S;
+  // infographie avec les titres libres des étapes (infoTitles.ts)
+  const info = () => withTitles(core.lastInfo, S.procTitles);
 
   // Pendant un export du Motif, la scène passe en 16:9 (motifFrame) : le moteur la mesure à cette
   // taille (resize), l'écran n'en montre que la partie visible, sans changer d'échelle.
@@ -216,7 +219,7 @@ export function createExporter(
         row = W * 4;
       for (let y = 0; y < H; y++) img.data.set(buf.subarray((H - 1 - y) * row, (H - y) * row), y * row);
       ctx.putImageData(img, 0, 0);
-      if (core.lastInfo && withInfo !== false) core.drawInfoCanvas(ctx, core.lastInfo, k);
+      if (core.lastInfo && withInfo !== false) core.drawInfoCanvas(ctx, info()!, k);
       if (asCanvas) return cv;
       const blob = await new Promise<Blob | null>((r) => cv.toBlob(r, 'image/png'));
       if (blob) await saveFile(`brand-hub-co-labs-${stamp()}-x${k}.png`, blob);
@@ -436,7 +439,7 @@ export function createExporter(
       }
       out.push('</g>');
     }
-    if (core.lastInfo && !noInfo) out.push(core.infoSVG(core.lastInfo));
+    if (core.lastInfo && !noInfo) out.push(core.infoSVG(info()!));
     out.push('</svg>');
     return out.join('\n');
   }
@@ -540,7 +543,7 @@ export function createExporter(
       if (!cv) return;
       pattern = { type: 'png', data: cv.toDataURL('image/png').split(',')[1] };
     } else pattern = { type: 'svg', svg: buildSVG(false, null, true) };
-    const I = core.lastInfo,
+    const I = info(),
       items = [];
     if (I)
       for (const it of I.items) {

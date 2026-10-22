@@ -47,6 +47,12 @@ const IMAGES_SECTION = 'Images';
 const TONE_SECTION = 'Lumière et tons de l’image';
 // Section Volume du Motif : les textes de l'infographie s'y placent (sous-menu « Infographie »).
 const VOLUME_SECTION = 'Volume';
+// Pastilles : « Taille max. » très basse (2 px dans la Membrane) bride les autres réglages ; on le dit.
+const DOTS_SECTION = 'Pastilles';
+const MAX_PX_TIGHT = 4;
+const MAX_PX_OPEN = 12;
+// la note n'apparaît qu'une fois l'un de ces réglages touché (pas sur l'écran d'arrivée validé)
+const DOT_KEYS = new Set(['dotSize', 'aspect', 'fusion', 'contrast']);
 
 // Panneau droit des pages Tool (Figma « Tool / … ») : en-tête repliable, sections, bouton Export.
 export function EditorPanel({
@@ -63,6 +69,8 @@ export function EditorPanel({
   toggleRef: Ref<HTMLButtonElement>;
 }) {
   const [advanced, setAdvanced] = useState(readAdvanced);
+  // un réglage des pastilles a été touché pendant la visite (note « Taille max. »)
+  const [dotsTouched, setDotsTouched] = useState(false);
   const engine = useEngine(engineMode !== undefined);
   useEditor(); // mode édition ouvert ou fermé : les textes et les droits changent
   const modeControls = CONTROLS.filter((c) => c.mode === engineMode || (engineMode && c.mode === 'both'));
@@ -173,18 +181,35 @@ export function EditorPanel({
                 <EngineControls
                   engine={engine}
                   controls={controls}
+                  onChanged={(key) => DOT_KEYS.has(key) && setDotsTouched(true)}
                   subStart={
                     engineMode === 'motif' && section.title === VOLUME_SECTION && hasInfoTexts(engine.core.S)
                       ? { Infographie: <InfoTexts engine={engine} /> }
                       : undefined
                   }
                   beforeSubs={
-                    advanced &&
-                    engineMode === 'illustration' &&
-                    section.title === TONE_SECTION && (
+                    advanced && engineMode === 'illustration' && section.title === TONE_SECTION ? (
                       <button type="button" className={styles.action} onClick={engine.actions.resetTone}>
                         Rétablir les tons
                       </button>
+                    ) : (
+                      section.title === DOTS_SECTION &&
+                      dotsTouched &&
+                      Number(engine.core.S.maxPx) <= MAX_PX_TIGHT && (
+                        <div className={styles.tip}>
+                          <p>
+                            Les pastilles sont limitées à {Number(engine.core.S.maxPx)} px à l’écran : Taille,
+                            Allongement, Fusion et Variation changent peu.
+                          </p>
+                          <button
+                            type="button"
+                            className={styles.action}
+                            onClick={() => engine.actions.change('maxPx', MAX_PX_OPEN)}
+                          >
+                            Agrandir la limite à {MAX_PX_OPEN} px
+                          </button>
+                        </div>
+                      )
                     )
                   }
                 />

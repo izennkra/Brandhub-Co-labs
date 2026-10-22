@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { routes } from '../src/app/routes';
+import { getEngine } from '../src/lib/pattern-engine/createEngine';
 
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
@@ -145,6 +146,36 @@ describe('panneau Motif branché au moteur', () => {
     expect(screen.getByRole('group', { name: 'Mode de la ligne' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Membrane' }));
     expect(screen.getByRole('button', { name: 'Réseau' })).toBeInTheDocument();
+  });
+
+  it('« Taille max. » très basse : une note l’explique une fois Taille touchée, et peut l’agrandir', async () => {
+    const user = userEvent.setup();
+    renderAt('/outils/motif');
+    const size = await screen.findByRole('slider', { name: 'Taille' });
+    const S = (await getEngine()).core.S as Record<string, unknown>;
+    S.maxPx = 2;
+    // écran d'arrivée inchangé : pas de note tant qu'on n'a rien touché
+    expect(screen.queryByText(/Les pastilles sont limitées/)).not.toBeInTheDocument();
+    fireEvent.change(size, { target: { value: '2.5' } });
+    expect(screen.getByText(/Les pastilles sont limitées à 2 px/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Agrandir la limite à 12 px' }));
+    expect(S.maxPx).toBe(12);
+    expect(screen.queryByText(/Les pastilles sont limitées/)).not.toBeInTheDocument();
+  });
+
+  it('Ligne › Process : la forme est réglable d’office, les réglages sans effet sont cachés', async () => {
+    const user = userEvent.setup();
+    renderAt('/outils/motif');
+    await screen.findByRole('slider', { name: 'Renflements' });
+    await user.click(screen.getByRole('button', { name: 'Ligne' }));
+    await user.click(screen.getByRole('button', { name: 'Process' }));
+    const volume = screen.getByRole('region', { name: 'Volume' });
+    for (const name of ['Épaisseur', 'Gonflement', 'Finesse des cols', 'Longueur', 'Fondu des bouts'])
+      expect(within(volume).getByRole('slider', { name }), name).toBeInTheDocument();
+    expect(within(volume).queryByRole('slider', { name: 'Renflements' })).not.toBeInTheDocument();
+    expect(within(volume).getByRole('group', { name: 'Les étapes grandissent surtout' })).toBeInTheDocument();
+    expect(within(volume).getByRole('textbox', { name: 'Titre de l’étape 1' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Membrane' }));
   });
 
   it('les pages sans moteur n’ont pas d’interrupteur « Réglage avancé »', () => {

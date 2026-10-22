@@ -29,17 +29,22 @@ export function EngineControls({
   controls,
   beforeSubs,
   subStart,
+  onChanged,
 }: {
   engine: Engine;
   controls: Control[];
   beforeSubs?: ReactNode; // placé juste avant le premier sous-menu (ex. « Rétablir les tons »)
-  // contenu placé en tête d'un sous-menu (ex. les textes de l'« Infographie ») ; le sous-menu
+  // contenu placé en tête d'un sous-menu, après son interrupteur s'il en a un (ex. les textes de
+  // l'« Infographie ») ; le sous-menu
   // apparaît pour lui seul quand aucun de ses réglages n'est affiché (réglages essentiels)
   subStart?: Record<string, ReactNode>;
+  onChanged?: (key: string) => void; // après chaque réglage changé dans le panneau
 }) {
   const S = engine.core.S;
-  const change = (control: Control, value: number | boolean) =>
+  const change = (control: Control, value: number | boolean) => {
     engine.actions.change(control.key, value, control.effect);
+    onChanged?.(control.key);
+  };
 
   const field = (control: Control) => {
     if (control.kind === 'slider')
@@ -96,8 +101,10 @@ export function EngineControls({
               <Icon name="chevron-down-small" size="xs" className={styles.chevron} />
             </summary>
             <div className={styles.subBody}>
+              {/* après l'interrupteur qui ouvre le sous-menu (« Afficher l'infographie ») */}
+              {run.controls[0]?.kind === 'toggle' && field(run.controls[0])}
               {subStart?.[run.sub]}
-              {run.controls.map(field)}
+              {run.controls.slice(run.controls[0]?.kind === 'toggle' ? 1 : 0).map(field)}
             </div>
           </details>
         </Fragment>

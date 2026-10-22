@@ -329,6 +329,44 @@ function describeControl(c: Control) {
 }
 
 const prototypeControls = found.filter((f) => !OUT_OF_SCOPE_SECTIONS.includes(describeFound(f).section));
+
+// Écarts voulus avec le prototype : refonte de la partie Ligne validée le 22/10/2026
+// (taille de la forme visible d'office, « Forme de la ligne » et « Infographie » hors du réglage
+// avancé, « Progression » en trois boutons au lieu d'un curseur aux valeurs en mots).
+const ESSENTIAL = { level: 'essential' } as const;
+const LINE_SHAPE = { sub: 'Forme de la ligne', level: 'essential' } as const;
+const DEPARTURES: Record<string, Record<string, unknown>> = {
+  tubeR: { sub: undefined, level: 'essential' },
+  junction: ESSENTIAL,
+  thin: ESSENTIAL,
+  lineLen: LINE_SHAPE,
+  lineFade: LINE_SHAPE,
+  lineWave: { sub: 'Forme de la ligne' },
+  lineLabels: ESSENTIAL,
+  dataContrast: ESSENTIAL,
+  procMin: ESSENTIAL,
+  infoScale: ESSENTIAL,
+  infoGap: ESSENTIAL,
+  procCurve: {
+    kind: 'choice',
+    level: 'essential',
+    options: [
+      { label: 'au début', value: 0.75 },
+      { label: 'partout', value: 1 },
+      { label: 'à la fin', value: 1.3 },
+    ],
+  },
+};
+function expectedControl(f: Found) {
+  const { min, max, step, ...rest } = describeFound(f) as ReturnType<typeof describeFound> & {
+    min?: number;
+    max?: number;
+    step?: number;
+  };
+  const changes = DEPARTURES[f.key] ?? {};
+  if (changes.kind === 'choice') return { ...rest, ...changes };
+  return { ...rest, ...(min !== undefined && { min, max, step }), ...changes };
+}
 const byKey = <T extends { key: string }>(list: T[]) =>
   Object.fromEntries(list.map((item) => [item.key, item]));
 
@@ -352,20 +390,20 @@ describe('table des réglages : reprise du prototype', () => {
   });
 
   it('chaque réglage du prototype (hors export) est dans la table, à l’identique', () => {
-    expect(byKey(CONTROLS.map(describeControl))).toEqual(byKey(prototypeControls.map(describeFound)));
+    expect(byKey(CONTROLS.map(describeControl))).toEqual(byKey(prototypeControls.map(expectedControl)));
   });
 
-  it('66 curseurs, 5 interrupteurs et 5 sélecteurs, sans doublon', () => {
+  it('65 curseurs, 5 interrupteurs et 6 sélecteurs, sans doublon', () => {
     const count = (kind: Control['kind']) => CONTROLS.filter((c) => c.kind === kind).length;
-    expect(count('slider')).toBe(66);
+    expect(count('slider')).toBe(65);
     expect(count('toggle')).toBe(5);
-    expect(count('choice')).toBe(5);
+    expect(count('choice')).toBe(6);
     expect(new Set(CONTROLS.map((c) => c.key)).size).toBe(CONTROLS.length);
   });
 
   it('chaque valeur s’affiche avec le format du prototype', () => {
     for (const f of prototypeControls) {
-      if (f.kind !== 'slider') continue;
+      if (f.kind !== 'slider' || DEPARTURES[f.key]?.kind) continue;
       const expected = new Function('fx', `return (${f.fmt});`)(fx) as (v: number) => string;
       const control = CONTROLS.find((c) => c.key === f.key);
       if (control?.kind !== 'slider') throw new Error(`Curseur absent de la table : ${f.key}`);
@@ -416,5 +454,11 @@ describe('table des réglages : reprise du prototype', () => {
     expect(shown('infoGap', { ...ligne, lineMode: 2 })).toBe(true);
     expect(shown('hoverRadius', { ...membrane, hoverMode: 1 })).toBe(false);
     expect(shown('lobes', ligne)).toBe(true);
+    // en Données et en Process, un renflement par valeur ou par étape : réglages sans effet cachés
+    for (const key of ['lobes', 'lobeLen', 'pinchSpeed']) {
+      expect(shown(key, { ...ligne, lineMode: 1 }), key).toBe(false);
+      expect(shown(key, { ...ligne, lineMode: 2 }), key).toBe(false);
+      expect(shown(key, membrane), key).toBe(true);
+    }
   });
 });
