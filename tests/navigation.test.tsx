@@ -31,6 +31,7 @@ const RESOURCE_PAGES = [
   { path: '/ressources/imagerie', title: 'Imagerie' },
   { path: '/ressources/patterns', title: 'Patterns prédéfinis' },
   { path: '/ressources/inspiration', title: 'Inspiration' },
+  { path: '/ressources/qr-code', title: 'QR code' },
 ];
 
 describe('navigation : colonne de gauche et pages Tool', () => {
@@ -84,7 +85,7 @@ describe('navigation : sélecteur Tool / Ressource et pages Ressource', () => {
     );
   });
 
-  it('bascule vers les Ressources et liste leurs 7 pages', async () => {
+  it('bascule vers les Ressources et liste leurs 8 pages', async () => {
     const router = renderAt('/outils/motif');
     await userEvent.click(within(sectionsNav()).getByRole('link', { name: 'Ressource' }));
     expect(router.state.location.pathname).toBe('/ressources/logo');
