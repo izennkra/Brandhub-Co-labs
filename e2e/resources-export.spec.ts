@@ -13,12 +13,17 @@ async function download(page: Page, name: string | RegExp) {
   return { name: file.suggestedFilename(), data: await readFile((await file.path())!) };
 }
 
-test('Logo : chaque déclinaison s’exporte en SVG, PNG et PDF', async ({ page }) => {
+test('Logo : chaque déclinaison s’exporte en SVG, PNG et PDF, sur fond transparent ou sur fond', async ({
+  page,
+}) => {
   await page.goto('/ressources/logo');
   await page.evaluate((svg) => {
     localStorage.setItem(
       'bhc.store.res-colors',
-      JSON.stringify({ a: { group: 'principale', name: 'Orange', hex: '#EC5F14', order: 0 } }),
+      JSON.stringify({
+        a: { group: 'principale', name: 'Orange', hex: '#EC5F14', order: 0 },
+        b: { group: 'principale', name: 'Brun', hex: '#431604', order: 1 },
+      }),
     );
     localStorage.setItem(
       'bhc.store.res-logo-groups',
@@ -27,16 +32,22 @@ test('Logo : chaque déclinaison s’exporte en SVG, PNG et PDF', async ({ page 
   }, LOGO);
   await page.reload();
 
-  const svg = await download(page, 'Télécharger Logo principal Orange en SVG');
-  expect(svg.name).toBe('logo-principal-orange.svg');
+  const svg = await download(page, 'Télécharger Logo principal Orange · fond transparent en SVG');
+  expect(svg.name).toBe('logo-principal-orange-fond-transparent.svg');
   expect(svg.data.toString()).toContain('#EC5F14');
   expect(svg.data.toString()).not.toContain('#000');
+  expect(svg.data.toString()).not.toContain('#431604');
 
-  const png = await download(page, 'Télécharger Logo principal Orange en PNG');
+  const onBrown = await download(page, 'Télécharger Logo principal Orange · sur fond Brun en SVG');
+  expect(onBrown.name).toBe('logo-principal-orange-sur-fond-brun.svg');
+  expect(onBrown.data.toString()).toContain('fill="#431604"');
+
+  const png = await download(page, 'Télécharger Logo principal Orange · sur fond Brun en PNG');
+  expect(png.name).toBe('logo-principal-orange-sur-fond-brun.png');
   expect(png.data.subarray(1, 4).toString()).toBe('PNG');
 
-  const pdf = await download(page, 'Télécharger Logo principal Orange en PDF');
-  expect(pdf.name).toBe('logo-principal-orange.pdf');
+  const pdf = await download(page, 'Télécharger Logo principal Orange · fond transparent en PDF');
+  expect(pdf.name).toBe('logo-principal-orange-fond-transparent.pdf');
   expect(pdf.data.subarray(0, 4).toString()).toBe('%PDF');
 });
 

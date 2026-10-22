@@ -297,7 +297,6 @@ export function ColorPage() {
           <Section
             key={p.id}
             title={p.title}
-            description={list.length ? `${p.hint} Clique sur une valeur pour la copier.` : undefined}
             actions={
               unlocked && (
                 <button
@@ -331,10 +330,7 @@ export function ColorPage() {
       })}
 
       {palette.length > 0 && (
-        <Section
-          title="Nuances"
-          description="Calculées à partir de chaque couleur des palettes : elles suivent toute modification. La couleur d’origine est marquée d’un point. Clique sur une case pour copier son code."
-        >
+        <Section title="Nuances">
           {PALETTES.map((p) => {
             const list = palette.filter((c) => groupOf(c) === p.id);
             if (!list.length) return null;
@@ -356,10 +352,7 @@ export function ColorPage() {
       )}
 
       {(neutralSteps || unlocked) && (
-        <Section
-          title="Neutres"
-          description="Fonds, textes et traits : onze paliers entre une couleur claire (50) et une couleur foncée (950)."
-        >
+        <Section title="Neutres">
           {unlocked && (
             <div className={page.pairFields}>
               <HexField

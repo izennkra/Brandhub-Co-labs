@@ -13,16 +13,19 @@ import { notify } from '../../lib/resources/events';
 import { readAsText } from '../../lib/resources/files';
 import {
   logoVariants,
+  logoVersions,
   sanitizeSvg,
   svgToPdf,
+  versionLabel,
   type LogoColor,
-  type LogoVariant,
+  type LogoVersion,
 } from '../../lib/resources/logo';
 import { useCollection } from '../../lib/resources/useCollection';
 
 // Page Logo (Figma « Ressource / Logo ») : une section par déclinaison (logo principal, symbole…).
 // Le logo est déposé une seule fois en SVG ; il est décliné dans chaque couleur de la marque
-// (page Couleur) et chaque version s'exporte en SVG, PNG ou PDF.
+// (page Couleur), sur fond transparent et sur fond plein ; chaque version s'exporte en SVG, PNG ou PDF,
+// avec un nom de fichier composé automatiquement (section, couleur, fond).
 type LogoSection = { name: string; svg?: string };
 type Color = { name: string; hex: string; group?: string };
 type Neutrals = { light: string; dark: string };
@@ -37,15 +40,16 @@ type Format = 'svg' | 'png' | 'pdf';
 const FORMATS: Format[] = ['svg', 'png', 'pdf'];
 const svgUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
-async function render(variant: LogoVariant, format: Format): Promise<Blob> {
+async function render(variant: LogoVersion, format: Format): Promise<Blob> {
   if (format === 'svg') return new Blob([variant.svg], { type: 'image/svg+xml' });
   return format === 'png' ? svgToPng(variant.svg) : svgToPdf(variant.svg);
 }
 
-const fileName = (section: string, variant: LogoVariant, format: Format) =>
-  `${slug(section)}-${slug(variant.name)}.${format}`;
+// ex. « logo-principal-orange-fond-transparent.png », « logo-principal-orange-sur-fond-brun.svg »
+const fileName = (section: string, version: LogoVersion, format: Format) =>
+  `${slug(section)}-${slug(versionLabel(version))}.${format}`;
 
-async function downloadVariant(section: string, variant: LogoVariant, format: Format) {
+async function downloadVariant(section: string, variant: LogoVersion, format: Format) {
   try {
     downloadBlob(await render(variant, format), fileName(section, variant, format));
   } catch {
@@ -54,7 +58,7 @@ async function downloadVariant(section: string, variant: LogoVariant, format: Fo
 }
 
 /** Toutes les versions d'une ou plusieurs sections, dans les trois formats, en un .zip. */
-async function zipVariants(zipName: string, sections: { name: string; variants: LogoVariant[] }[]) {
+async function zipVariants(zipName: string, sections: { name: string; variants: LogoVersion[] }[]) {
   const entries: { name: string; data: Blob }[] = [];
   for (const { name, variants } of sections)
     for (const variant of variants)
@@ -71,15 +75,20 @@ async function zipVariants(zipName: string, sections: { name: string; variants: 
   await downloadZip(zipName, entries);
 }
 
-function VariantCard({ section, variant }: { section: string; variant: LogoVariant }) {
-  const label = `${section} ${variant.name}`;
+function VariantCard({ section, variant }: { section: string; variant: LogoVersion }) {
+  const label = `${section} ${versionLabel(variant)}`;
   return (
     <li className={styles.card}>
-      <div className={styles.preview} data-dark={variant.dark}>
+      <div
+        className={styles.preview}
+        data-dark={variant.dark}
+        data-transparent={!variant.backdrop}
+        style={variant.backdrop ? { background: variant.backdrop.hex } : undefined}
+      >
         <img src={svgUrl(variant.svg)} alt={label} />
       </div>
-      <span className={styles.cardName}>
-        {section} — {variant.name}
+      <span className={styles.cardName} title={`${section} — ${versionLabel(variant)}`}>
+        {section} — {versionLabel(variant)}
       </span>
       <div className={styles.cardActions}>
         {FORMATS.map((format) => (
@@ -117,7 +126,7 @@ export function LogoPage() {
   const list: (LogoSection & { id: string })[] = sections.items.length ? sections.items : DEFAULT_SECTIONS;
   const withLogo = list
     .filter((s) => s.svg)
-    .map((s) => ({ name: s.name, variants: logoVariants(s.svg!, brand) }));
+    .map((s) => ({ name: s.name, variants: logoVersions(logoVariants(s.svg!, brand), brand) }));
 
   useDownloadAll(
     'Télécharger tous les logos (SVG, PNG, PDF)',
@@ -156,7 +165,7 @@ export function LogoPage() {
       {list.map((section) => {
         const svg = section.svg;
         if (!svg && !unlocked) return null;
-        const variants = svg ? logoVariants(svg, brand) : [];
+        const variants = svg ? logoVersions(logoVariants(svg, brand), brand) : [];
         const isDefault = DEFAULT_SECTIONS.some((s) => s.id === section.id);
         return (
           <Section
@@ -210,7 +219,7 @@ export function LogoPage() {
             {variants.length > 0 && (
               <ul className={styles.grid} aria-label={section.name}>
                 {variants.map((variant) => (
-                  <VariantCard key={variant.name} section={section.name} variant={variant} />
+                  <VariantCard key={versionLabel(variant)} section={section.name} variant={variant} />
                 ))}
               </ul>
             )}

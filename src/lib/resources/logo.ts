@@ -1,4 +1,4 @@
-import { isLight, normalizeHex } from './colors';
+import { hexToRgb, isLight, normalizeHex } from './colors';
 
 // Déclinaisons des logos : un SVG déposé une fois est recoloré dans chaque couleur de la marque,
 // puis exporté en SVG, PNG ou PDF.
@@ -59,6 +59,82 @@ export function logoVariants(svg: string, colors: LogoColor[]): LogoVariant[] {
     variants.push({ name: color.name, svg: recolorSvg(svg, hex), dark: isLight(hex) });
   }
   return variants;
+}
+
+// Contraste WCAG entre deux couleurs (1 à 21).
+function luminance(hex: string) {
+  const { r, g, b } = hexToRgb(hex);
+  const lin = (c: number) => (c / 255 <= 0.03928 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+const contrast = (a: string, b: string) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+/** Le logo posé sur un fond plein, avec une marge autour (20 % du plus grand côté). */
+export function withBackground(svg: string, hex: string, margin = 0.2) {
+  const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
+  const root = doc.documentElement;
+  if (root.nodeName !== 'svg') return svg;
+  const box = (root.getAttribute('viewBox') ?? '').split(/[\s,]+/).map(Number);
+  const [x, y, w, h] =
+    box.length === 4 && box.every(Number.isFinite) && box[2] > 0 && box[3] > 0
+      ? box
+      : [
+          0,
+          0,
+          parseFloat(root.getAttribute('width') ?? '') || 100,
+          parseFloat(root.getAttribute('height') ?? '') || 100,
+        ];
+  const pad = margin * Math.max(w, h);
+  const frame = [x - pad, y - pad, w + 2 * pad, h + 2 * pad];
+  root.setAttribute('viewBox', frame.join(' '));
+  root.setAttribute('width', String(frame[2]));
+  root.setAttribute('height', String(frame[3]));
+  const rect = doc.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', String(frame[0]));
+  rect.setAttribute('y', String(frame[1]));
+  rect.setAttribute('width', String(frame[2]));
+  rect.setAttribute('height', String(frame[3]));
+  rect.setAttribute('fill', hex);
+  root.insertBefore(rect, root.firstChild);
+  return new XMLSerializer().serializeToString(root);
+}
+
+// Une version à télécharger : la déclinaison, sur fond transparent ou sur une couleur de la marque.
+export type LogoVersion = LogoVariant & { backdrop: LogoColor | null };
+
+/** Nom affiché et nom de fichier : « Orange · fond transparent », « Orange · sur fond Brun ». */
+export const versionLabel = (version: LogoVersion) =>
+  `${version.name} · ${version.backdrop ? `sur fond ${version.backdrop.name}` : 'fond transparent'}`;
+
+/**
+ * Deux versions par déclinaison : fond transparent, puis sur fond plein. Le fond est la couleur
+ * de la marque la plus contrastée avec le logo (pour l'original, la plus claire).
+ */
+export function logoVersions(variants: LogoVariant[], colors: LogoColor[]): LogoVersion[] {
+  const brand = colors
+    .map((c) => ({ name: c.name, hex: normalizeHex(c.hex) }))
+    .filter((c): c is LogoColor => Boolean(c.hex));
+  return variants.flatMap((variant) => {
+    const own = brand.find((c) => c.name === variant.name)?.hex;
+    const candidates = brand.filter((c) => c.hex !== own);
+    const score = (c: LogoColor) => (own ? contrast(own, c.hex) : luminance(c.hex));
+    const backdrop = candidates.reduce<LogoColor | null>(
+      (best, c) => (!best || score(c) > score(best) ? c : best),
+      null,
+    );
+    const versions: LogoVersion[] = [{ ...variant, backdrop: null }];
+    if (backdrop)
+      versions.push({
+        ...variant,
+        svg: withBackground(variant.svg, backdrop.hex),
+        dark: !isLight(backdrop.hex),
+        backdrop,
+      });
+    return versions;
+  });
 }
 
 /** Logo en PDF vectoriel (jsPDF + svg2pdf, chargés seulement à l'export). */

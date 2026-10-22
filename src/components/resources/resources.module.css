@@ -81,6 +81,24 @@
   background: var(--color-dark);
 }
 
+/* fond transparent : damier, foncé quand le logo est clair */
+.preview[data-transparent='true'] {
+  --checker: color-mix(in srgb, var(--color-surface-raised) 80%, var(--color-text));
+  background-color: var(--color-surface-raised);
+  background-image: conic-gradient(
+    var(--checker) 25%,
+    transparent 0 50%,
+    var(--checker) 0 75%,
+    transparent 0
+  );
+  background-size: var(--space-4) var(--space-4);
+}
+
+.preview[data-transparent='true'][data-dark='true'] {
+  --checker: color-mix(in srgb, var(--color-dark) 80%, var(--color-surface-raised));
+  background-color: var(--color-dark);
+}
+
 .preview img {
   max-width: 70%;
   max-height: 60%;
