@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EDITOR_HEADER } from '../api/_lib/editor';
-import { cleanName, handleFiles, MAX_FILE, type FileStore } from '../api/files';
+import { blobConfigured, cleanName, handleFiles, MAX_FILE, type FileStore } from '../api/files';
 import { handleStore, memoryDb } from '../api/store';
 
 const CODE = 'colabs-2026';
@@ -124,5 +124,14 @@ describe('/api/files (Vercel Blob)', () => {
   it('nettoie les noms de fichiers', () => {
     expect(cleanName('Été — Logo (2).PNG')).toBe('ete-logo-2.png');
     expect(cleanName('***')).toBe('fichier');
+  });
+});
+
+describe('Vercel Blob relié au projet', () => {
+  it('reconnaît l’ancienne façon (jeton) et la nouvelle (identifiant du stockage)', () => {
+    expect(blobConfigured({ BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_x' })).toBe(true);
+    expect(blobConfigured({ BLOB_STORE_ID: 'store_abc' })).toBe(true);
+    expect(blobConfigured({ BLOB_STORE_ID: '  ' })).toBe(false);
+    expect(blobConfigured({ BLOB_WEBHOOK_PUBLIC_KEY: 'x' })).toBe(false);
   });
 });
