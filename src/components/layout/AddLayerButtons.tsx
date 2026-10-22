@@ -25,8 +25,17 @@ async function loadImage(file: File) {
 /** Ajouter un calque : le motif ou l'illustration de l'outil (tels que réglés), ou une image. */
 export function AddLayerButtons({ engine }: { engine: Engine | null }) {
   const input = useRef<HTMLInputElement>(null);
-  const addPattern = (app: 'motif' | 'image') =>
-    engine && layoutStore.addLayer(newPatternLayer(app, engine.layout.baseSettings(app)));
+  // La forme arrive sur fond transparent, fondue dans le fond du frame, et son calque l'épouse,
+  // posé à bord perdu dans le frame.
+  const addPattern = (app: 'motif' | 'image') => {
+    if (!engine) return;
+    const settings = engine.layout.baseSettings(app);
+    if (layoutStore.doc.fill) settings.bg = layoutStore.doc.fill;
+    const layer = newPatternLayer(app, settings);
+    layoutStore.addLayer(layer);
+    const shape = engine.layout.measure(layer, true);
+    if (shape) layoutStore.fit(layer.id, shape, 'cover');
+  };
   const addImages = async (files: FileList) => {
     for (const file of [...files].filter((f) => f.type.startsWith('image/'))) {
       try {

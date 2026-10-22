@@ -10,7 +10,6 @@ import { EngineControls } from '../EditorPanel/EngineControls';
 import { PanelSection } from '../EditorPanel/PanelSection';
 import { useEngine } from '../EditorPanel/useEngine';
 import { ColorPicker } from '../engine/ColorPicker';
-import { Slider } from '../engine/Slider';
 import swatches from '../engine/ColorPicker.module.css';
 import { Toggle } from '../engine/Toggle';
 import { Icon, type IconName } from '../Icon';
@@ -75,6 +74,12 @@ function NumberField({
   );
 }
 
+/** Le calque épouse de nouveau sa forme, à la même taille et à la même place. */
+const refit = (engine: Engine | null, layer: PatternLayer) => {
+  const shape = engine?.layout.measure(layer);
+  if (shape) layoutStore.fit(layer.id, shape, 'keep');
+};
+
 /** Boucle d'une illustration : les images cochées passent dans l'ordre de la liste (propre au calque). */
 function LoopList({ engine, layer }: { engine: Engine; layer: PatternLayer }) {
   const library = engine.layout.library();
@@ -85,7 +90,10 @@ function LoopList({ engine, layer }: { engine: Engine; layer: PatternLayer }) {
     ...chosen.map((key) => library.findIndex((image) => image.key === key)),
     ...library.flatMap((image, index) => (chosen.includes(image.key) ? [] : [index])),
   ];
-  const setLoop = (loop: string[]) => layoutStore.updatePattern(layer.id, { loop });
+  const setLoop = (loop: string[]) => {
+    layoutStore.updatePattern(layer.id, { loop });
+    refit(engine, layer);
+  };
   const move = (key: string, step: number) => {
     const next = [...chosen],
       i = next.indexOf(key),
@@ -160,8 +168,8 @@ function PatternOptions({
   return (
     <>
       <p className={styles.hint}>
-        Copie {layer.app === 'image' ? 'de l’illustration' : 'du motif'} de l’outil : tes réglages ici ne
-        changent pas l’outil.
+        Copie {layer.app === 'image' ? 'de l’illustration' : 'du motif'} de l’outil, sur fond transparent :
+        tes réglages ici ne changent pas l’outil. Double-clic sur la forme pour le mode 3D.
       </p>
       <Toggle
         label="Animé"
@@ -174,19 +182,20 @@ function PatternOptions({
         aria-pressed={mode3d}
         onClick={() => layoutStore.set3d(!mode3d)}
       >
-        <Icon name="3d-box-top" size="sm" /> {mode3d ? 'Terminer la manipulation 3D' : 'Manipuler en 3D'}
+        <Icon name="3d-box-top" size="sm" /> {mode3d ? 'Terminer le mode 3D' : 'Mode 3D'}
       </button>
-      <Slider
-        label="Zoom du motif"
-        min={100}
-        max={800}
-        step={5}
-        value={Math.round((layer.zoom || 1) * 100)}
-        format={(v) => `${v} %`}
-        onChange={(v) => layoutStore.updatePattern(layer.id, { zoom: v / 100 })}
-      />
-      <button type="button" className={styles.action} onClick={() => layoutStore.recenter(layer.id)}>
-        Recentrer le motif
+      <button type="button" className={styles.action} onClick={() => refit(engine, layer)}>
+        Ajuster le calque à la forme
+      </button>
+      <button
+        type="button"
+        className={styles.action}
+        onClick={() => {
+          layoutStore.recenter(layer.id);
+          refit(engine, layer);
+        }}
+      >
+        Recentrer la forme
       </button>
       {layer.app === 'image' && engine && (
         <>
@@ -436,9 +445,13 @@ export function LayoutPanel({
           <AddLayerButtons engine={engine} />
         </PanelSection>
 
-        <PanelSection title="Fill">
+        <PanelSection title="Fill" defaultOpen>
           {engine ? (
-            <div role="radiogroup" aria-label="Fond du frame" className={swatches.swatches}>
+            <div
+              role="radiogroup"
+              aria-label="Fond du frame"
+              className={`${swatches.swatches} ${styles.wrap}`}
+            >
               <label className={swatches.swatch} title="Aucun (transparent)">
                 <input
                   type="radio"
@@ -458,7 +471,14 @@ export function LayoutPanel({
                     className={swatches.input}
                     aria-label={swatch.name}
                     checked={doc.fill === swatch.id}
-                    onChange={() => layoutStore.setFrame({ fill: swatch.id })}
+                    onChange={() => {
+                      layoutStore.setFrame({ fill: swatch.id });
+                      // les formes se fondent dans le fond du frame
+                      engine.layout.setBackground(
+                        doc.layers.filter((l): l is PatternLayer => l.type === 'pattern'),
+                        swatch.id,
+                      );
+                    }}
                   />
                   <span
                     className={`${swatches.chip} ${swatches.square}`}
@@ -497,19 +517,13 @@ export function LayoutPanel({
             ) : (
               <>
                 {section === 'Couleurs' && (
-                  <Toggle
-                    label="Fond du motif"
-                    checked={live.bgOn}
-                    onChange={(bgOn) => layoutStore.updatePattern(live.id, { bgOn })}
-                  />
-                )}
-                {section === 'Couleurs' && (
                   <ColorPicker
                     palette={engine.core.PALETTE}
                     background={String(engine.core.S.bg)}
                     dots={engine.core.S.dots as Set<string>}
                     onBackground={engine.actions.setBackground}
                     onToggleDot={engine.actions.toggleDot}
+                    showBackground={false}
                   />
                 )}
                 <EngineControls engine={engine} controls={controlsOf(section)} />

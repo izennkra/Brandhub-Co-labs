@@ -295,3 +295,8 @@
 .loopActions {
   display: flex;
 }
+
+/* fond du frame : « Aucun » et les 7 couleurs, sur deux lignes au besoin */
+.wrap {
+  flex-wrap: wrap;
+}

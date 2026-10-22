@@ -13,17 +13,20 @@ export function ColorPicker({
   dots,
   onBackground,
   onToggleDot,
+  showBackground = true,
 }: {
   palette: readonly Swatch[];
   background: string;
   dots: ReadonlySet<string>;
   onBackground: (id: string) => void;
   onToggleDot: (id: string) => void;
+  /** Layout editor : le fond se règle sur le frame, pas sur la forme. */
+  showBackground?: boolean;
 }) {
   const id = useId();
   return (
     <>
-      <div className={styles.row}>
+      <div className={styles.row} hidden={!showBackground}>
         <span id={`${id}-bg`} className={styles.label}>
           Fond
         </span>

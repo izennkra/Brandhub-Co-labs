@@ -207,3 +207,32 @@
 .zoom button:hover {
   background: var(--color-control-active);
 }
+
+/* pivoter : rond au-dessus du calque ; déplacer (mode 3D) : poignée en haut à gauche */
+.rotate,
+.grip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  border: var(--size-divider) solid var(--color-accent);
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+}
+
+.rotate {
+  bottom: calc(100% + var(--space-3));
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: grab;
+}
+
+.grip {
+  top: calc(-1 * var(--space-8));
+  left: calc(-1 * var(--space-8));
+  border-radius: var(--radius-sm);
+  cursor: move;
+}

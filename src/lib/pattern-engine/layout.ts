@@ -1,7 +1,7 @@
 // Layout editor côté moteur : le mode « Design libre » du prototype (lignes 3604 à 4365), réduit à
 // un frame. Le moteur dessine chaque calque de motif avec son propre état (renderLayerTo, ligne 2608) ;
 // on lui prête les réglages du calque choisi (setLive, ligne 3688), puis on rend ceux de l'outil.
-import type { LayoutDoc, PatternLayer } from '../layout/doc';
+import type { LayoutDoc, PatternLayer, Shape } from '../layout/doc';
 import { EXPORT_FMTS } from './export-options';
 import { pickVideoMime, saveFile } from './exporter';
 import type { EngineImage, EngineLayer, EngineSettings, PrototypeEngine } from './prototype-engine.js';
@@ -70,11 +70,18 @@ export function createLayoutBridge(
   // - la largeur du calque devient sa largeur de référence : agrandir le calque agrandit aussi les
   //   pastilles et les traits, le motif grandit d'un bloc et reste net (le moteur règle PXK sur L.w) ;
   // - la bibliothèque d'images devient celle de la boucle du calque.
-  function draw(L: PatternLayer, pw: number, ph: number, dt: number, ctx: CanvasRenderingContext2D) {
+  function draw(
+    L: PatternLayer,
+    pw: number,
+    ph: number,
+    dt: number,
+    ctx: CanvasRenderingContext2D,
+    ref = L.ref || L.w,
+  ) {
     const width = L.w,
       library = core.imgList,
       own = libraryFor(L);
-    L.w = L.ref || width;
+    L.w = ref;
     if (own) core.imgList = own;
     try {
       core.renderLayerTo(L, L === dl.live, pw, ph, dt, ctx);
@@ -82,7 +89,24 @@ export function createLayoutBridge(
       L.w = width;
       core.imgList = library;
     }
-    L._cam0 ??= JSON.parse(JSON.stringify(L.cam ?? null)) ?? undefined;
+  }
+
+  // Bords de ce qui est dessiné (pixels assez opaques), en part de l'image ; null si rien.
+  function bounds(ctx: CanvasRenderingContext2D, size: number) {
+    const { data } = ctx.getImageData(0, 0, size, size);
+    let x0 = size,
+      y0 = size,
+      x1 = -1,
+      y1 = -1;
+    for (let y = 0; y < size; y++)
+      for (let x = 0; x < size; x++)
+        if (data[(y * size + x) * 4 + 3] > 12) {
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+    return x1 < 0 ? null : { x0: x0 / size, y0: y0 / size, x1: (x1 + 1) / size, y1: (y1 + 1) / size };
   }
 
   // composeFrame (ligne 4304) : fond, puis chaque calque à sa place, tourné, à l'échelle sc.
@@ -126,11 +150,6 @@ export function createLayoutBridge(
         t.width = Math.max(2, Math.round(dw * k));
         t.height = Math.max(2, Math.round(dh * k));
         draw(L, t.width, t.height, dt, t.getContext('2d')!);
-        const bg = L.bgOn && core.HEX[String(settingOf(L, 'bg'))];
-        if (bg) {
-          ctx.fillStyle = bg;
-          ctx.fillRect(-dw / 2, -dh / 2, dw, dh);
-        }
         ctx.drawImage(t, -dw / 2, -dh / 2, dw, dh);
       }
       ctx.restore();
@@ -242,9 +261,69 @@ export function createLayoutBridge(
       }
       draw(L, canvas.width, canvas.height, dt, canvas.getContext('2d')!);
     },
-    /** Couleur du fond du motif (« Fond » de ses Couleurs). */
-    bgOf(L: PatternLayer) {
-      return core.HEX[String(settingOf(L, 'bg'))];
+    /**
+     * Mesure la forme d'un calque (rotation automatique et boucle comprises) : elle est dessinée en
+     * petit, caméra reculée, puis on relève ses bords. settle : laisse d'abord la forme se construire.
+     */
+    measure(L: PatternLayer, settle = false): Shape | null {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+      if (settle || !L.cam) for (let i = 0; i < 40; i++) draw(L, 48, 48, 0.1, ctx, 48);
+      const cam0 = { ...(L.cam as Record<string, number>) },
+        zoom0 = L.zoom,
+        pan0 = L.pan;
+      const eng = L.eng as { imgTime: number } | undefined,
+        time0 = eng?.imgTime;
+      const turns = settingOf(L, 'autoRotate') ? 8 : 1;
+      const images = libraryFor(L)?.length ?? 1;
+      const cycle = Number(settingOf(L, 'imgHold')) + Number(settingOf(L, 'imgTrans'));
+      let shape: Shape | null = null;
+      try {
+        for (let k = 1.8; k < 8 && !shape; k *= 2) {
+          let box: Omit<Shape, 'k' | 'fov'> | null = null;
+          for (let image = 0; image < images; image++)
+            for (let turn = 0; turn < turns; turn++) {
+              L.zoom = 1;
+              L.pan = [0, 0];
+              L.cam = { ...cam0, radius: cam0.radius * k, theta: cam0.theta + (turn * 2 * Math.PI) / turns };
+              draw(L, size, size, image && !turn ? cycle : 0, ctx, size);
+              const b = bounds(ctx, size);
+              if (b)
+                box = box
+                  ? {
+                      x0: Math.min(box.x0, b.x0),
+                      y0: Math.min(box.y0, b.y0),
+                      x1: Math.max(box.x1, b.x1),
+                      y1: Math.max(box.y1, b.y1),
+                    }
+                  : b;
+            }
+          if (!box) break;
+          // la forme touche le bord de la vue : on recule davantage
+          const edge = 1 / size;
+          if (box.x0 > edge && box.y0 > edge && box.x1 < 1 - edge && box.y1 < 1 - edge)
+            shape = { ...box, k, fov: Number(settingOf(L, 'fov')) || 35 };
+        }
+      } finally {
+        L.cam = cam0;
+        L.zoom = zoom0;
+        L.pan = pan0;
+        if (eng && time0 !== undefined) eng.imgTime = time0;
+        L.dirty = true;
+      }
+      return shape;
+    },
+    /** Fond du frame : les motifs se fondent dans cette couleur (leur propre fond reste transparent). */
+    setBackground(layers: PatternLayer[], id: string) {
+      for (const L of layers) {
+        if (L === dl.live) core.S.bg = id;
+        else L.settings.bg = id;
+        L.dirty = true;
+      }
+      core.refreshColors();
+      syncAll();
     },
     /** Boucle entre les illustrations, propre au calque. */
     loopOn(L: PatternLayer) {

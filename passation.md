@@ -73,10 +73,12 @@
 - **Page d'essai** : chaque visite part d'un frame vide, **rien n'est enregistré** (décision du porteur, 22/10/2026). On teste, on exporte.
 - **Un seul frame** (Figma `Tool / Layout editor Motif`, nœud `2337:7799`) : formats 1:1, 4:5, 9:16, 16:9, 4:3, A4, Bannière, ou taille libre ; fond (Fill) ; rognage.
 - **Plan de travail** : molette pour se déplacer, ⌘ / Ctrl + molette (ou pincement) pour zoomer, boutons − / + / ajuster en bas à gauche, glisser le fond ou Espace + glisser pour se déplacer.
-- **Calques** : Motif, Illustration (copies de l'outil, modifiables sans toucher l'outil) et Image. Déplacer, redimensionner (Maj : proportions), X / Y / W / H / rotation, alignements, ordre, masquer, supprimer.
-- **Jamais flou** : l'aperçu est calculé à la taille affichée, et un motif agrandi grandit d'un bloc (pastilles comprises) grâce à sa largeur de référence (`ref`).
-- **Manipulation 3D** (bouton ou double-clic) : glisser tourne le motif, Maj + glisser recadre, molette zoome dedans ; « Zoom du motif » 100 à 800 % et « Recentrer le motif ».
-- **Couleurs** du motif choisi : fond du motif (peint sous le calque, désactivable) et pastilles, plus Pastilles, Survol, Rotation.
+- **Calques** : Motif, Illustration (copies de l'outil, modifiables sans toucher l'outil) et Image. Déplacer, redimensionner (Maj : proportions), pivoter (rond au-dessus, Maj : par 15°), X / Y / W / H / rotation, alignements, ordre, masquer, supprimer.
+- **Le calque épouse sa forme** : le moteur dessine la forme en petit (rotation automatique et boucle comprises), on relève ses bords, et le calque prend sa proportion. À l'ajout, il est posé **à bord perdu** dans le frame. Après chaque rotation 3D, il se réajuste (même taille, même place). Calcul dans `fitToShape` (`src/lib/layout/doc.ts`), mesure dans `layout.measure` (`src/lib/pattern-engine/layout.ts`).
+- **Fond transparent** : les formes n'ont jamais de fond ; le fond se règle sur le frame (Fill), et les formes s'y fondent (leur couleur de fond suit celle du frame).
+- **Jamais flou** : l'aperçu est calculé à la taille affichée, et un motif agrandi grandit d'un bloc (traits compris) grâce à sa largeur de référence (`ref`).
+- **Mode 3D** (double-clic ou bouton) : glisser tourne la forme, la poignée ✥ la déplace, coins ou molette l'agrandissent, le rond la fait pivoter ; « Ajuster le calque à la forme », « Recentrer la forme ».
+- **Couleurs** de la forme choisie : pastilles, plus Pastilles, Survol, Rotation.
 - **Boucle d'illustrations** propre au calque : cases à cocher et ordre libre ; la bibliothèque de l'outil Illustration ne change pas.
 - **Export** du frame : image (×1 à ×3, PNG, WebP, JPEG) ou vidéo.
 - Côté moteur : `renderLayerTo`, `settingsGet`, `settingsSet` exposés via `EXPORTS` (SHA inchangé) ; tout le reste dans `src/lib/pattern-engine/layout.ts` et `src/lib/layout/doc.ts`.

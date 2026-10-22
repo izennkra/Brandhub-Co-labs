@@ -21,17 +21,17 @@ export type PatternLayer = Box &
   EngineLayer & {
     type: 'pattern';
     anim: boolean;
-    /** Largeur de référence des pastilles : agrandir le calque agrandit tout le motif (jamais flou). */
+    /** Largeur de référence des traits : agrandir le calque agrandit tout le motif (jamais flou). */
     ref: number;
-    /** Le fond du motif (couleur « Fond » de ses Couleurs) est peint sous le motif. */
-    bgOn: boolean;
+    /** Recul de la caméra par rapport à celle de l'outil (garde l'épaisseur des traits juste). */
+    camScale: number;
     /** Boucle de l'illustration : images de la bibliothèque, dans l'ordre choisi. */
     loop: string[];
     /** Aperçu dessiné par le moteur (élément de la page). */
     _cv?: HTMLCanvasElement;
     _acc?: number;
-    /** Cadrage 3D d'origine (« Recentrer le motif »). */
-    _cam0?: unknown;
+    /** Cadrage d'origine, après le premier ajustement (« Recentrer la forme »). */
+    _fit0?: { cam: unknown; zoom: number };
     /** Bibliothèque propre à la boucle (calculée par le moteur). */
     _list?: { key: string; images: unknown[] };
   };
@@ -64,7 +64,7 @@ export const emptyDoc = (): LayoutDoc => ({
 // prévient les vues avec un numéro de version.
 let doc: LayoutDoc = emptyDoc();
 let selected: string | null = null;
-let mode3d = false; // « Manipuler en 3D » : glisser tourne le motif choisi, la molette zoome dedans
+let mode3d = false; // mode 3D : glisser tourne la forme choisie, la molette l’agrandit
 let version = 0;
 const listeners = new Set<() => void>();
 
@@ -73,12 +73,81 @@ function emit() {
   listeners.forEach((listener) => listener());
 }
 
-const clampPan = (L: PatternLayer) => {
-  const z = Math.max(1, L.zoom || 1),
-    m = 0.5 - 0.5 / z;
-  const [x, y] = L.pan ?? [0, 0];
-  L.pan = [Math.max(-m, Math.min(m, x)), Math.max(-m, Math.min(m, y))];
-};
+// ---------- calque ajusté à sa forme ----------
+/** Forme mesurée par le moteur : ses bords, en part d'une vue carrée où la caméra a reculé de k. */
+export type Shape = { x0: number; y0: number; x1: number; y1: number; k: number; fov: number };
+type Cam = { theta: number; phi: number; radius: number; tx: number; ty: number; tz: number };
+
+const TOOL_HEIGHT = 900; // hauteur de la scène de l'outil (px) : les traits gardent leur épaisseur relative
+const HEADROOM = 1.5; // recul de la caméra à l'ajout : la forme peut tourner sans sortir de l'image
+const MARGIN = 1.03;
+
+/**
+ * Le calque prend la proportion de sa forme, et la caméra vise le centre de la forme.
+ * - cover : à l'ajout, le calque couvre le frame (bord perdu) ;
+ * - keep : après une rotation 3D, la forme garde sa taille et sa place, le calque l'épouse.
+ * Les unités « vue » valent la hauteur de l'image à la distance de caméra actuelle.
+ */
+export function fitToShape(
+  L: PatternLayer,
+  shape: Shape,
+  mode: 'cover' | 'keep',
+  frame: { w: number; h: number },
+) {
+  const cam = { ...(L.cam as Cam) };
+  const { k } = shape;
+  let w = (shape.x1 - shape.x0) * k * MARGIN,
+    h = (shape.y1 - shape.y0) * k * MARGIN;
+  const cx = ((shape.x0 + shape.x1) / 2 - 0.5) * k,
+    cy = ((shape.y0 + shape.y1) / 2 - 0.5) * k;
+  const zoom = Math.max(1, L.zoom || 1);
+  const pxPerView = L.h * zoom; // pixels du calque par unité de vue (fenêtre centrée sur la forme)
+
+  // la caméra vise le centre de la forme (repère de la caméra : droite, haut)
+  const world = 2 * cam.radius * Math.tan((shape.fov * Math.PI) / 360);
+  const st = Math.sin(cam.theta),
+    ct = Math.cos(cam.theta),
+    sp = Math.sin(cam.phi),
+    cp = Math.cos(cam.phi);
+  const right = [ct, 0, -st],
+    up = [-st * cp, sp, -ct * cp];
+  cam.tx += (right[0] * cx - up[0] * cy) * world;
+  cam.ty += (right[1] * cx - up[1] * cy) * world;
+  cam.tz += (right[2] * cx - up[2] * cy) * world;
+
+  // taille à l'écran (mode keep) : avant tout changement de recul
+  const keepW = w * pxPerView,
+    keepH = h * pxPerView;
+  const offset = [cx * pxPerView, cy * pxPerView];
+
+  // recul : de la marge pour tourner à l'ajout, et un zoom entre 1 et 8
+  let back = mode === 'cover' ? HEADROOM : 1;
+  if (h / back > 1) back = h;
+  if (h / back < 1 / 8) back = h * 8;
+  cam.radius *= back;
+  L.camScale = (L.camScale || 1) * back;
+  w /= back;
+  h /= back;
+  const aspect = w / h;
+  L.cam = cam;
+  L.zoom = 1 / h;
+  L.pan = [0, 0];
+
+  if (mode === 'cover') {
+    const H = Math.max(frame.h, frame.w / aspect);
+    Object.assign(L, { w: Math.round(aspect * H), h: Math.round(H), r: 0 });
+    Object.assign(L, { x: Math.round((frame.w - L.w) / 2), y: Math.round((frame.h - L.h) / 2) });
+    L._fit0 = { cam: { ...cam }, zoom: L.zoom };
+  } else {
+    const a = (L.r * Math.PI) / 180;
+    const ccx = L.x + L.w / 2 + offset[0] * Math.cos(a) - offset[1] * Math.sin(a),
+      ccy = L.y + L.h / 2 + offset[0] * Math.sin(a) + offset[1] * Math.cos(a);
+    Object.assign(L, { w: Math.round(keepW), h: Math.round(keepH) });
+    Object.assign(L, { x: Math.round(ccx - L.w / 2), y: Math.round(ccy - L.h / 2) });
+  }
+  L.ref = aspect * L.camScale * TOOL_HEIGHT;
+  L.dirty = true;
+}
 
 const clampRound = (n: number) => Math.round(Number.isFinite(n) ? n : 0);
 
@@ -151,15 +220,19 @@ export const layoutStore = {
     emit();
   },
   /** Options d'un calque de motif : animé ou fixe, image de l'illustration, fond, boucle. */
-  updatePattern(
-    id: string,
-    patch: Partial<Pick<PatternLayer, 'anim' | 'imgIndex' | 'bgOn' | 'loop' | 'zoom'>>,
-  ) {
+  updatePattern(id: string, patch: Partial<Pick<PatternLayer, 'anim' | 'imgIndex' | 'loop'>>) {
     const layer = layoutStore.layer(id);
     if (layer?.type !== 'pattern') return;
     Object.assign(layer, patch, { dirty: true });
-    if (patch.zoom !== undefined) clampPan(layer);
     emit();
+  },
+  /** Agrandit ou réduit un calque autour de son centre. */
+  scale(id: string, factor: number) {
+    const layer = layoutStore.layer(id);
+    if (!layer) return;
+    const w = Math.max(8, layer.w * factor),
+      h = Math.max(8, layer.h * factor);
+    layoutStore.updateLayer(id, { w, h, x: layer.x + (layer.w - w) / 2, y: layer.y + (layer.h - h) / 2 });
   },
   // ---------- manipulation 3D (prototype, lignes 3852 à 3940) ----------
   /** Glisser : le motif tourne (caméra du calque). */
@@ -172,38 +245,19 @@ export const layoutStore = {
     (layer as PatternLayer).dirty = true;
     emit();
   },
-  /** Maj + glisser : recadre dans le motif zoomé (dx, dy en part du calque). */
-  panCrop(id: string, dx: number, dy: number) {
-    const layer = layoutStore.layer(id);
-    if (layer?.type !== 'pattern') return;
-    const z = Math.max(1, layer.zoom || 1);
-    const [x, y] = layer.pan ?? [0, 0];
-    layer.pan = [x - dx / z, y - dy / z];
-    clampPan(layer);
-    layer.dirty = true;
-    emit();
-  },
-  /** Zoom dans le motif autour d'un point (u, v : de -0,5 à 0,5 dans le calque), 100 à 800 %. */
-  zoomInto(id: string, u: number, v: number, factor: number) {
-    const layer = layoutStore.layer(id);
-    if (layer?.type !== 'pattern') return;
-    const z0 = Math.max(1, layer.zoom || 1),
-      z1 = Math.max(1, Math.min(8, z0 * factor));
-    const [px, py] = layer.pan ?? [0, 0];
-    const fx = px + u / z0,
-      fy = py + v / z0;
-    layer.zoom = z1;
-    layer.pan = [fx - u / z1, fy - v / z1];
-    clampPan(layer);
-    layer.dirty = true;
-    emit();
-  },
-  /** « Recentrer le motif » : cadrage 3D d'origine, sans zoom. */
+  /** « Recentrer la forme » : cadrage 3D d'origine (le calque est ensuite réajusté à la forme). */
   recenter(id: string) {
     const layer = layoutStore.layer(id);
-    if (layer?.type !== 'pattern') return;
-    if (layer._cam0) layer.cam = JSON.parse(JSON.stringify(layer._cam0));
-    Object.assign(layer, { zoom: 1, pan: [0, 0], dirty: true });
+    if (layer?.type !== 'pattern' || !layer._fit0) return;
+    layer.cam = JSON.parse(JSON.stringify(layer._fit0.cam));
+    Object.assign(layer, { zoom: layer._fit0.zoom, pan: [0, 0], dirty: true });
+    emit();
+  },
+  /** Le calque épouse sa forme (mesurée par le moteur) : voir fitToShape. */
+  fit(id: string, shape: Shape, mode: 'cover' | 'keep') {
+    const layer = layoutStore.layer(id);
+    if (layer?.type !== 'pattern' || !layer.cam) return;
+    fitToShape(layer, shape, mode, doc);
     emit();
   },
   addLayer(layer: Layer) {
@@ -272,7 +326,7 @@ export function newPatternLayer(app: 'motif' | 'image', settings: EngineSettings
     imgIndex: 0,
     anim: true,
     ref: doc.w,
-    bgOn: true,
+    camScale: 1,
     loop: [],
     zoom: 1,
     pan: [0, 0],

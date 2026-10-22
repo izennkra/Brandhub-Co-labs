@@ -33,12 +33,27 @@ async function add(page: Page, kind: 'Motif' | 'Illustration') {
   await expect.poll(() => drawn(page), { timeout: 15000 }).toBeGreaterThan(500);
 }
 
-test('page blanche : un motif suit le format, rien n’est gardé au rechargement', async ({ page }) => {
+const field = async (page: Page, name: string) =>
+  Number(await page.getByRole('textbox', { name, exact: true }).inputValue());
+
+test('le calque épouse la forme, à bord perdu ; rien n’est gardé au rechargement', async ({ page }) => {
   await add(page, 'Motif');
-  await expect(page.getByRole('textbox', { name: 'Largeur' })).toHaveValue('1080');
+  const [x, y, w, h] = await Promise.all(
+    ['Position X', 'Position Y', 'Largeur', 'Hauteur'].map((name) => field(page, name)),
+  );
+  // il couvre le frame 1080 × 1920, centré
+  expect(x).toBeLessThanOrEqual(0);
+  expect(y).toBeLessThanOrEqual(0);
+  expect(x + w).toBeGreaterThanOrEqual(1080);
+  expect(y + h).toBeGreaterThanOrEqual(1920);
+  expect(Math.abs(x + w / 2 - 540)).toBeLessThanOrEqual(1);
+  // fond transparent : les coins du calque sont vides
+  const corner = await page
+    .locator('main canvas[aria-hidden="true"]')
+    .evaluate((c: HTMLCanvasElement) => c.getContext('2d')!.getImageData(0, 0, 4, 4).data[3]);
+  expect(corner).toBe(0);
   await page.getByRole('button', { name: '1:1', exact: true }).click();
   await expect(page.getByText('1080×1080')).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'Hauteur' })).toHaveValue('1080');
   await page.reload();
   await expect(page.getByText('Place un motif dans ce format.')).toBeVisible();
   await expect(page.getByText('1080×1920')).toBeVisible();
@@ -46,6 +61,7 @@ test('page blanche : un motif suit le format, rien n’est gardé au rechargemen
 
 test('zoom du plan de travail : boutons, ⌘ + molette, ajuster', async ({ page }) => {
   await page.goto('/outils/layout-editor');
+  await expect(page.getByText('1080×1920')).toBeVisible(); // le plan de travail a mesuré sa taille
   const zoom = page.getByRole('group', { name: 'Zoom du plan de travail' });
   const percent = async () => Number((await zoom.locator('span').textContent())!.replace(/\D/g, ''));
   const fitted = await percent();
@@ -81,22 +97,44 @@ test('agrandi, le motif reste net : l’aperçu est calculé à la taille affich
     .toBeGreaterThanOrEqual(0.97);
 });
 
-test('manipulation 3D : glisser fait tourner la copie du motif, l’outil ne change pas', async ({ page }) => {
+test('double-clic : mode 3D ; tourner, déplacer, pivoter ; le fond se règle sur le frame', async ({
+  page,
+}) => {
+  test.setTimeout(60000); // beaucoup d'étapes, lentes quand toute la suite tourne
   await page.goto('/outils/motif');
   await expect(page.locator('main #scene')).toBeVisible();
   const toolBg = await engine(page, (e) => e.core.S.bg);
   await add(page, 'Motif');
-  await page.getByRole('button', { name: 'Manipuler en 3D' }).click();
-  await expect(page.getByText(/Manipulation 3D/)).toBeVisible();
-  const before = await engine(page, (e) => e.layout.live?.cam?.theta);
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Dézoomer' }).click();
   const box = (await page.locator('main canvas[aria-hidden="true"]').boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  const cx = box.x + box.width / 2,
+    cy = box.y + box.height / 2;
+  await page.mouse.dblclick(cx, cy);
+  await expect(page.getByText(/Mode 3D ·/)).toBeVisible();
+  // glisser : la forme tourne, puis le calque se réajuste
+  const before = await engine(page, (e) => e.layout.live?.cam?.theta);
+  await page.mouse.move(cx, cy);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 6 });
+  await page.mouse.move(cx + 120, cy, { steps: 6 });
   await page.mouse.up();
   expect(await engine(page, (e) => e.layout.live?.cam?.theta)).not.toBe(before);
-  // la couleur de fond de la copie change ; celle de l'outil, non
-  await page.getByRole('radiogroup', { name: 'Fond' }).getByLabel('Orange').check({ force: true });
+  // poignée ✥ : déplacer
+  const x0 = await field(page, 'Position X');
+  const grip = (await page.getByTitle('Déplacer').boundingBox())!;
+  await page.mouse.move(grip.x + 5, grip.y + 5);
+  await page.mouse.down();
+  await page.mouse.move(grip.x + 65, grip.y + 5, { steps: 4 });
+  await page.mouse.up();
+  expect(await field(page, 'Position X')).toBeGreaterThan(x0);
+  // rond : pivoter
+  const rotate = (await page.getByTitle(/Pivoter/).boundingBox())!;
+  await page.mouse.move(rotate.x + 6, rotate.y + 6);
+  await page.mouse.down();
+  await page.mouse.move(rotate.x + 200, rotate.y + 150, { steps: 6 });
+  await page.mouse.up();
+  expect(await field(page, 'Rotation en degrés')).toBeGreaterThan(0);
+  // fond : réglé sur le frame, les formes s'y fondent ; l'outil garde le sien
+  await page.getByRole('radiogroup', { name: 'Fond du frame' }).getByLabel('Orange').check({ force: true });
   await expect.poll(() => engine(page, (e) => e.core.S.bg)).toBe('orange');
   await page.getByRole('link', { name: 'Motif' }).click();
   await expect.poll(() => engine(page, (e) => e.core.S.bg)).toBe(toolBg);

@@ -10,9 +10,10 @@ import styles from './LayoutStage.module.css';
 // Plan de travail du Layout editor (Figma « Tool / Layout editor Motif ») : un frame sur la toile à
 // points, son nom au-dessus, son format en dessous. Comme dans le prototype (Design libre, ligne 3798) :
 // molette = se déplacer, ⌘ / Ctrl + molette ou pincement = zoomer, glisser le fond = se déplacer.
-// Calques : glisser pour déplacer, coins pour redimensionner (Maj : proportions), flèches du clavier.
-// Manipulation 3D d'un motif (double-clic ou bouton du panneau) : glisser le fait tourner,
-// Maj + glisser le recadre, la molette zoome dedans.
+// Calques : glisser pour déplacer, coins pour redimensionner (Maj : proportions), rond pour pivoter
+// (Maj : par 15°), flèches du clavier. Mode 3D d'une forme (double-clic ou bouton du panneau) :
+// glisser la fait tourner, la poignée ✥ la déplace, coins et molette l'agrandissent ; après chaque
+// rotation, le calque se réajuste à la forme.
 
 // Barre d'espace tenue : glisser déplace la vue (un seul plan de travail à la fois).
 const keys = { space: false };
@@ -31,7 +32,8 @@ type Drag =
       y: number;
       box: Pick<Layer, 'x' | 'y' | 'w' | 'h'>;
     }
-  | { kind: 'orbit' | 'crop'; id: string; x: number; y: number }
+  | { kind: 'orbit'; id: string; x: number; y: number }
+  | { kind: 'rotate'; id: string; cx: number; cy: number; a0: number; r0: number }
   | { kind: 'pan'; x: number; y: number; view: View; moved: boolean };
 
 // libreTick (ligne 3765) : chaque calque de motif visible est dessiné par le moteur, à la taille
@@ -143,16 +145,9 @@ export function LayoutStage() {
         sy = event.clientY - r.top;
       const v = viewRef.current;
       const target = layoutStore.layer(layoutStore.selected);
-      if (layoutStore.mode3d && target?.type === 'pattern') {
-        const cx = v.x + (target.x + target.w / 2) * v.s,
-          cy = v.y + (target.y + target.h / 2) * v.s;
-        layoutStore.zoomInto(
-          target.id,
-          (sx - cx) / (target.w * v.s),
-          (sy - cy) / (target.h * v.s),
-          Math.exp(-event.deltaY * 0.004),
-        );
-      } else if (event.ctrlKey || event.metaKey) zoomAt(sx, sy, Math.exp(-event.deltaY * 0.0105));
+      if (layoutStore.mode3d && target?.type === 'pattern')
+        layoutStore.scale(target.id, Math.exp(-event.deltaY * 0.002));
+      else if (event.ctrlKey || event.metaKey) zoomAt(sx, sy, Math.exp(-event.deltaY * 0.0105));
       else
         setCustom({
           ...v,
@@ -169,7 +164,7 @@ export function LayoutStage() {
     drag.current = { kind: 'pan', x: event.clientX, y: event.clientY, view: viewRef.current, moved: false };
   };
 
-  const start = (event: PointerEvent, id: string, handle: Handle | null) => {
+  const start = (event: PointerEvent, id: string, handle: Handle | null, grip = false) => {
     event.stopPropagation();
     if (event.button === 1 || keys.space) return startPan(event);
     if (event.button !== 0) return;
@@ -177,8 +172,8 @@ export function LayoutStage() {
     if (!target) return;
     if (id !== layoutStore.selected) layoutStore.select(id);
     host.current?.setPointerCapture(event.pointerId);
-    if (layoutStore.mode3d && target.type === 'pattern' && !handle)
-      drag.current = { kind: event.shiftKey ? 'crop' : 'orbit', id, x: event.clientX, y: event.clientY };
+    if (layoutStore.mode3d && target.type === 'pattern' && !handle && !grip)
+      drag.current = { kind: 'orbit', id, x: event.clientX, y: event.clientY };
     else
       drag.current = {
         kind: handle ? 'resize' : 'move',
@@ -193,6 +188,29 @@ export function LayoutStage() {
   // poignée d'angle : son coin est dans data-handle
   const startHandle = (event: PointerEvent<HTMLElement>) =>
     layoutStore.selected && start(event, layoutStore.selected, event.currentTarget.dataset.handle as Handle);
+  // poignée ✥ du mode 3D : déplace le calque
+  const startGrip = (event: PointerEvent<HTMLElement>) =>
+    layoutStore.selected && start(event, layoutStore.selected, null, true);
+  // poignée ronde : pivote le calque autour de son centre
+  const startRotate = (event: PointerEvent<HTMLElement>) => {
+    event.stopPropagation();
+    const target = layoutStore.layer(layoutStore.selected);
+    const element = host.current;
+    if (!target || !element) return;
+    const r = element.getBoundingClientRect(),
+      v = viewRef.current;
+    const cx = r.left + v.x + (target.x + target.w / 2) * v.s,
+      cy = r.top + v.y + (target.y + target.h / 2) * v.s;
+    element.setPointerCapture(event.pointerId);
+    drag.current = {
+      kind: 'rotate',
+      id: target.id,
+      cx,
+      cy,
+      a0: Math.atan2(event.clientY - cy, event.clientX - cx),
+      r0: target.r,
+    };
+  };
 
   const move = (event: PointerEvent) => {
     const d = drag.current;
@@ -205,16 +223,16 @@ export function LayoutStage() {
       if (d.moved) setCustom({ ...d.view, x: d.view.x + dx, y: d.view.y + dy });
       return;
     }
-    if (d.kind === 'orbit' || d.kind === 'crop') {
-      const dx = event.clientX - d.x,
-        dy = event.clientY - d.y;
+    if (d.kind === 'orbit') {
+      layoutStore.orbit(d.id, event.clientX - d.x, event.clientY - d.y);
       d.x = event.clientX;
       d.y = event.clientY;
-      const target = layoutStore.layer(d.id);
-      if (!target) return;
-      if (d.kind === 'orbit') layoutStore.orbit(d.id, dx, dy);
-      else layoutStore.panCrop(d.id, dx / (target.w * v.s), dy / (target.h * v.s));
       return;
+    }
+    if (d.kind === 'rotate') {
+      let r = d.r0 + ((Math.atan2(event.clientY - d.cy, event.clientX - d.cx) - d.a0) * 180) / Math.PI;
+      if (event.shiftKey) r = Math.round(r / 15) * 15;
+      return layoutStore.updateLayer(d.id, { r: ((r % 360) + 360) % 360 });
     }
     if (d.kind !== 'move' && d.kind !== 'resize') return;
     const dx = (event.clientX - d.x) / v.s,
@@ -239,6 +257,12 @@ export function LayoutStage() {
     if (host.current?.hasPointerCapture(event.pointerId)) host.current.releasePointerCapture(event.pointerId);
     // un simple clic sur le fond désélectionne
     if (d?.kind === 'pan' && !d.moved && event.button === 0 && !keys.space) layoutStore.select(null);
+    // après une rotation 3D, le calque épouse de nouveau la forme
+    const target = d?.kind === 'orbit' ? layoutStore.layer(d.id) : null;
+    if (engine && target?.type === 'pattern') {
+      const shape = engine.layout.measure(target);
+      if (shape) layoutStore.fit(target.id, shape, 'keep');
+    }
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -297,6 +321,12 @@ export function LayoutStage() {
       onPointerMove={move}
       onPointerUp={end}
       onPointerCancel={end}
+      // la toile capture le pointeur pendant un glisser : le double-clic arrive donc ici.
+      // Double-clic sur une forme : mode 3D (et retour).
+      onDoubleClick={() => {
+        if (layoutStore.layer(layoutStore.selected)?.type === 'pattern')
+          layoutStore.set3d(!layoutStore.mode3d);
+      }}
       onKeyDown={onKeyDown}
       onKeyUp={(event) => {
         if (event.key === ' ') keys.space = false;
@@ -324,12 +354,8 @@ export function LayoutStage() {
                 <div
                   key={l.id}
                   className={styles.layer}
-                  style={{
-                    ...box(l),
-                    background: l.type === 'pattern' && l.bgOn && engine ? engine.layout.bgOf(l) : undefined,
-                  }}
+                  style={box(l)}
                   onPointerDown={(event) => start(event, l.id, null)}
-                  onDoubleClick={() => l.type === 'pattern' && layoutStore.set3d(true)}
                 >
                   {l.type === 'pattern' ? (
                     <canvas
@@ -360,17 +386,23 @@ export function LayoutStage() {
               data-mode={editing3d ? '3d' : undefined}
               style={{ ...box(layer), left: left + layer.x * s, top: top + layer.y * s }}
               onPointerDown={(event) => start(event, layer.id, null)}
-              onDoubleClick={() => layer.type === 'pattern' && layoutStore.set3d(!mode3d)}
             >
-              {!editing3d &&
-                (['nw', 'ne', 'sw', 'se'] as const).map((handle) => (
-                  <span
-                    key={handle}
-                    className={styles.handle}
-                    data-handle={handle}
-                    onPointerDown={startHandle}
-                  />
-                ))}
+              {(['nw', 'ne', 'sw', 'se'] as const).map((handle) => (
+                <span
+                  key={handle}
+                  className={styles.handle}
+                  data-handle={handle}
+                  onPointerDown={startHandle}
+                />
+              ))}
+              <span className={styles.rotate} title="Pivoter (Maj : par 15°)" onPointerDown={startRotate}>
+                <Icon name="arrow-rotate-clockwise" size="xs" />
+              </span>
+              {editing3d && (
+                <span className={styles.grip} title="Déplacer" onPointerDown={startGrip}>
+                  <Icon name="arrow-up-down-left-right" size="xs" />
+                </span>
+              )}
               {!editing3d && (layer.w !== doc.w || layer.h !== doc.h) && (
                 <span className={styles.size}>
                   {layer.w} × {layer.h}
@@ -389,8 +421,8 @@ export function LayoutStage() {
 
       {editing3d && (
         <p className={styles.hint}>
-          Manipulation 3D · glisser pour tourner · Maj + glisser pour recadrer · molette pour zoomer · Échap
-          pour terminer
+          Mode 3D · glisser : tourner la forme · ✥ : déplacer · coins ou molette : agrandir · rond : pivoter ·
+          Échap : terminer
         </p>
       )}
 

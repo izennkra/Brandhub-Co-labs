@@ -1871,4 +1871,132 @@ export const icons = {
       </>
     ),
   },
+  'arrow-up-down-left-right': {
+    viewBox: '0 0 24 24',
+    stroke15: (_id) => (
+      <>
+        <g>
+          <path
+            d="M9 5.24985L11.2929 2.95696C11.6834 2.56643 12.3166 2.56643 12.7071 2.95696L15 5.24985"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M5.24985 9L2.95696 11.2929C2.56643 11.6834 2.56643 12.3166 2.95696 12.7071L5.24985 15"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M18.75 9L21.0429 11.2929C21.4334 11.6834 21.4334 12.3166 21.0429 12.7071L18.75 15"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M15 18.75L12.7071 21.0429C12.3166 21.4334 11.6834 21.4334 11.2929 21.0429L9 18.75"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M12 4V12M12 12V20M12 12H4M12 12H20"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      </>
+    ),
+    stroke2: (_id) => (
+      <>
+        <g>
+          <path
+            d="M9 5.49985L11.2929 3.20696C11.6834 2.81643 12.3166 2.81643 12.7071 3.20696L15 5.49985"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M5.49985 9L3.20696 11.2929C2.81643 11.6834 2.81643 12.3166 3.20696 12.7071L5.49985 15"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M18.5 9L20.7929 11.2929C21.1834 11.6834 21.1834 12.3166 20.7929 12.7071L18.5 15"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M15 18.5L12.7071 20.7929C12.3166 21.1834 11.6834 21.1834 11.2929 20.7929L9 18.5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M12 4V12M12 12V20M12 12H4M12 12H20"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      </>
+    ),
+  },
+  'arrow-rotate-clockwise': {
+    viewBox: '0 0 24 24',
+    stroke15: (_id) => (
+      <>
+        <g>
+          <path
+            d="M18.5 7.00891C16.6791 4.95438 14.7962 3.75 11.979 3.75C7.42266 3.75 3.729 7.44365 3.729 12C3.729 16.5563 7.42266 20.25 11.979 20.25C15.5711 20.25 18.627 17.9543 19.7596 14.75"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M19.25 4V8H15.25"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      </>
+    ),
+    stroke2: (_id) => (
+      <>
+        <g>
+          <path
+            d="M19.5165 14.6667C18.4182 17.7738 15.4549 20 11.9717 20C7.5534 20 3.97168 16.4183 3.97168 12C3.97168 7.58172 7.5534 4 11.9717 4C15.0676 4 17 5.5 19 8"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M19 4V8H15"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      </>
+    ),
+  },
 } satisfies Record<string, IconDefinition>;

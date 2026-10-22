@@ -53,24 +53,44 @@ describe('Layout editor : le frame et ses calques', () => {
     expect(layoutStore.selected).toBeNull();
   });
 
-  it('manipulation 3D : tourne la caméra du motif, zoome dedans (100 à 800 %) et recentre', () => {
+  it('mode 3D : glisser tourne la caméra de la forme ; un calque image n’a pas de mode 3D', () => {
     const layer = newPatternLayer('motif', { app: 'motif' });
     layoutStore.addLayer(layer);
     layoutStore.set3d(true);
     expect(layoutStore.mode3d).toBe(true);
-    // le moteur a dessiné le calque une première fois : sa caméra existe
-    layer.cam = { theta: 0, phi: 1.5, radius: 40 };
-    layer._cam0 = { theta: 0, phi: 1.5, radius: 40 };
+    layer.cam = { theta: 0, phi: 1.5, radius: 40, tx: 0, ty: 0, tz: 0 };
     layoutStore.orbit(layer.id, 100, 0);
     expect((layer.cam as { theta: number }).theta).toBeCloseTo(-0.7);
-    layoutStore.zoomInto(layer.id, 0.25, 0, 100);
-    expect(layer.zoom).toBe(8); // plafonné à 800 %
-    expect(Math.abs(layer.pan![0])).toBeLessThanOrEqual(0.5 - 0.5 / 8);
-    layoutStore.recenter(layer.id);
-    expect([layer.zoom, layer.pan, (layer.cam as { theta: number }).theta]).toEqual([1, [0, 0], 0]);
-    // un calque image ne se manipule pas en 3D
+    layoutStore.scale(layer.id, 2);
+    expect([layer.w, layer.h, layer.x, layer.y]).toEqual([2160, 3840, -540, -960]);
     layoutStore.addLayer(newImageLayer('Logo', 'data:,', 100, 100));
     expect(layoutStore.mode3d).toBe(false);
+  });
+
+  it('à l’ajout, le calque épouse sa forme et couvre le frame à bord perdu', () => {
+    const layer = newPatternLayer('motif', { app: 'motif' });
+    layer.cam = { theta: 0, phi: Math.PI / 2, radius: 40, tx: 0, ty: 0, tz: 0 };
+    layoutStore.addLayer(layer);
+    // forme deux fois plus large que haute, centrée, vue avec une caméra reculée de 2
+    layoutStore.fit(layer.id, { x0: 0.1, x1: 0.9, y0: 0.3, y1: 0.7, k: 2, fov: 35 }, 'cover');
+    expect(layer.w / layer.h).toBeCloseTo(2, 2);
+    expect([layer.x, layer.y, layer.h]).toEqual([Math.round((1080 - layer.w) / 2), 0, 1920]);
+    expect(layer.zoom).toBeGreaterThanOrEqual(1);
+    expect(layer.camScale).toBeCloseTo(1.5); // recul : la forme peut tourner sans sortir de l'image
+    expect(layer.ref).toBeCloseTo(2 * 1.5 * 900, 0);
+    expect(layer._fit0).toBeDefined();
+  });
+
+  it('après une rotation 3D, la forme garde sa taille et sa place, le calque se réajuste', () => {
+    const layer = newPatternLayer('motif', { app: 'motif' });
+    Object.assign(layer, { cam: { theta: 0, phi: Math.PI / 2, radius: 40, tx: 0, ty: 0, tz: 0 }, zoom: 2 });
+    layoutStore.addLayer(layer);
+    // forme décalée vers la droite, deux fois moins large que le calque
+    layoutStore.fit(layer.id, { x0: 0.5, x1: 0.7, y0: 0.4, y1: 0.6, k: 2, fov: 35 }, 'keep');
+    const cam = layer.cam as { tx: number; tz: number };
+    expect(cam.tx).toBeGreaterThan(0); // la caméra vise le centre de la forme
+    expect(layer.h).toBe(Math.round(0.4 * 1.03 * 1920 * 2));
+    expect(layer.x + layer.w / 2).toBeCloseTo(540 + 0.2 * 1920 * 2, -1);
   });
 
   it('un motif garde sa largeur de référence : agrandi, il grandit d’un bloc', () => {
