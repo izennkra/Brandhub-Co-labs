@@ -5,6 +5,7 @@
 // (il enregistrait chaque ajout et chaque réglage pour tout le monde), sauf au premier chargement,
 // où il dépose les images de départ dans une bibliothèque vide.
 import type { ModelState, ModelViews } from './models';
+import { createSizing } from './sizing';
 import type { PresetStore } from './presets';
 import type { EngineImage, EngineSettings, PrototypeEngine } from './prototype-engine.js';
 
@@ -15,10 +16,13 @@ export const SETTINGS_COL = 'imgsettings';
 const LIBRARY_KEYS = ['imgLoop', 'imgHold', 'imgTrans'];
 
 // model : illustration en 3D (models.ts), identifiant de son modèle.
-type Image = EngineImage & { src?: string; model?: string; demo?: boolean };
+// size : taille dans son carré (sizing.ts), 1 = taille d'origine.
+type Image = EngineImage & { src?: string; model?: string; demo?: boolean; size?: number };
 // Document « images » : nom, tons, boucle, ordre ; hidden = modèle 3D supprimé par l'équipe ;
 // yaw, pitch, flat : angle d'une illustration 3D et si elle est aplatie.
+// size : taille de l'illustration dans son carré (absente = taille d'origine).
 type Meta = Partial<ModelState> & {
+  size?: number;
   name?: string;
   tone?: EngineSettings;
   inLoop?: boolean;
@@ -65,8 +69,11 @@ export function createLibrary(
   // Illustrations enregistrées : identifiant → nom, tons et réglages enregistrés.
   const saved = new Map<
     string,
-    { name?: string; tone?: EngineSettings; settings?: Settings; view?: ModelState }
+    { name?: string; tone?: EngineSettings; settings?: Settings; view?: ModelState; size?: number }
   >();
+  const sizing = createSizing(core, models);
+  // taille enregistrée, à écrire avec l'illustration (rien si c'est la taille d'origine)
+  const sizeMeta = (size: number) => (size !== 1 ? { size } : {});
   // Réglages changés pendant la visite, par image (retrouvés quand on revient sur elle).
   const session = new WeakMap<Image, Settings>();
   // Tant que la bibliothèque n'est pas chargée, le moteur montre ses images de démonstration :
@@ -106,10 +113,11 @@ export function createLibrary(
     if (isNew)
       await store.put('imagesrc', image.id, {
         // illustration 3D : la vue en PNG, fond transparent quand elle est aplatie
-        src: image.src ?? image.canvas.toDataURL(image.model ? 'image/png' : 'image/jpeg', 0.86),
+        src: image.src ?? sizing.source(image).toDataURL(image.model ? 'image/png' : 'image/jpeg', 0.86),
       });
     await store.put(SETTINGS_COL, image.id, { s: settings });
     const view = models?.stateOf(image);
+    const size = sizing.get(image);
     // en dernier : une image n'apparaît dans la liste de tous qu'une fois complète
     await store.put('images', image.id, {
       name: image.name,
@@ -117,8 +125,9 @@ export function createLibrary(
       inLoop: image.inLoop !== false,
       t: image.t,
       ...(image.model ? { model: image.model, ...view } : {}),
+      ...sizeMeta(size),
     });
-    saved.set(image.id, { name: image.name, tone: { ...image.tone }, settings, view });
+    saved.set(image.id, { name: image.name, tone: { ...image.tone }, settings, view, size });
     session.delete(image);
   };
 
@@ -208,6 +217,14 @@ export function createLibrary(
       if (!metas.length)
         for (const meta of await store.list('images').catch(() => [])) saved.set(meta.id, {});
       if (models) addModels(new Map(metas.map((meta) => [meta.id, meta.data as Meta])));
+      // taille enregistrée de chaque illustration
+      for (const meta of metas) {
+        const size = (meta.data as Meta | undefined)?.size;
+        const image = (core.imgList as Image[]).find((im) => im.id === meta.id);
+        if (!image || size === undefined) continue;
+        sizing.set(image, size);
+        saved.set(meta.id, { ...saved.get(meta.id), size: sizing.get(image) });
+      }
       for (const image of core.imgList as Image[])
         if (image.id && saved.has(image.id))
           Object.assign(saved.get(image.id)!, { name: image.name, tone: { ...image.tone } });
@@ -268,7 +285,9 @@ export function createLibrary(
           };
           // copie d'une illustration 3D : même modèle, mais sa propre vue
           if (image.model) models?.copyView(image, copy);
+          sizing.copy(image, copy);
           image.tone = { ...original.tone };
+          sizing.set(image, original.size ?? 1);
           image.name = original.name ?? image.name;
           session.delete(image);
           await write(copy, true);
@@ -299,6 +318,17 @@ export function createLibrary(
     /** Aplatir ou repasser en 3D (pour la visite ; « Enregistrer » le garde pour tous). */
     setFlat(flat: boolean) {
       models?.setFlat(selected(), flat);
+      changed();
+    },
+
+    /** Taille de l'illustration choisie (1 = taille d'origine). */
+    sizeOf() {
+      return sizing.get(selected());
+    },
+
+    /** Curseur « Taille de l'image » : pour la visite ; « Enregistrer » la garde pour tous. */
+    setSize(size: number) {
+      sizing.set(selected(), size);
       changed();
     },
 
@@ -351,6 +381,7 @@ export function createLibrary(
           inLoop: image.inLoop !== false,
           t: image.t,
           ...(image.model ? { model: image.model, ...saved.get(image.id!)?.view } : {}),
+          ...sizeMeta(saved.get(image.id!)?.size ?? 1),
         })
         .catch(() => toast('Ordre non enregistré : ouvre le mode édition.'));
     },

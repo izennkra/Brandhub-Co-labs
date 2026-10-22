@@ -28,7 +28,8 @@ const FRONT = { theta: 0, phi: Math.PI / 2 };
 type ModelImage = EngineImage & { model?: string; lum?: unknown; blurL?: unknown; blurR?: number };
 /** Ce qui est enregistré d'une illustration 3D : son angle et si elle est aplatie. */
 export type ModelState = { yaw: number; pitch: number; flat: boolean };
-type View = ModelState & { def: ModelDef; dirty: boolean; last: number };
+// size : taille dans le carré (sizing.ts), 1 = le modèle tient tout le carré
+type View = ModelState & { def: ModelDef; size: number; dirty: boolean; last: number };
 type DotSet = { px: Float32Array; py: Float32Array; ps: Float32Array; pd: Float32Array };
 
 /**
@@ -163,6 +164,7 @@ export function createModelViews(core: PrototypeEngine, changed: () => void) {
     if (!object) return;
     const { renderer, scene, camera, pivot } = getStage();
     pivot.rotation.set(view.pitch, 0, 0);
+    pivot.scale.setScalar(view.size);
     object.rotation.set(0, view.yaw, 0);
     pivot.remove(...pivot.children); // un seul modèle à la fois sur la scène
     pivot.add(object);
@@ -202,6 +204,7 @@ export function createModelViews(core: PrototypeEngine, changed: () => void) {
         yaw: typeof state?.yaw === 'number' ? state.yaw : def.yaw,
         pitch: typeof state?.pitch === 'number' ? state.pitch : def.pitch,
         flat: state?.flat === true,
+        size: 1,
         dirty: false,
         last: 0,
       };
@@ -225,6 +228,16 @@ export function createModelViews(core: PrototypeEngine, changed: () => void) {
     stateOf(image: EngineImage | undefined): ModelState | undefined {
       const view = image && views.get(image as ModelImage);
       return view ? { yaw: view.yaw, pitch: view.pitch, flat: view.flat } : undefined;
+    },
+    /** Taille du modèle dans son carré (sizing.ts). */
+    setSize(image: EngineImage | undefined, size: number) {
+      const view = image && views.get(image as ModelImage);
+      if (!image || !view || view.size === size) return;
+      view.size = size;
+      void draw(image as ModelImage, view).then(() => {
+        delete image.thumb;
+        changed();
+      });
     },
     /**
      * Aplatir : l'illustration devient l'image figée de la vue actuelle, sur fond transparent, et tourne
