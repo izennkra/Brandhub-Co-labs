@@ -85,6 +85,7 @@
   --size-swatch: 28px; /* pastille de couleur (Fond, Pastilles) : 7 tiennent sur la largeur du panneau */
   --size-thumb: 56px; /* vignette du bandeau d'images (Figma 85 ÷ 1,44, arrondi à la grille) */
   --size-content-max: 1320px; /* contenu des pages Ressource */
+  --size-card-min: 240px; /* largeur mini d'une carte de ressource (4 colonnes sur grand écran) */
   --size-text-max: 60ch; /* largeur de lecture confortable d'un paragraphe */
   --size-divider: 1px;
   --size-focus-ring: 2px;

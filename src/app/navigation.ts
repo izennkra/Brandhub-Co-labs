@@ -14,7 +14,8 @@ export type ToolPageDef = NavPage & {
 };
 
 export type ResourcePageDef = NavPage & {
-  description: string; // provisoire, à remplacer par les textes définitifs (partie resources)
+  description: string; // provisoire, à remplacer par les textes définitifs
+  editTips: string[]; // consignes du mode édition, dans le panneau latéral
 };
 
 export type SectionId = 'tool' | 'resource';
@@ -79,42 +80,70 @@ export const RESOURCE_PAGES: ResourcePageDef[] = [
     label: 'Logo',
     icon: 'vector-logo',
     description: 'Les logos de la marque, prêts à télécharger.',
+    editTips: [
+      'Dépose chaque logo une seule fois, en SVG, dans sa section (Logo principal, Symbole…).',
+      'Il est décliné tout seul dans chaque couleur de la page Couleur, et s’exporte en SVG, PNG et PDF.',
+      '« Ajouter une section » pour une autre déclinaison ; clique sur un titre pour le renommer.',
+    ],
   },
   {
     path: '/ressources/typographie',
     label: 'Typographie',
     icon: 'text1',
     description: 'Les polices de la marque, leurs graisses et leur hiérarchie.',
+    editTips: [
+      'Change le nom, le rôle, les graisses et le code CSS directement dans les cartes.',
+      'Dépose les fichiers de police (WOFF2, OTF, TTF) dans la carte Fichiers.',
+      'Ajoute ou retire des niveaux dans l’échelle typographique.',
+    ],
   },
   {
     path: '/ressources/couleur',
     label: 'Couleur',
     icon: 'color-palette',
     description: 'La palette de la marque et ses valeurs à copier.',
+    editTips: [
+      'Palette principale, puis palette secondaire pour les couleurs d’accent : un nom et un code HEX suffisent.',
+      'Neutres : saisis la couleur la plus claire et la plus foncée, les paliers se construisent seuls.',
+      'Les nuances de chaque couleur sont calculées automatiquement.',
+    ],
   },
   {
     path: '/ressources/iconographie',
     label: 'Iconographie',
     icon: 'shapes-plus-x-square-circle',
     description: 'Les icônes de la marque, à rechercher et à copier.',
+    editTips: [
+      'Les icônes viennent de la bibliothèque Central : il n’y a rien à déposer.',
+      'Les couleurs de la page Couleur apparaissent en raccourci dans le filtre Couleur.',
+    ],
   },
   {
     path: '/ressources/imagerie',
     label: 'Imagerie',
     icon: 'images1',
     description: 'Les images et la direction photo de la marque.',
+    editTips: [
+      'Dépose tes images dans la zone d’ajout.',
+      'Donne un thème à chaque image : il sert de filtre.',
+    ],
   },
   {
     path: '/ressources/patterns',
     label: 'Patterns prédéfinis',
     icon: 'dot-grid3x3',
     description: 'Les motifs prêts à l’emploi, générés avec l’outil.',
+    editTips: ['Les layouts arrivent depuis le Layout editor ; ici, tu peux les renommer ou les retirer.'],
   },
   {
     path: '/ressources/inspiration',
     label: 'Inspiration',
     icon: 'lightbulb-glow',
     description: 'Les références visuelles qui nourrissent la marque.',
+    editTips: [
+      'Dépose tes images d’inspiration dans la zone d’ajout.',
+      'Clique sur un nom pour le renommer.',
+    ],
   },
 ];
 

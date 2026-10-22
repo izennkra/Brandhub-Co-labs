@@ -1,6 +1,6 @@
 # Carte des parties : Brand Hub · Co Labs
 
-> Statut : **validée le 21/10/2026**. Les specs de chaque partie sont écrites dans l'ordre de construction ci-dessous.
+> Statut : **validée le 21/10/2026**. Ordre revu le 22/10/2026 : Export → Ressources → Layout editor (voir `passation.md`).
 > Prototype de référence : `reference/prototype.html` · Règles : `CLAUDE.md`
 
 ## Ce qui existe aujourd'hui (prototype)
@@ -56,7 +56,7 @@ app-shell → pattern-engine, data-store → editor-access → resources → lay
 
 Pourquoi les Ressources avant le Layout editor ? Le Layout editor doit pouvoir insérer les logos et les images des Ressources. Si on les construit d'abord, il n'y a rien à refaire ensuite.
 
-Chaque partie aura sa propre spec (`SPEC-app-shell.md`, `SPEC-resources.md`, etc.), écrite dans cet ordre, puis validée avant de coder.
+Depuis le 22/10/2026, plus de spec écrite par partie : on code directement ce qui est cadré (voir `CLAUDE.md` § Méthode).
 
 ## Questions ouvertes
 

@@ -1,9 +1,17 @@
+import type { ReactNode } from 'react';
 import { usePageTitle } from '../../app/usePageTitle';
 import styles from './ResourcePage.module.css';
 
-// Gabarit commun des pages Ressource (Figma « Ressource / … ») : titre, description,
-// puis le contenu de la page, qui arrive avec la partie resources.
-export function ResourcePage({ title, description }: { title: string; description: string }) {
+// Gabarit commun des pages Ressource (Figma « Ressource / … ») : titre, description, puis le contenu.
+export function ResourcePage({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children?: ReactNode;
+}) {
   usePageTitle(title);
   return (
     <section className={styles.page}>
@@ -12,7 +20,7 @@ export function ResourcePage({ title, description }: { title: string; descriptio
           <h1 className={styles.title}>{title}</h1>
           <p className={styles.description}>{description}</p>
         </header>
-        <p className={styles.pending}>Le contenu de cette page arrive avec la partie resources.</p>
+        {children}
       </div>
     </section>
   );

@@ -3,6 +3,7 @@
 // modifie pas : ping, liste d'une collection, lecture, écriture et suppression d'un document.
 // Les données sont dans Upstash Redis : une table (hash) « bhc:<collection> » par collection.
 import { Redis } from '@upstash/redis';
+import { codeMatches } from './_lib/editor.js';
 
 /** Base de données du service : Upstash en ligne, en mémoire dans les tests. */
 export type StoreDb = {
@@ -17,6 +18,9 @@ const COLLECTION = /^[a-z][a-z0-9-]{0,39}$/;
 const MAX_ID = 200;
 // Une requête Vercel ne dépasse pas 4,5 Mo : on refuse avant, avec un message clair.
 export const MAX_BODY = 4 * 1024 * 1024;
+// Collections des pages Ressource : seules les personnes qui ont le code peuvent les modifier.
+// Les collections du moteur (presets, images, imagesrc) restent ouvertes à tous.
+export const isProtected = (col: string) => col.startsWith('res-');
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -28,13 +32,19 @@ const fail = (status: number, error: string) => json(status, { ok: false, error 
 const validId = (id: unknown): id is string => typeof id === 'string' && id.length > 0 && id.length <= MAX_ID;
 
 /** Traite une requête du contrat /api/store. Sans base configurée, le service se déclare absent. */
-export async function handleStore(request: Request, db: StoreDb | null): Promise<Response> {
+export async function handleStore(
+  request: Request,
+  db: StoreDb | null,
+  editorCode?: string,
+): Promise<Response> {
   // Le moteur reste alors en mode navigateur (il teste « ping » au démarrage).
   if (!db) return fail(503, 'stockage partagé non configuré');
   const params = new URL(request.url).searchParams;
   try {
     if (request.method === 'GET') {
       if (params.has('ping')) return json(200, { ok: true });
+      // Vérification du code éditeur (champ « code » du panneau des Ressources).
+      if (params.has('editor')) return json(200, { ok: true, valid: codeMatches(request, editorCode) });
       const col = params.get('col') ?? '';
       if (!COLLECTION.test(col)) return fail(400, 'collection invalide');
       const id = params.get('id');
@@ -59,6 +69,7 @@ export async function handleStore(request: Request, db: StoreDb | null): Promise
       if (typeof body.col !== 'string' || !COLLECTION.test(body.col)) return fail(400, 'collection invalide');
       if (!validId(body.id)) return fail(400, 'identifiant invalide');
       if (body.data === undefined || body.data === null) return fail(400, 'données manquantes');
+      if (isProtected(body.col) && !codeMatches(request, editorCode)) return fail(403, 'code éditeur requis');
       await db.set(body.col, body.id, body.data);
       return json(200, { ok: true });
     }
@@ -67,6 +78,7 @@ export async function handleStore(request: Request, db: StoreDb | null): Promise
       const id = params.get('id');
       if (!COLLECTION.test(col)) return fail(400, 'collection invalide');
       if (!validId(id)) return fail(400, 'identifiant invalide');
+      if (isProtected(col) && !codeMatches(request, editorCode)) return fail(403, 'code éditeur requis');
       await db.del(col, id);
       return json(200, { ok: true });
     }
@@ -129,6 +141,6 @@ function dbFromEnv(): StoreDb | null {
 }
 
 let db: StoreDb | null | undefined;
-const handle = (request: Request) => handleStore(request, (db ??= dbFromEnv()));
+const handle = (request: Request) => handleStore(request, (db ??= dbFromEnv()), process.env.EDITOR_CODE);
 
 export { handle as GET, handle as POST, handle as DELETE };
