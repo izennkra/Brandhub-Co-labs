@@ -18,9 +18,12 @@ const COLLECTION = /^[a-z][a-z0-9-]{0,39}$/;
 const MAX_ID = 200;
 // Une requête Vercel ne dépasse pas 4,5 Mo : on refuse avant, avec un message clair.
 export const MAX_BODY = 4 * 1024 * 1024;
-// Collections des pages Ressource : seules les personnes qui ont le code peuvent les modifier.
-// Les collections du moteur (presets, images, imagesrc) restent ouvertes à tous.
-export const isProtected = (col: string) => col.startsWith('res-');
+// Collections des pages Ressource et préréglages partagés : seules les personnes qui ont le code
+// peuvent les modifier (un visiteur garde ses préréglages dans son navigateur).
+export const isProtected = (col: string) => col.startsWith('res-') || col === 'presets';
+// Bibliothèque de l'Illustration : tout le monde peut y ajouter une illustration (bouton
+// « Enregistrer l'illustration »), mais seul le code permet d'en modifier ou d'en supprimer une.
+export const ADD_ONLY = new Set(['images', 'imagesrc', 'imgsettings']);
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -69,7 +72,11 @@ export async function handleStore(
       if (typeof body.col !== 'string' || !COLLECTION.test(body.col)) return fail(400, 'collection invalide');
       if (!validId(body.id)) return fail(400, 'identifiant invalide');
       if (body.data === undefined || body.data === null) return fail(400, 'données manquantes');
-      if (isProtected(body.col) && !codeMatches(request, editorCode)) return fail(403, 'code éditeur requis');
+      if (!codeMatches(request, editorCode)) {
+        if (isProtected(body.col)) return fail(403, 'code éditeur requis');
+        if (ADD_ONLY.has(body.col) && (await db.get(body.col, body.id)) != null)
+          return fail(403, 'code éditeur requis pour modifier une illustration enregistrée');
+      }
       await db.set(body.col, body.id, body.data);
       return json(200, { ok: true });
     }
@@ -78,7 +85,8 @@ export async function handleStore(
       const id = params.get('id');
       if (!COLLECTION.test(col)) return fail(400, 'collection invalide');
       if (!validId(id)) return fail(400, 'identifiant invalide');
-      if (isProtected(col) && !codeMatches(request, editorCode)) return fail(403, 'code éditeur requis');
+      if ((isProtected(col) || ADD_ONLY.has(col)) && !codeMatches(request, editorCode))
+        return fail(403, 'code éditeur requis');
       await db.del(col, id);
       return json(200, { ok: true });
     }

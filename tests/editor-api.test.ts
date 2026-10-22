@@ -38,13 +38,31 @@ describe('/api/store : les Ressources demandent le code éditeur', () => {
     expect((await handleStore(post(doc, ''), memoryDb(), undefined)).status).toBe(403);
   });
 
-  it('les préréglages du moteur restent ouverts à tous', async () => {
-    const response = await handleStore(
-      post({ col: 'presets', id: 'a', data: { name: 'A' } }),
-      memoryDb(),
-      CODE,
-    );
-    expect(response.status).toBe(200);
+  it('les préréglages partagés demandent aussi le code', async () => {
+    const db = memoryDb();
+    const doc = { col: 'presets', id: 'a', data: { name: 'A' } };
+    expect((await handleStore(post(doc), db, CODE)).status).toBe(403);
+    expect((await handleStore(post(doc, CODE), db, CODE)).status).toBe(200);
+    const remove = (code?: string) =>
+      handleStore(req('/api/store?col=presets&id=a', { method: 'DELETE', code }), db, CODE);
+    expect((await remove()).status).toBe(403);
+    expect((await remove(CODE)).status).toBe(200);
+  });
+
+  it('tout le monde ajoute une illustration ; seul le code la modifie ou la supprime', async () => {
+    const db = memoryDb();
+    for (const col of ['imagesrc', 'imgsettings', 'images']) {
+      const add = { col, id: 'cadenas', data: { name: 'Cadenas' } };
+      expect((await handleStore(post(add), db, CODE)).status).toBe(200);
+      const change = { col, id: 'cadenas', data: { name: 'Abîmé' } };
+      expect((await handleStore(post(change), db, CODE)).status).toBe(403);
+      expect((await db.get(col, 'cadenas')) as { name: string }).toEqual({ name: 'Cadenas' });
+      expect((await handleStore(post(change, CODE), db, CODE)).status).toBe(200);
+      const remove = (code?: string) =>
+        handleStore(req(`/api/store?col=${col}&id=cadenas`, { method: 'DELETE', code }), db, CODE);
+      expect((await remove()).status).toBe(403);
+      expect((await remove(CODE)).status).toBe(200);
+    }
   });
 });
 

@@ -1,0 +1,244 @@
+/* Toile à points du Figma « Tool / Layout editor Motif », frame centré. */
+.stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: clip; /* « hidden » laisserait la toile défiler quand un bouton prend le focus */
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  background-image: radial-gradient(circle, var(--color-control-active) 1px, transparent 1.5px);
+  background-size: var(--space-5) var(--space-5);
+  touch-action: none;
+}
+
+.stage[data-mode='3d'] {
+  cursor: grab;
+}
+
+.stage:focus-visible {
+  outline: var(--size-focus-ring) solid var(--color-focus);
+  outline-offset: calc(-1 * var(--size-focus-ring));
+}
+
+.frameName {
+  position: absolute;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.frame {
+  position: absolute;
+  box-shadow: var(--shadow-overlay);
+}
+
+/* frame sans fond : damier, comme dans les logiciels de dessin */
+.frame[data-transparent='true'] {
+  background: repeating-conic-gradient(var(--color-card) 0 25%, var(--color-surface-raised) 0 50%) 0 0 /
+    var(--space-4) var(--space-4);
+}
+
+.layer {
+  position: absolute;
+  cursor: move;
+}
+
+.layer canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.layer canvas,
+.layer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* sélection : contour orange (accent du Figma) et poignées aux coins */
+.selection {
+  position: absolute;
+  outline: var(--size-focus-ring) solid var(--color-accent);
+  cursor: move;
+}
+
+.handle {
+  position: absolute;
+  width: var(--space-3);
+  height: var(--space-3);
+  border: var(--size-divider) solid var(--color-accent);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-raised);
+  transform: translate(-50%, -50%);
+}
+
+.handle[data-handle='nw'] {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+
+.handle[data-handle='ne'] {
+  top: 0;
+  left: 100%;
+  cursor: nesw-resize;
+}
+
+.handle[data-handle='sw'] {
+  top: 100%;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+.handle[data-handle='se'] {
+  top: 100%;
+  left: 100%;
+  cursor: nwse-resize;
+}
+
+.size {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 50%;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* format sous le frame : « 9:16  1080×1920 » */
+.badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.badge b {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-control-active);
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+
+.empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* manipulation 3D : contour en pointillés, curseur de rotation */
+.selection[data-mode='3d'] {
+  outline-style: dashed;
+  cursor: grab;
+}
+
+.selection[data-mode='3d']:active {
+  cursor: grabbing;
+}
+
+.hint {
+  position: absolute;
+  top: var(--space-3);
+  left: 50%;
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-dark);
+  color: var(--color-text-inverse);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* zoom du plan de travail, en bas à gauche */
+.zoom {
+  position: absolute;
+  bottom: var(--space-3);
+  left: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--color-control-group);
+  font-size: var(--text-xs);
+}
+
+.zoom span {
+  min-width: calc(var(--space-10) + var(--space-1));
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.zoom button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-compact);
+  height: var(--size-control-compact);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.zoom button:hover {
+  background: var(--color-control-active);
+}
+
+/* pivoter : rond au-dessus du calque ; déplacer (mode 3D) : poignée en haut à gauche */
+.rotate,
+.grip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  border: var(--size-divider) solid var(--color-accent);
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+}
+
+.rotate {
+  bottom: calc(100% + var(--space-3));
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: grab;
+}
+
+.grip {
+  top: calc(-1 * var(--space-8));
+  left: calc(-1 * var(--space-8));
+  border-radius: var(--radius-sm);
+  cursor: move;
+}

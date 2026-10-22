@@ -85,9 +85,22 @@ describe('bloc Export du panneau (Figma + dock du prototype)', () => {
     expect(S.exported).toBe(1);
   });
 
-  it('reste désactivé sur le Layout editor (pas encore de moteur)', async () => {
-    const router = createMemoryRouter(routes, { initialEntries: ['/outils/layout-editor'] });
-    render(<RouterProvider router={router} />);
-    expect(screen.getByRole('button', { name: 'Export' })).toHaveAttribute('aria-disabled', 'true');
+  it('Layout editor : exporte le frame en image ou en vidéo', async () => {
+    const { user, S } = await openExport('/outils/layout-editor');
+    expect(
+      within(group('Type d’export'))
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Image', 'Vidéo']);
+    await user.click(screen.getByRole('button', { name: '3x' }));
+    await user.click(screen.getByRole('button', { name: 'WebP' }));
+    expect(screen.getByText('3240 × 5760 px')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Exporter' }));
+    expect(S.layoutExport).toEqual({ w: 1080, h: 1920, scale: 2, fmt: 1 });
+    await user.click(screen.getByRole('button', { name: 'Vidéo' }));
+    await user.click(screen.getByRole('button', { name: 'Enregistrer la vidéo' }));
+    expect(S.layoutVideo).toBe(8);
+    // page d'essai : rien n'est enregistré
+    expect(screen.queryByRole('button', { name: /Patterns prédéfinis/ })).not.toBeInTheDocument();
   });
 });

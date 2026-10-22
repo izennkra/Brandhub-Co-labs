@@ -3,10 +3,40 @@
 import type { AppMode } from './createEngine';
 import type { PrototypeEngine } from './prototype-engine.js';
 
-// Chaque préréglage est un document de la collection « presets » du Store du moteur.
-export type Preset = { id: string; name: string; t: number; s: Record<string, unknown> };
+// Chaque préréglage partagé est un document de la collection « presets » du stockage.
+// « mine » : préréglage d'un visiteur, gardé dans son navigateur seulement.
+export type Preset = { id: string; name: string; t: number; s: Record<string, unknown>; mine?: boolean };
+
+/** Stockage des préréglages partagés (celui de l'appli, qui joint le code éditeur). */
+export type PresetStore = {
+  readonly kind: string;
+  readonly ready?: Promise<unknown>;
+  list: (col: string) => Promise<Array<{ id: string; data: Record<string, unknown> }>>;
+  put: (col: string, id: string, data: unknown) => Promise<void>;
+  del: (col: string, id: string) => Promise<void>;
+};
 
 const DEF_KEY = 'bhc.presetDefault';
+// Préréglages d'un visiteur : seulement dans son navigateur, personne d'autre ne les voit.
+const MINE_KEY = 'bhc.mesPresets';
+const MINE_PREFIX = 'moi-';
+
+function readMine(): Preset[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(MINE_KEY) || '[]');
+    return Array.isArray(list) ? list.filter((p) => p && p.id && p.s).map((p) => ({ ...p, mine: true })) : [];
+  } catch {
+    return [];
+  }
+}
+function writeMine(list: Preset[]) {
+  try {
+    localStorage.setItem(MINE_KEY, JSON.stringify(list.map(({ id, name, t, s }) => ({ id, name, t, s }))));
+    return true;
+  } catch {
+    return false;
+  }
+}
 const SKIP_KEYS = new Set(['paused', 'fog', 'pinches']);
 
 // slugName (ligne 2710) : identifiant du préréglage à partir de son nom.
@@ -27,7 +57,8 @@ export function fmtDate(p: Preset) {
     return (
       new Date(p.t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) +
       ' · ' +
-      (p.s && p.s.app === 'image' ? 'Illustration' : p.s && p.s.variant === 0 ? 'Aérée' : 'Quantique')
+      (p.s && p.s.app === 'image' ? 'Illustration' : p.s && p.s.variant === 0 ? 'Aérée' : 'Quantique') +
+      (p.mine ? ' · sur cet appareil' : '')
     );
   } catch {
     return '';
@@ -40,9 +71,16 @@ export function createPresets(
   syncAll: () => void,
   toast: (message: string) => void,
   changed: () => void,
+  {
+    store: Store = core.Store,
+    isEditor = () => false,
+  }: { store?: PresetStore; isEditor?: () => boolean } = {},
 ) {
-  const { Store } = core;
   let presets: Preset[] = [];
+  let mine: Preset[] = [];
+  // En ligne, sans le mode édition, on enregistre dans le navigateur (le partagé demande le code).
+  const personal = () => Store.kind === 'api' && !isEditor();
+  const all = () => [...presets, ...mine];
   let presetDefault: string | null = null;
   let loaded = false;
   // Préréglage de démarrage d'un autre outil que celui affiché : appliqué quand on l'ouvre
@@ -91,9 +129,19 @@ export function createPresets(
   const isImage = (p: Preset) => p.s.app === 'image';
 
   const api = {
+    /** Réglages actuels, tels qu'un préréglage les enregistre (sert aussi aux illustrations). */
+    snapshot: snapshotSettings,
+    /** Applique des réglages enregistrés (préréglage ou illustration). */
+    applySnapshot: applySettings,
     /** Préréglages de l'outil affiché (Motif ou Illustration), du plus récent au plus ancien. */
     list() {
-      return presets.filter((p) => isImage(p) === (core.S.app === 'image'));
+      return all()
+        .filter((p) => isImage(p) === (core.S.app === 'image'))
+        .sort((a, b) => b.t - a.t);
+    },
+    /** Peut-on supprimer ce préréglage ? Les siens, ou tous en mode édition. */
+    canRemove(id: string) {
+      return Boolean(mine.some((p) => p.id === id) || (presets.some((p) => p.id === id) && !personal()));
     },
     get loaded() {
       return loaded;
@@ -106,20 +154,20 @@ export function createPresets(
       if (!loaded) return 'Chargement des préréglages…';
       return Store.kind === 'local'
         ? 'Enregistrés dans ce navigateur seulement : le stockage partagé n’est pas configuré sur ce site.'
-        : Store.readOnly
-          ? 'Partagés avec toutes les personnes qui ont le lien. Tu peux les appliquer, mais pas en ajouter.'
-          : 'Partagés : toutes les personnes qui ont le lien voient ces préréglages et peuvent les appliquer. L’étoile choisit celui qui s’ouvre au démarrage, sur ton appareil.';
+        : personal()
+          ? 'Ceux de l’équipe sont visibles par tous. Les tiens restent dans ce navigateur : toi seul les vois. L’étoile choisit celui qui s’ouvre au démarrage.'
+          : 'Mode édition : tes préréglages sont partagés avec toutes les personnes qui ont le lien. L’étoile choisit celui qui s’ouvre au démarrage, sur ton appareil.';
     },
     // Clic sur le nom (ligne 2724).
     apply(id: string) {
-      const p = presets.find((q) => q.id === id);
+      const p = all().find((q) => q.id === id);
       if (!p) return;
       applySettings(p.s);
       toast('Préréglage appliqué : ' + p.name);
     },
     // Étoile : préréglage ouvert au démarrage, sur cet appareil (ligne 2727).
     toggleDefault(id: string) {
-      const p = presets.find((q) => q.id === id);
+      const p = all().find((q) => q.id === id);
       if (!p) return;
       const isDef = presetDefault === p.id;
       presetDefault = isDef ? null : p.id;
@@ -138,23 +186,51 @@ export function createPresets(
     },
     // Retrait (ligne 2731) ; la double confirmation est gérée par le panneau.
     async remove(id: string) {
+      if (mine.some((q) => q.id === id)) {
+        mine = mine.filter((q) => q.id !== id);
+        writeMine(mine);
+        changed();
+        toast('Préréglage supprimé.');
+        return;
+      }
+      if (personal()) return toast('Seul le mode édition peut supprimer un préréglage de l’équipe.');
       try {
         await Store.del('presets', id);
         presets = presets.filter((q) => q.id !== id);
         changed();
         toast('Préréglage supprimé.');
       } catch {
-        toast('Suppression impossible : tu n’as peut-être que le droit de lecture.');
+        toast('Suppression impossible : ouvre le mode édition pour supprimer un préréglage partagé.');
       }
     },
     // savePreset (ligne 2746).
     async save(input: string) {
       await core.storeReady;
+      await Store.ready;
       let name = (input || '').trim().slice(0, 40);
       if (!name) {
         let i = presets.length + 1;
         while (presets.some((p) => p.name === 'Préréglage ' + i)) i++;
         name = 'Préréglage ' + i;
+      }
+      if (personal()) {
+        const entry: Preset = {
+          id: MINE_PREFIX + slugName(name),
+          name,
+          t: Date.now(),
+          s: snapshotSettings(),
+          mine: true,
+        };
+        const i = mine.findIndex((p) => p.id === entry.id);
+        const next = i >= 0 ? mine.map((p, k) => (k === i ? entry : p)) : [entry, ...mine];
+        if (!writeMine(next)) {
+          toast('Espace du navigateur plein.');
+          return false;
+        }
+        mine = next;
+        changed();
+        toast((i >= 0 ? 'Préréglage mis à jour : ' : 'Préréglage enregistré dans ce navigateur : ') + name);
+        return true;
       }
       const id = slugName(name);
       const entry: Preset = { id, name, t: Date.now(), s: snapshotSettings() };
@@ -175,7 +251,7 @@ export function createPresets(
         toast(
           (e as { code?: string })?.code === 'quota'
             ? 'Espace du navigateur plein.'
-            : 'Enregistrement impossible : tu n’as peut-être que le droit de lecture.',
+            : 'Enregistrement impossible : ouvre le mode édition pour partager un préréglage.',
         );
         return false;
       }
@@ -192,6 +268,7 @@ export function createPresets(
     // initPresets (ligne 2758).
     async init() {
       await core.storeReady;
+      await Store.ready;
       try {
         presetDefault = localStorage.getItem(DEF_KEY);
       } catch {
@@ -211,6 +288,7 @@ export function createPresets(
       } catch {
         presets = [];
       }
+      mine = readMine();
       // anciens préréglages enregistrés dans ce navigateur : on les reprend dans la liste partagée
       try {
         const old = JSON.parse(localStorage.getItem('synapse.presets.v1') || 'null');
@@ -233,7 +311,7 @@ export function createPresets(
       }
       loaded = true;
       changed();
-      const def = presets.find((p) => p.id === presetDefault);
+      const def = all().find((p) => p.id === presetDefault);
       if (def) {
         pendingDefault = def;
         api.onAppChanged();

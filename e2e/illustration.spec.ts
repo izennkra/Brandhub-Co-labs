@@ -12,9 +12,10 @@ const names = (page: Page) =>
     .getByRole('list', { name: 'Images' })
     .getByRole('listitem')
     .locator('button[aria-current]')
-    .allTextContents();
+    .allTextContents()
+    .then((all) => all.map((name) => name.replace(' · non enregistrée', '')));
 
-test('Illustration : ajouter, garder après rafraîchissement, réordonner et retirer une image', async ({
+test('Illustration : une image ajoutée ne reste que si on l’enregistre ; réordonner et retirer', async ({
   page,
 }) => {
   await page.goto('/outils/illustration');
@@ -22,25 +23,34 @@ test('Illustration : ajouter, garder après rafraîchissement, réordonner et re
   await expect(strip).toBeVisible({ timeout: 15000 });
   await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(3);
   const demo = await names(page);
+  const add = () =>
+    page
+      .getByLabel('Importer des images')
+      .setInputFiles({ name: 'carre.png', mimeType: 'image/png', buffer: PNG });
 
-  await page
-    .getByLabel('Importer des images')
-    .setInputFiles({ name: 'carre.png', mimeType: 'image/png', buffer: PNG });
+  // Sans « Enregistrer », l'image ne vit que le temps de la visite.
+  await add();
   await expect.poll(() => names(page)).toEqual([...demo, 'carre']);
-  await expect(panel(page).getByRole('button', { name: 'carre', exact: true })).toHaveAttribute(
+  await expect(panel(page).getByRole('button', { name: 'carre · non enregistrée' })).toHaveAttribute(
     'aria-current',
     'true',
   );
   await expect(strip.getByRole('button', { name: 'Afficher carre' })).toBeVisible();
+  await page.reload();
+  await expect.poll(() => names(page), { timeout: 15000 }).toEqual(demo);
 
+  // Enregistrée : elle reste, pour tout le monde.
+  await add();
+  await expect.poll(() => names(page)).toEqual([...demo, 'carre']);
+  await panel(page).getByRole('button', { name: 'Enregistrer l’illustration' }).click();
+  await expect(panel(page).getByRole('button', { name: 'carre', exact: true })).toBeVisible();
   await page.reload();
   await expect.poll(() => names(page), { timeout: 15000 }).toEqual([...demo, 'carre']);
 
   await panel(page).getByRole('button', { name: 'Déplacer carre' }).focus();
   await page.keyboard.press('ArrowUp');
   await expect.poll(() => names(page)).toEqual([demo[0], demo[1], 'carre', demo[2]]);
-  // Le moteur enregistre l'ordre 600 ms après le dernier changement (saveImageMeta du prototype).
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(500);
   await page.reload();
   await expect.poll(() => names(page), { timeout: 15000 }).toEqual([demo[0], demo[1], 'carre', demo[2]]);
 

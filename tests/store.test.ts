@@ -34,16 +34,17 @@ describe('/api/store (contrat imposé par le Store du moteur)', () => {
   });
 
   it('enregistre, liste, lit, met à jour et supprime un document', async () => {
+    // collection libre (ni Ressource, ni préréglages, ni bibliothèque d'illustrations)
     const db = memoryDb();
     expect(
-      await (await post(db, { col: 'presets', id: 'doux', data: { name: 'Doux', t: 1 } })).json(),
+      await (await post(db, { col: 'essais', id: 'doux', data: { name: 'Doux', t: 1 } })).json(),
     ).toEqual({
       ok: true,
     });
-    await post(db, { col: 'presets', id: 'vif', data: { name: 'Vif', t: 2 } });
-    await post(db, { col: 'presets', id: 'doux', data: { name: 'Doux 2', t: 3 } });
+    await post(db, { col: 'essais', id: 'vif', data: { name: 'Vif', t: 2 } });
+    await post(db, { col: 'essais', id: 'doux', data: { name: 'Doux 2', t: 3 } });
 
-    const list = await (await call(db, '/api/store?col=presets')).json();
+    const list = await (await call(db, '/api/store?col=essais')).json();
     expect(list).toEqual({
       ok: true,
       items: [
@@ -51,14 +52,14 @@ describe('/api/store (contrat imposé par le Store du moteur)', () => {
         { id: 'vif', data: { name: 'Vif', t: 2 } },
       ],
     });
-    expect(await (await call(db, '/api/store?col=presets&id=vif')).json()).toEqual({
+    expect(await (await call(db, '/api/store?col=essais&id=vif')).json()).toEqual({
       ok: true,
       item: { data: { name: 'Vif', t: 2 } },
     });
 
-    await call(db, '/api/store?col=presets&id=vif', { method: 'DELETE' });
-    expect(await (await call(db, '/api/store?col=presets&id=vif')).json()).toEqual({ ok: true, item: null });
-    expect((await (await call(db, '/api/store?col=presets')).json()).items).toHaveLength(1);
+    await call(db, '/api/store?col=essais&id=vif', { method: 'DELETE' });
+    expect(await (await call(db, '/api/store?col=essais&id=vif')).json()).toEqual({ ok: true, item: null });
+    expect((await (await call(db, '/api/store?col=essais')).json()).items).toHaveLength(1);
   });
 
   it('garde les collections séparées', async () => {

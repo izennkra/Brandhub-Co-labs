@@ -13,39 +13,44 @@ export function ColorPicker({
   dots,
   onBackground,
   onToggleDot,
+  showBackground = true,
 }: {
   palette: readonly Swatch[];
   background: string;
   dots: ReadonlySet<string>;
   onBackground: (id: string) => void;
   onToggleDot: (id: string) => void;
+  /** Layout editor : le fond se règle sur le frame, pas sur la forme. */
+  showBackground?: boolean;
 }) {
   const id = useId();
   return (
     <>
-      <div className={styles.row}>
-        <span id={`${id}-bg`} className={styles.label}>
-          Fond
-        </span>
-        <div role="radiogroup" aria-labelledby={`${id}-bg`} className={styles.swatches}>
-          {palette.map((swatch) => (
-            <label key={swatch.id} className={styles.swatch} title={swatch.name}>
-              <input
-                type="radio"
-                name={`${id}-bg`}
-                className={styles.input}
-                aria-label={swatch.name}
-                checked={background === swatch.id}
-                onChange={() => onBackground(swatch.id)}
-              />
-              <span
-                className={`${styles.chip} ${styles.square}`}
-                style={{ '--swatch': swatch.hex } as React.CSSProperties}
-              />
-            </label>
-          ))}
+      {showBackground && (
+        <div className={styles.row}>
+          <span id={`${id}-bg`} className={styles.label}>
+            Fond
+          </span>
+          <div role="radiogroup" aria-labelledby={`${id}-bg`} className={styles.swatches}>
+            {palette.map((swatch) => (
+              <label key={swatch.id} className={styles.swatch} title={swatch.name}>
+                <input
+                  type="radio"
+                  name={`${id}-bg`}
+                  className={styles.input}
+                  aria-label={swatch.name}
+                  checked={background === swatch.id}
+                  onChange={() => onBackground(swatch.id)}
+                />
+                <span
+                  className={`${styles.chip} ${styles.square}`}
+                  style={{ '--swatch': swatch.hex } as React.CSSProperties}
+                />
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <div className={styles.row}>
         <span id={`${id}-dots`} className={styles.label}>
           Pastilles

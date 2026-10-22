@@ -1,6 +1,6 @@
 # Passation : Brand Hub · Co-labs
 
-> Mise à jour le 22/10/2026. Branche en cours : `feature/resources`.
+> Mise à jour le 22/10/2026. Branche en cours : `feature/layout-editor`.
 > À lire aussi : `CLAUDE.md` (règles du projet).
 
 ## 1. Le projet en bref
@@ -40,9 +40,9 @@
 | Structure de l'appli, navigation, design system | ✅ dans `main` (PR n° 1) |
 | Moteur : Motif + Illustration | ✅ dans `main` (PR n° 2) |
 | Stockage partagé + préréglages partagés | ✅ dans `main` (PR n° 3) |
-| **Export** (Image, SVG, Vidéo, Figma) | 🟡 testé par le porteur, **PR n° 4 ouverte**, pas encore fusionnée |
-| **Ressources** (7 pages + mode édition) | 🟡 branche `feature/resources` (partie de `feature/export`), poussée, **dernière série à faire tester, puis PR** |
-| **Layout editor** | ⏳ **prochaine partie** |
+| **Export** (Image, SVG, Vidéo, Figma) | ✅ dans `main` (PR n° 4) |
+| **Ressources** (7 pages + mode édition) | ✅ dans `main` (PR n° 5) |
+| **Layout editor** | 🟡 branche `feature/layout-editor`, poussée, **à faire tester, puis PR** |
 | Vercel (mise en ligne), profil éditeur complet | après |
 
 ### Ressources : ce qui existe
@@ -68,14 +68,27 @@
 - **Patterns prédéfinis** : mosaïque filtrée par format. Elle est vide : elle sera remplie par les layouts du Layout editor (collection `res-layouts`).
 - **Fichiers** : `/api/files` envoie vers Vercel Blob. Sans Blob, les images sont réduites et gardées dans les données.
 
+### Layout editor : ce qui existe
+
+- **Page d'essai** : chaque visite part d'un frame vide, **rien n'est enregistré** (décision du porteur, 22/10/2026). On teste, on exporte.
+- **Un seul frame**, nommé « Visuel » par défaut (Figma `Tool / Layout editor Motif`, nœud `2337:7799`) : formats 1:1, 4:5, 9:16, 16:9, 4:3, A4, Bannière, ou taille libre ; fond (Fill) ; rognage.
+- **Plan de travail** : molette pour se déplacer, ⌘ / Ctrl + molette (ou pincement) pour zoomer, boutons − / + / ajuster en bas à gauche, glisser le fond ou Espace + glisser pour se déplacer.
+- **Calques** : Motif, Illustration (copies de l'outil, modifiables sans toucher l'outil) et Image. Déplacer, redimensionner (Maj : proportions), pivoter (rond au-dessus, Maj : par 15°), X / Y / W / H / rotation, alignements, ordre, masquer, supprimer.
+- **Le calque épouse sa forme** : le moteur dessine la forme en petit (rotation automatique et boucle comprises), on relève ses bords, et le calque prend sa proportion. À l'ajout, il est posé **à bord perdu** dans le frame. Après chaque rotation 3D, il se réajuste (même taille, même place). Calcul dans `fitToShape` (`src/lib/layout/doc.ts`), mesure dans `layout.measure` (`src/lib/pattern-engine/layout.ts`).
+- **Fond transparent** : les formes n'ont jamais de fond ; le fond se règle sur le frame (Fill), et les formes s'y fondent (leur couleur de fond suit celle du frame).
+- **Jamais flou** : l'aperçu est calculé à la taille affichée, et un motif agrandi grandit d'un bloc (traits compris) grâce à sa largeur de référence (`ref`).
+- **Mode 3D** (double-clic ou bouton) : glisser tourne la forme, la poignée ✥ la déplace, coins ou molette l'agrandissent, le rond la fait pivoter ; « Ajuster le calque à la forme », « Recentrer la forme ».
+- **Couleurs** de la forme choisie : pastilles, plus Pastilles, Survol, Rotation.
+- **Rotation 360° en boucle** par calque (motif ou illustration) : un tour exact en N secondes (2 à 60) ; le calque est mesuré sur tout le tour ; en vidéo, une durée égale à un tour boucle parfaitement.
+- Le moteur garde la distance de caméra entre 5 et 180 (`RADIUS`) : le recul de la mesure et du recadrage en tient compte.
+- **Boucle d'illustrations** propre au calque : cases à cocher et ordre libre ; la bibliothèque de l'outil Illustration ne change pas.
+- **Export** du frame : image (×1 à ×3, PNG, WebP, JPEG) ou vidéo. Les motifs sont dessinés **par morceaux de 2048 px au plus** (`limits.tile`) : un calque à bord perdu en 3x saturait la carte graphique, qui « décrochait » (export puis aperçu tout blancs). Même chose pour l'aperçu très zoomé : seule la partie visible est dessinée. Si la carte graphique décroche quand même, un message demande de recharger la page.
+- Côté moteur : `renderLayerTo`, `settingsGet`, `settingsSet` exposés via `EXPORTS` (SHA inchangé) ; tout le reste dans `src/lib/pattern-engine/layout.ts` et `src/lib/layout/doc.ts`.
+
 ## 5. Prochaines étapes
 
-1. Faire tester au porteur la dernière série (page Couleur revue avec nuances automatiques, cartes Typographie), puis ouvrir la **PR des Ressources**. La PR n° 4 (Export) peut être fusionnée avant, sur son accord.
-2. **Layout editor**, décision du porteur : **simple**. C'est **une seule frame**, comme sur la maquette Figma (`Tool / Layout editor Motif`, nœud `2337:7799`), où l'on place son motif dans un format. Pas de plan de travail à plusieurs frames.
-   - Le panneau du Figma : Layout (X, Y, W, H, rotation, alignements, rognage), Format, Calques, Fill, Pastilles, Survol, Rotation, Couleurs, puis le bloc Export.
-   - Brancher le bloc Export sur la frame (il est aujourd'hui grisé sur cette page).
-   - Enregistrer un layout doit l'ajouter à la page **Patterns prédéfinis** (`res-layouts` : nom, format, aperçu).
-   - Point de départ : le « Design libre » du prototype (lignes 3603 et suivantes), à simplifier.
+1. Faire tester le **Layout editor** au porteur, puis ouvrir sa PR.
+2. **Patterns prédéfinis** : la page reste vide, puisque le Layout editor n'enregistre plus rien. À décider avec le porteur : permettre d'y déposer des images en mode édition (comme Inspiration) ?
 3. **Mise en ligne Vercel** : créer le projet, relier Upstash Redis et Vercel Blob depuis le Marketplace, ajouter `EDITOR_CODE`, puis redéployer.
 4. Avant la mise en ligne : vérifier la **licence Central Icons** (commerciale). On montre maintenant toute la bibliothèque sur la page Iconographie.
 

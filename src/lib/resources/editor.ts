@@ -35,6 +35,11 @@ export async function unlockEditor(code: string) {
   return ok;
 }
 
+/** Le mode édition est-il ouvert dans cet onglet ? (pour le code hors React) */
+export function isEditorUnlocked() {
+  return unlocked;
+}
+
 export function lockEditor() {
   setCode(null);
 }
