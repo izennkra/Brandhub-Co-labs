@@ -1,0 +1,104 @@
+/* Textes de l'infographie : un bloc par étape ou par donnée, dans le style des champs du panneau. */
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+}
+
+.remove {
+  display: grid;
+  place-items: center;
+  width: var(--size-control-compact);
+  height: var(--size-control-compact);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.remove:hover:not(:disabled) {
+  background: var(--color-control-group);
+  color: var(--color-text);
+}
+
+.remove:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.input {
+  width: 100%;
+  min-height: var(--size-control);
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  color: var(--color-text);
+  font: inherit;
+  resize: vertical;
+}
+
+.input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.data {
+  display: grid;
+  grid-template-columns: calc(var(--space-12) + var(--space-4)) minmax(0, 1fr);
+  gap: var(--space-1);
+}
+
+.number {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+.add {
+  min-height: var(--size-control);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.add:hover:not(:disabled) {
+  background: var(--color-control-active);
+}
+
+.add:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+}
+
+.field .input {
+  font-size: var(--text-sm);
+}

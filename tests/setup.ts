@@ -65,6 +65,10 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
         S[key] = value;
         actual.engineEvents.dispatchEvent(new Event('settings'));
       },
+      setInfo: (patch: Record<string, unknown>) => {
+        Object.assign(S, patch);
+        actual.engineEvents.dispatchEvent(new Event('settings'));
+      },
     },
     exporter: {
       busy: false,
