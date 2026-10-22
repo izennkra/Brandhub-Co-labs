@@ -9,6 +9,7 @@ import type { ControlEffect } from './controls';
 import { createExporter } from './exporter';
 import { createLayoutBridge, type LayoutTick } from './layout';
 import { createLibrary, type Library } from './library';
+import { createTitlePainter } from './infoTitles';
 import { createModelViews, type ModelViews } from './models';
 import { createPresets } from './presets';
 import {
@@ -411,10 +412,13 @@ async function createEngine(): Promise<Engine> {
   let models: ModelViews | null = null;
   // Après chaque image du moteur : on prévient ceux qui l'attendaient (export de toutes les illustrations).
   let waiters: (() => void)[] = [];
+  // Titres libres des étapes : l'infographie est réécrite après chaque image du moteur (infoTitles.ts).
+  let paintTitles: (() => void) | null = null;
   const gate = createAnimationGate((callback) =>
     window.requestAnimationFrame((now) => {
       models?.tick(now);
       callback(now);
+      paintTitles?.();
       const done = waiters;
       waiters = [];
       done.forEach((resolve) => resolve());
@@ -427,6 +431,7 @@ async function createEngine(): Promise<Engine> {
   const env = buildEnv(gate);
   testHooks()?.beforeStart?.();
   const core = runPrototypeEngine(env);
+  paintTitles = createTitlePainter(core, labels);
   // Effet au survol désactivé à l'ouverture (choix du porteur) ; il s'active dans le panneau.
   core.S.hoverOn = false;
 
