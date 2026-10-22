@@ -39,6 +39,7 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
       },
       images: () => [],
       pickImage: () => {},
+      renameImage: () => {},
       saveIllustration: async () => {
         S.savedIllustrations = Number(S.savedIllustrations ?? 0) + 1;
       },

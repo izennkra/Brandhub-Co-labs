@@ -128,6 +128,24 @@ describe('bibliothèque de l’Illustration', () => {
     });
   });
 
+  it('renommer : pour la visite ; la copie d’un visiteur garde le nouveau nom, l’original reprend le sien', async () => {
+    const { db, core, lib } = await withSaved();
+    expect(lib.rename(0, '   ')).toBe(false);
+    expect(lib.rename(0, '  Cadenas doré ')).toBe(true);
+    expect(core.imgList[0].name).toBe('Cadenas doré');
+    expect(await db.get('images', 'cadenas')).toMatchObject({ name: 'Cadenas' });
+    await lib.save();
+    expect(core.imgList.map((im) => im.name)).toEqual(['Cadenas', 'Cadenas doré', 'Tomate']);
+    expect(await db.get('images', 'cadenas')).toMatchObject({ name: 'Cadenas' });
+  });
+
+  it('renommer en mode édition, puis mettre à jour : le nom change pour tous', async () => {
+    const { db, lib } = await withSaved(true);
+    lib.rename(0, 'Cadenas doré');
+    await lib.save();
+    expect(await db.get('images', 'cadenas')).toMatchObject({ name: 'Cadenas doré' });
+  });
+
   it('en mode édition, l’illustration est mise à jour pour tous', async () => {
     const { db, core, lib } = await withSaved(true);
     expect(lib.saveLabel()).toBe('Mettre à jour l’illustration');

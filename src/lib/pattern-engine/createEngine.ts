@@ -252,6 +252,10 @@ function createActions(
     pickImage(index: number) {
       library().pick(index);
     },
+    /** Renommer une image (le nom vaut pour la visite, jusqu'à « Enregistrer l'illustration »). */
+    renameImage(index: number, name: string) {
+      library().rename(index, name);
+    },
     /** Bouton « Enregistrer l'illustration » : pour tous, avec tous ses réglages. */
     saveIllustration() {
       return library().save();
@@ -386,6 +390,8 @@ async function createEngine(): Promise<Engine> {
   const env = buildEnv(gate);
   testHooks()?.beforeStart?.();
   const core = runPrototypeEngine(env);
+  // Effet au survol désactivé à l'ouverture (choix du porteur) ; il s'active dans le panneau.
+  core.S.hoverOn = false;
 
   // Démarrage repris de la fin du prototype (lignes 4405-4414), pour la partie moteur et dans le
   // même ordre : refreshColors() ; regenerate() ; resetView() ; loadLibrary() ;
