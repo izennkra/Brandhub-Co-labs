@@ -2,6 +2,8 @@
 // cette vue sert d'image à l'Illustration ; la trame de pastilles du moteur s'y applique telle quelle.
 // Quand on tourne l'illustration (souris ou rotation automatique), c'est le modèle qui tourne :
 // la trame reste face à soi et suit la nouvelle vue. Le moteur n'est pas modifié.
+// Aplatie, l'illustration devient une image figée sous son angle (PNG sur fond transparent) :
+// elle tourne alors comme les autres illustrations. Repassée en 3D, on peut de nouveau changer l'angle.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import infiniUrl from '../../assets/models/infini.glb?url';
@@ -24,7 +26,49 @@ const REDRAW_MS = 50;
 const FRONT = { theta: 0, phi: Math.PI / 2 };
 
 type ModelImage = EngineImage & { model?: string; lum?: unknown; blurL?: unknown; blurR?: number };
-type View = { def: ModelDef; yaw: number; pitch: number; dirty: boolean; last: number };
+/** Ce qui est enregistré d'une illustration 3D : son angle et si elle est aplatie. */
+export type ModelState = { yaw: number; pitch: number; flat: boolean };
+type View = ModelState & { def: ModelDef; dirty: boolean; last: number };
+type DotSet = { px: Float32Array; py: Float32Array; ps: Float32Array; pd: Float32Array };
+
+/**
+ * Le moteur rebat ses pastilles à chaque nouvelle trame : chaque pastille garde sa taille, sa couleur
+ * et son mouvement propres, mais change de place. Sur un modèle qui tourne (une trame toutes les
+ * 50 ms), elles sautaient d'un point à l'autre : la trame tremblait. Ici, chaque point de la grille
+ * reprend la pastille qu'il avait (slots : point → pastille) ; seuls les points qui apparaissent
+ * prennent une pastille libre. La première trame reste celle du moteur.
+ */
+export function keepSlots(set: DotSet, slots: Map<string, number>) {
+  const n = set.px.length;
+  const keys: (string | null)[] = [];
+  for (let k = 0; k < n; k++) keys.push(set.ps[k] > 0 ? set.px[k] + ',' + set.py[k] : null);
+  const order = new Int32Array(n).fill(-1); // place → pastille du moteur qui y va
+  const taken = new Uint8Array(n);
+  const waiting: number[] = [];
+  keys.forEach((key, k) => {
+    if (key === null) return;
+    const slot = slots.get(key);
+    if (slot !== undefined && slot < n && !taken[slot]) {
+      order[slot] = k;
+      taken[slot] = 1;
+    } else waiting.push(k);
+  });
+  // places libres : d'abord celles des pastilles invisibles du moteur, gardées pour la fin
+  const free: number[] = [];
+  for (let k = 0; k < n; k++) if (!taken[k]) free.push(k);
+  const hidden = keys.flatMap((key, k) => (key === null ? [k] : []));
+  [...waiting, ...hidden].forEach((k, i) => (order[free[i]] = k));
+  const copy = { px: set.px.slice(), py: set.py.slice(), ps: set.ps.slice(), pd: set.pd.slice() };
+  slots.clear();
+  for (let slot = 0; slot < n; slot++) {
+    const k = order[slot];
+    set.px[slot] = copy.px[k];
+    set.py[slot] = copy.py[k];
+    set.ps[slot] = copy.ps[k];
+    set.pd[slot] = copy.pd[k];
+    if (keys[k] !== null) slots.set(keys[k]!, slot);
+  }
+}
 
 /**
  * La rotation demandée au moteur (écart de sa caméra avec la vue de face) passe au modèle :
@@ -43,6 +87,7 @@ export function takeRotation(orbit: { theta: number; phi: number }, view: { yaw:
 
 export function createModelViews(core: PrototypeEngine, changed: () => void) {
   const views = new WeakMap<ModelImage, View>();
+  const slots = new WeakMap<ModelImage, Map<string, number>>();
   const objects = new Map<string, Promise<THREE.Group | null>>();
   let stage: {
     renderer: THREE.WebGLRenderer;
@@ -54,7 +99,7 @@ export function createModelViews(core: PrototypeEngine, changed: () => void) {
   // Un seul petit moteur 3D pour tous les modèles, créé au premier besoin.
   const getStage = () => {
     if (stage) return stage;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
     renderer.setPixelRatio(1);
     renderer.setSize(SIZE, SIZE, false);
     renderer.setClearColor(0xffffff, 1);
@@ -121,11 +166,16 @@ export function createModelViews(core: PrototypeEngine, changed: () => void) {
     object.rotation.set(0, view.yaw, 0);
     pivot.remove(...pivot.children); // un seul modèle à la fois sur la scène
     pivot.add(object);
+    // aplatie : fond transparent (le moteur pose l'image sur du blanc, la trame ne change pas)
+    renderer.setClearColor(0xffffff, view.flat ? 0 : 1);
     renderer.render(scene, camera);
     const ctx = image.canvas.getContext('2d');
     if (!ctx) return;
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    if (!view.flat) {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, SIZE, SIZE);
+    }
     ctx.drawImage(renderer.domElement, 0, 0, SIZE, SIZE);
     // caches du moteur pour cette image (luminance, flou) : à recalculer
     delete image.lum;
@@ -142,12 +192,19 @@ export function createModelViews(core: PrototypeEngine, changed: () => void) {
       canvas.width = canvas.height = SIZE;
       return canvas;
     },
-    /** Relie une illustration à son modèle et dessine sa première vue. */
-    attach(image: ModelImage, modelId: string) {
+    /** Relie une illustration à son modèle et dessine sa première vue (angle enregistré, s'il y en a un). */
+    attach(image: ModelImage, modelId: string, state?: Partial<ModelState>) {
       const def = MODELS.find((d) => d.id === modelId);
       if (!def || views.has(image)) return;
       image.model = modelId;
-      const view: View = { def, yaw: def.yaw, pitch: def.pitch, dirty: false, last: 0 };
+      const view: View = {
+        def,
+        yaw: typeof state?.yaw === 'number' ? state.yaw : def.yaw,
+        pitch: typeof state?.pitch === 'number' ? state.pitch : def.pitch,
+        flat: state?.flat === true,
+        dirty: false,
+        last: 0,
+      };
       views.set(image, view);
       void draw(image, view).then(() => {
         delete image.thumb; // vignette recalculée avec la vraie vue
@@ -164,15 +221,45 @@ export function createModelViews(core: PrototypeEngine, changed: () => void) {
       views.set(to, { ...view, dirty: false, last: 0 });
     },
     isModel: (image: EngineImage | undefined) => Boolean(image && views.has(image as ModelImage)),
+    /** Angle et aplatissement d'une illustration 3D (ce que « Enregistrer » garde). */
+    stateOf(image: EngineImage | undefined): ModelState | undefined {
+      const view = image && views.get(image as ModelImage);
+      return view ? { yaw: view.yaw, pitch: view.pitch, flat: view.flat } : undefined;
+    },
+    /**
+     * Aplatir : l'illustration devient l'image figée de la vue actuelle, sur fond transparent, et tourne
+     * comme les autres. Repasser en 3D : la trame revient de face et la souris tourne de nouveau le modèle.
+     */
+    setFlat(image: EngineImage | undefined, flat: boolean) {
+      const view = image && views.get(image as ModelImage);
+      if (!image || !view || view.flat === flat) return;
+      view.flat = flat;
+      core.resetView();
+      void draw(image as ModelImage, view).then(() => {
+        delete image.thumb;
+        changed();
+      });
+    },
     /**
      * À chaque image du moteur : la rotation demandée (souris, inertie, rotation automatique) est
      * reportée sur le modèle, et la trame revient face à soi.
      */
     tick(now: number) {
-      if (core.S.app !== 'image' || core.imgTr) return;
+      if (core.S.app !== 'image') return;
+      // nouvelle trame à faire : on la fait ici pour que chaque point garde sa pastille
+      if (core.imgDirty) {
+        core.buildImageSets();
+        (core.imgList as ModelImage[]).forEach((image, index) => {
+          const set = core.imgSets[index] as DotSet | undefined;
+          if (!set || !views.has(image)) return;
+          if (!slots.has(image)) slots.set(image, new Map());
+          keepSlots(set, slots.get(image)!);
+        });
+      }
+      if (core.imgTr) return;
       const image = core.imgList[core.curImg] as ModelImage | undefined;
       const view = image && views.get(image);
-      if (!image || !view) return;
+      if (!image || !view || view.flat) return;
       if (takeRotation(core.orbit, view)) view.dirty = true;
       if (view.dirty && now - view.last >= REDRAW_MS) {
         view.dirty = false;

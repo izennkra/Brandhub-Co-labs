@@ -4,7 +4,7 @@
 // Le moteur n'est pas modifié : on retient seulement ses écritures dans « images » et « imagesrc »
 // (il enregistrait chaque ajout et chaque réglage pour tout le monde), sauf au premier chargement,
 // où il dépose les images de départ dans une bibliothèque vide.
-import type { ModelViews } from './models';
+import type { ModelState, ModelViews } from './models';
 import type { PresetStore } from './presets';
 import type { EngineImage, EngineSettings, PrototypeEngine } from './prototype-engine.js';
 
@@ -16,8 +16,9 @@ const LIBRARY_KEYS = ['imgLoop', 'imgHold', 'imgTrans'];
 
 // model : illustration en 3D (models.ts), identifiant de son modèle.
 type Image = EngineImage & { src?: string; model?: string; demo?: boolean };
-// Document « images » : nom, tons, boucle, ordre ; hidden = modèle 3D supprimé par l'équipe.
-type Meta = {
+// Document « images » : nom, tons, boucle, ordre ; hidden = modèle 3D supprimé par l'équipe ;
+// yaw, pitch, flat : angle d'une illustration 3D et si elle est aplatie.
+type Meta = Partial<ModelState> & {
   name?: string;
   tone?: EngineSettings;
   inLoop?: boolean;
@@ -62,7 +63,10 @@ export function createLibrary(
   },
 ) {
   // Illustrations enregistrées : identifiant → nom, tons et réglages enregistrés.
-  const saved = new Map<string, { name?: string; tone?: EngineSettings; settings?: Settings }>();
+  const saved = new Map<
+    string,
+    { name?: string; tone?: EngineSettings; settings?: Settings; view?: ModelState }
+  >();
   // Réglages changés pendant la visite, par image (retrouvés quand on revient sur elle).
   const session = new WeakMap<Image, Settings>();
   // Tant que la bibliothèque n'est pas chargée, le moteur montre ses images de démonstration :
@@ -101,18 +105,20 @@ export function createLibrary(
     const settings = own();
     if (isNew)
       await store.put('imagesrc', image.id, {
-        src: image.src ?? image.canvas.toDataURL('image/jpeg', 0.86),
+        // illustration 3D : la vue en PNG, fond transparent quand elle est aplatie
+        src: image.src ?? image.canvas.toDataURL(image.model ? 'image/png' : 'image/jpeg', 0.86),
       });
     await store.put(SETTINGS_COL, image.id, { s: settings });
+    const view = models?.stateOf(image);
     // en dernier : une image n'apparaît dans la liste de tous qu'une fois complète
     await store.put('images', image.id, {
       name: image.name,
       tone: image.tone,
       inLoop: image.inLoop !== false,
       t: image.t,
-      ...(image.model ? { model: image.model } : {}),
+      ...(image.model ? { model: image.model, ...view } : {}),
     });
-    saved.set(image.id, { name: image.name, tone: { ...image.tone }, settings });
+    saved.set(image.id, { name: image.name, tone: { ...image.tone }, settings, view });
     session.delete(image);
   };
 
@@ -137,13 +143,16 @@ export function createLibrary(
         };
         core.imgList.push(image);
       }
-      saved.set(def.id, { ...saved.get(def.id), name: image.name, tone: { ...image.tone } });
-      models.attach(image, def.id);
+      models.attach(image, def.id, meta);
+      const view = models.stateOf(image);
+      saved.set(def.id, { ...saved.get(def.id), name: image.name, tone: { ...image.tone }, view });
     });
     for (const [id, meta] of metas)
       if (meta?.model && !meta.hidden && id !== meta.model) {
         const image = (core.imgList as Image[]).find((im) => im.id === id);
-        if (image) models.attach(image, meta.model);
+        if (!image) continue;
+        models.attach(image, meta.model, meta);
+        saved.set(id, { ...saved.get(id), view: models.stateOf(image) });
       }
     core.imgList.sort((a, b) => (a.t || 0) - (b.t || 0));
     core.curImg = core.selImg = 0;
@@ -282,6 +291,17 @@ export function createLibrary(
       changed();
     },
 
+    /** Illustration 3D choisie : est-elle aplatie ? (undefined si ce n'est pas un modèle 3D) */
+    modelView() {
+      return models?.stateOf(selected());
+    },
+
+    /** Aplatir ou repasser en 3D (pour la visite ; « Enregistrer » le garde pour tous). */
+    setFlat(flat: boolean) {
+      models?.setFlat(selected(), flat);
+      changed();
+    },
+
     /** Retrait : pour tous en mode édition, sinon seulement pendant cette visite. */
     async remove(index: number) {
       const image = core.imgList[index] as Image | undefined;
@@ -330,6 +350,7 @@ export function createLibrary(
           tone: saved.get(image.id!)?.tone ?? image.tone,
           inLoop: image.inLoop !== false,
           t: image.t,
+          ...(image.model ? { model: image.model, ...saved.get(image.id!)?.view } : {}),
         })
         .catch(() => toast('Ordre non enregistré : ouvre le mode édition.'));
     },

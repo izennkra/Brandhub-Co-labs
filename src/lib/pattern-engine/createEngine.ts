@@ -371,7 +371,8 @@ function thumbnail(image: EngineImage) {
 }
 
 // Points d'accroche réservés aux tests navigateur (rendu identique au prototype) : sans effet sinon.
-type EngineTestHooks = { beforeStart?: () => void; onReady?: (engine: Engine) => void };
+// noModels : sans les modèles 3D (ajoutés à l'outil), pour comparer l'Illustration au prototype.
+type EngineTestHooks = { beforeStart?: () => void; onReady?: (engine: Engine) => void; noModels?: boolean };
 const testHooks = () => (window as Window & { __engineTestHooks?: EngineTestHooks }).__engineTestHooks;
 
 export type Engine = {
@@ -433,9 +434,9 @@ async function createEngine(): Promise<Engine> {
     () => engineEvents.dispatchEvent(new Event('presets')),
     { store, isEditor: isEditorUnlocked },
   );
-  models = createModelViews(core, syncAll);
+  if (!testHooks()?.noModels) models = createModelViews(core, syncAll);
   const library = createLibrary(core, store, {
-    models,
+    models: models ?? undefined,
     snapshot: presets.snapshot,
     apply: presets.applySnapshot,
     loadTone: actions.loadTone,
