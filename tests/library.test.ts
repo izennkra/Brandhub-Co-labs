@@ -15,7 +15,32 @@ type Img = {
 };
 
 // Moteur simulé : réglages, liste d'images, et le Store du moteur (qui écrivait tout pour tout le monde).
-function setup({ library = [] as Img[], editor = false } = {}) {
+// Modèles 3D simulés : on note ce que la bibliothèque leur demande.
+function fakeModels() {
+  const attached: string[] = [];
+  const copies: string[] = [];
+  return {
+    attached,
+    copies,
+    views: {
+      defs: [{ id: 'modele-prisme', name: 'Prisme (modèle 3D)', url: '/prisme.glb', yaw: 0, pitch: 0 }],
+      blank: () => canvas,
+      attach: (image: Img, model: string) => {
+        (image as Img & { model?: string }).model = model;
+        attached.push(`${image.id}:${model}`);
+      },
+      copyView: (_from: Img, to: Img) => void copies.push(to.name),
+      isModel: () => true,
+      tick: () => {},
+    },
+  };
+}
+
+function setup({
+  library = [] as Img[],
+  editor = false,
+  models = null as ReturnType<typeof fakeModels> | null,
+} = {}) {
   const db: StoreDb = memoryDb();
   const store = createStore({
     fetch: (input, init) => handleStore(new Request(`http://localhost${input}`, init), db, CODE),
@@ -56,6 +81,7 @@ function setup({ library = [] as Img[], editor = false } = {}) {
     isEditor: () => editor,
     toast: (m) => toasts.push(m),
     changed: () => {},
+    models: models?.views as never,
   });
   return { db, core, lib, toasts, engineWrites };
 }
@@ -215,5 +241,36 @@ describe('bibliothèque de l’Illustration', () => {
     expect(await editor.lib.remove(0)).toBe(true);
     expect(await editor.db.get('images', 'cadenas')).toBeNull();
     expect(await editor.db.get('imgsettings', 'cadenas')).toBeNull();
+  });
+
+  it('modèles 3D : proposés à tous d’office, cachés pour tous en mode édition, copiés avec leur modèle', async () => {
+    const models = fakeModels();
+    const visitor = setup({ library: [{ id: 'cadenas', name: 'Cadenas', canvas, tone: {} }], models });
+    await visitor.db.set('images', 'cadenas', { name: 'Cadenas', t: 1 });
+    await visitor.lib.load();
+    const names = visitor.core.imgList.map((im) => im.name);
+    expect(names).toContain('Prisme (modèle 3D)');
+    const index = visitor.core.imgList.findIndex((im) => im.id === 'modele-prisme');
+    expect(visitor.lib.isSaved(index)).toBe(true);
+    expect(models.attached).toContain('modele-prisme:modele-prisme');
+
+    // un visiteur enregistre une copie : elle garde son modèle 3D
+    visitor.core.selImg = index;
+    await visitor.lib.save();
+    const copy = visitor.core.imgList[index + 1];
+    expect(models.copies).toEqual([copy.name]);
+    expect(await visitor.db.get('images', copy.id!)).toMatchObject({ model: 'modele-prisme' });
+
+    // en mode édition, la croix le cache pour tous ; il ne revient pas au chargement suivant
+    const editor = setup({ editor: true, models: fakeModels() });
+    await editor.lib.load();
+    const builtIn = editor.core.imgList.findIndex((im) => im.id === 'modele-prisme');
+    expect(await editor.lib.remove(builtIn)).toBe(true);
+    expect(await editor.db.get('images', 'modele-prisme')).toMatchObject({ hidden: true });
+    const next = setup({ models: fakeModels() });
+    for (const [id, data] of Object.entries(await editor.db.all('images')))
+      await next.db.set('images', id, data);
+    await next.lib.load();
+    expect(next.core.imgList.map((im) => im.id)).not.toContain('modele-prisme');
   });
 });

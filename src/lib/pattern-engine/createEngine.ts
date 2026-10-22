@@ -9,6 +9,7 @@ import type { ControlEffect } from './controls';
 import { createExporter } from './exporter';
 import { createLayoutBridge, type LayoutTick } from './layout';
 import { createLibrary, type Library } from './library';
+import { createModelViews, type ModelViews } from './models';
 import { createPresets } from './presets';
 import {
   runPrototypeEngine,
@@ -396,7 +397,14 @@ export type Engine = {
 async function createEngine(): Promise<Engine> {
   const { parking, canvas, labels } = createEngineElements();
   await registerGeistFamily();
-  const gate = createAnimationGate((callback) => window.requestAnimationFrame(callback));
+  // Avant chaque image du moteur : une illustration 3D reprend la rotation demandée (models.ts).
+  let models: ModelViews | null = null;
+  const gate = createAnimationGate((callback) =>
+    window.requestAnimationFrame((now) => {
+      models?.tick(now);
+      callback(now);
+    }),
+  );
   const env = buildEnv(gate);
   testHooks()?.beforeStart?.();
   const core = runPrototypeEngine(env);
@@ -425,7 +433,9 @@ async function createEngine(): Promise<Engine> {
     () => engineEvents.dispatchEvent(new Event('presets')),
     { store, isEditor: isEditorUnlocked },
   );
+  models = createModelViews(core, syncAll);
   const library = createLibrary(core, store, {
+    models,
     snapshot: presets.snapshot,
     apply: presets.applySnapshot,
     loadTone: actions.loadTone,

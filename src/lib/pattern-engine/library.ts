@@ -4,6 +4,7 @@
 // Le moteur n'est pas modifié : on retient seulement ses écritures dans « images » et « imagesrc »
 // (il enregistrait chaque ajout et chaque réglage pour tout le monde), sauf au premier chargement,
 // où il dépose les images de départ dans une bibliothèque vide.
+import type { ModelViews } from './models';
 import type { PresetStore } from './presets';
 import type { EngineImage, EngineSettings, PrototypeEngine } from './prototype-engine.js';
 
@@ -13,7 +14,27 @@ export const SETTINGS_COL = 'imgsettings';
 // Lecture de la bibliothèque (boucle) : commune à toutes les images, pas propre à une illustration.
 const LIBRARY_KEYS = ['imgLoop', 'imgHold', 'imgTrans'];
 
-type Image = EngineImage & { src?: string };
+// model : illustration en 3D (models.ts), identifiant de son modèle.
+type Image = EngineImage & { src?: string; model?: string; demo?: boolean };
+// Document « images » : nom, tons, boucle, ordre ; hidden = modèle 3D supprimé par l'équipe.
+type Meta = {
+  name?: string;
+  tone?: EngineSettings;
+  inLoop?: boolean;
+  t?: number;
+  model?: string;
+  hidden?: boolean;
+};
+// Tons de départ d'une illustration (ceux d'une image ajoutée dans le moteur).
+const START_TONE = {
+  imgBright: 0,
+  imgContr: 10,
+  imgGamma: 1,
+  imgLow: 8,
+  imgHigh: 94,
+  imgBlur: 1,
+  imgInvert: false,
+};
 type Settings = Record<string, unknown>;
 
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -29,6 +50,7 @@ export function createLibrary(
     isEditor,
     toast,
     changed,
+    models,
   }: {
     snapshot: () => Settings;
     apply: (settings: Settings) => void;
@@ -36,6 +58,7 @@ export function createLibrary(
     isEditor: () => boolean;
     toast: (message: string) => void;
     changed: () => void;
+    models?: ModelViews;
   },
 ) {
   // Illustrations enregistrées : identifiant → nom, tons et réglages enregistrés.
@@ -55,6 +78,8 @@ export function createLibrary(
   // Sans service partagé, tout reste dans ce navigateur : pas besoin du mode édition.
   const canEdit = () => isEditor() || store.kind === 'local';
   const isSaved = (image: Image | undefined) => Boolean(image?.id && saved.has(image.id));
+  // Modèle 3D proposé d'office (pas une copie) : on le cache pour tous au lieu de l'effacer.
+  const isBuiltIn = (image: Image) => Boolean(image.model && image.id === image.model);
   const selected = () => core.imgList[core.selImg] as Image | undefined;
 
   // Réglages de l'illustration affichée, sans la boucle ni les tons (gardés avec l'image).
@@ -85,9 +110,45 @@ export function createLibrary(
       tone: image.tone,
       inLoop: image.inLoop !== false,
       t: image.t,
+      ...(image.model ? { model: image.model } : {}),
     });
     saved.set(image.id, { name: image.name, tone: { ...image.tone }, settings });
     session.delete(image);
+  };
+
+  // Modèles 3D : ceux proposés d'office (sauf s'ils ont été supprimés) et les copies enregistrées.
+  const addModels = (metas: Map<string, Meta>) => {
+    if (!models) return;
+    const list = core.imgList as Image[];
+    // images de démonstration du moteur (bibliothèque vide) : remplacées par les modèles
+    if (list.some((image) => image.demo)) core.imgList = list.filter((image) => !image.demo);
+    models.defs.forEach((def, k) => {
+      const meta = metas.get(def.id);
+      if (meta?.hidden) return;
+      let image = (core.imgList as Image[]).find((im) => im.id === def.id);
+      if (!image) {
+        image = {
+          id: def.id,
+          name: meta?.name ?? def.name,
+          canvas: models.blank(),
+          tone: { ...START_TONE, ...meta?.tone },
+          inLoop: meta?.inLoop !== false,
+          t: meta?.t ?? k + 1, // jamais déplacé : en tête de liste, à une place qui ne bouge pas
+        };
+        core.imgList.push(image);
+      }
+      saved.set(def.id, { ...saved.get(def.id), name: image.name, tone: { ...image.tone } });
+      models.attach(image, def.id);
+    });
+    for (const [id, meta] of metas)
+      if (meta?.model && !meta.hidden && id !== meta.model) {
+        const image = (core.imgList as Image[]).find((im) => im.id === id);
+        if (image) models.attach(image, meta.model);
+      }
+    core.imgList.sort((a, b) => (a.t || 0) - (b.t || 0));
+    core.curImg = core.selImg = 0;
+    core.imgTr = null;
+    core.imgDirty = true;
   };
 
   return {
@@ -137,6 +198,7 @@ export function createLibrary(
       // bibliothèque vide au départ : le moteur vient d'y déposer ses images de départ
       if (!metas.length)
         for (const meta of await store.list('images').catch(() => [])) saved.set(meta.id, {});
+      if (models) addModels(new Map(metas.map((meta) => [meta.id, meta.data as Meta])));
       for (const image of core.imgList as Image[])
         if (image.id && saved.has(image.id))
           Object.assign(saved.get(image.id)!, { name: image.name, tone: { ...image.tone } });
@@ -195,6 +257,8 @@ export function createLibrary(
             name: renamed ? image.name : copyName(image.name),
             t: Date.now(),
           };
+          // copie d'une illustration 3D : même modèle, mais sa propre vue
+          if (image.model) models?.copyView(image, copy);
           image.tone = { ...original.tone };
           image.name = original.name ?? image.name;
           session.delete(image);
@@ -226,7 +290,15 @@ export function createLibrary(
         if (!canEdit()) toast('Retirée pour cette visite : elle reste dans la bibliothèque de l’équipe.');
         else {
           try {
-            await Promise.all([...IMAGE_COLS, SETTINGS_COL].map((col) => store.del(col, image.id!)));
+            if (isBuiltIn(image)) {
+              await store.put('images', image.id!, {
+                name: image.name,
+                t: image.t,
+                model: image.model,
+                hidden: true,
+              });
+              await store.del(SETTINGS_COL, image.id!);
+            } else await Promise.all([...IMAGE_COLS, SETTINGS_COL].map((col) => store.del(col, image.id!)));
           } catch {
             toast('Suppression impossible : ouvre le mode édition.');
             return false;
