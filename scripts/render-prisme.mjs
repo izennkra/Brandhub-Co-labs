@@ -3,9 +3,10 @@
 // Usage : node scripts/render-prisme.mjs . reference/illustrations/prisme.png
 import { createRequire } from 'node:module';
 import { writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
-const [project, out] = process.argv.slice(2);
+const [projectArg, out] = process.argv.slice(2);
+const project = resolve(projectArg);
 const require = createRequire(join(project, 'package.json'));
 const { chromium } = require('@playwright/test');
 const threePath = join(project, 'node_modules/three/build/three.min.js');
@@ -68,48 +69,39 @@ const dataUrl = await page.evaluate((SIZE) => {
     uniform float uBack;
     varying vec3 vBary; varying vec3 vN; varying vec3 vW; varying float vFace;
     float blob(vec3 p, vec3 c, float r){ vec3 d = p - c; return exp(-dot(d,d) / (r*r)); }
+    vec3 corners(vec3 c0, vec3 c1, vec3 c2){ return c0 * vBary.x + c1 * vBary.y + c2 * vBary.z; }
     void main(){
       vec3 n = normalize(vN);
       if (!gl_FrontFacing) n = -n;
-      vec3 deep = vec3(0.02, 0.27, 0.45);
-      vec3 mid  = vec3(0.10, 0.55, 0.78);
-      vec3 cyan = vec3(0.62, 0.92, 0.96);
-      vec3 L = normalize(vec3(-0.5, 0.7, 0.6));
-      float diff = clamp(dot(n, L) * 0.5 + 0.5, 0.0, 1.0);
-      // dégradé vertical et selon la lumière : bas foncé, haut clair
-      float t = clamp(diff * 0.55 + (vW.y + 1.2) / 2.6 * 0.5, 0.0, 1.0);
-      // chaque face a sa valeur : gauche claire, droite plus profonde, comme un vrai verre éclairé
-      t += vFace < 0.5 ? 0.32 : (vFace < 1.5 ? -0.22 : -0.2);
-      t = clamp(t, 0.0, 1.0);
-      vec3 col = mix(deep, mid, smoothstep(0.0, 0.55, t));
-      col = mix(col, cyan, smoothstep(0.45, 1.0, t));
-      // reflets doux et flous, propres à chaque face (verre dépoli)
-      float h = 0.0;
+      vec3 deep = vec3(0.02, 0.24, 0.44);
+      // couleurs aux coins de chaque face, comme un verre teinté éclairé par le haut à gauche
+      vec3 col;
+      float h = 0.0, d = 0.0;
       if (vFace < 0.5) {
-        h += blob(vBary, vec3(0.42, 0.18, 0.40), 0.26) * 1.0;
-        h += blob(vBary, vec3(0.70, 0.22, 0.08), 0.18) * 0.7;
-        h += blob(vBary, vec3(0.10, 0.20, 0.70), 0.18) * 0.35;
+        // face gauche : très claire en haut, bleu profond dans le coin gauche
+        col = corners(vec3(0.82, 0.96, 0.98), vec3(0.03, 0.33, 0.60), vec3(0.16, 0.62, 0.82));
+        h += blob(vBary, vec3(0.42, 0.14, 0.44), 0.22) * 0.95;
+        h += blob(vBary, vec3(0.26, 0.30, 0.44), 0.14) * 0.45;
+        d += blob(vBary, vec3(0.10, 0.72, 0.18), 0.22) * 0.55;
       } else if (vFace < 1.5) {
-        h += blob(vBary, vec3(0.22, 0.30, 0.48), 0.30) * 1.05;
-        h += blob(vBary, vec3(0.62, 0.05, 0.33), 0.16) * 0.5;
-        h += blob(vBary, vec3(0.05, 0.65, 0.30), 0.14) * 0.25;
-      } else if (vFace < 2.5) {
-        h += blob(vBary, vec3(0.35, 0.35, 0.30), 0.25) * 0.5;
+        // face droite : sarcelle en haut, cyan en bas, bleu-violet à droite, grand reflet blanc
+        col = corners(vec3(0.16, 0.58, 0.60), vec3(0.36, 0.84, 0.93), vec3(0.40, 0.52, 0.80));
+        h += blob(vBary, vec3(0.20, 0.42, 0.38), 0.27) * 1.15;
+        h += blob(vBary, vec3(0.08, 0.30, 0.62), 0.16) * 0.55;
+        d += blob(vBary, vec3(0.62, 0.10, 0.28), 0.16) * 0.35;
       } else {
-        h += blob(vBary, vec3(0.33, 0.33, 0.33), 0.30) * 0.35;
+        col = mix(deep, vec3(0.20, 0.55, 0.75), 0.5);
+        h += blob(vBary, vec3(0.33, 0.33, 0.33), 0.30) * 0.3;
       }
-      col = mix(col, vec3(1.0), clamp(h, 0.0, 0.92));
-      // bords plus clairs (Fresnel) et arêtes nettes, foncées
-      float fres = pow(1.0 - abs(n.z), 2.0);
-      col = mix(col, vec3(0.85, 0.97, 1.0), fres * 0.35);
+      col = mix(col, deep, clamp(d, 0.0, 0.7));
+      col = mix(col, vec3(0.97, 0.99, 1.0), clamp(h, 0.0, 0.95));
       float e = min(min(vBary.x, vBary.y), vBary.z);
-      float edge = 1.0 - smoothstep(0.003, 0.008, e);
-      col = mix(col, vec3(0.02, 0.16, 0.30), edge * 0.9);
-      // liseré clair juste à l'intérieur des arêtes (épaisseur du verre)
-      float rim = smoothstep(0.004, 0.008, e) * (1.0 - smoothstep(0.008, 0.03, e));
-      col = mix(col, vec3(0.9, 0.98, 1.0), rim * 0.35);
-      float alpha = uBack > 0.5 ? 0.6 : 0.74;
-      if (uBack > 0.5) col = mix(col, deep, 0.35);
+      float edge = 1.0 - smoothstep(0.0015, 0.0045, e);
+      col = mix(col, vec3(0.03, 0.20, 0.36), edge * 0.75);
+      float rim = smoothstep(0.004, 0.007, e) * (1.0 - smoothstep(0.007, 0.022, e));
+      col = mix(col, vec3(0.92, 0.99, 1.0), rim * 0.3);
+      float alpha = uBack > 0.5 ? 0.5 : 0.88;
+      if (uBack > 0.5) col = mix(col, deep, 0.45);
       gl_FragColor = vec4(col, alpha);
     }`;
   const make = (side, back) =>

@@ -46,6 +46,7 @@ const dataUrl = await page.evaluate((SIZE) => {
     return k * k * (3 - 2 * k);
   };
   const positions = [],
+    across = [],
     index = [];
   for (let i = 0; i <= N; i++) {
     const t = (i / N) * Math.PI * 2;
@@ -60,6 +61,7 @@ const dataUrl = await page.evaluate((SIZE) => {
     for (const k of [-1, 1]) {
       const q = p.clone().addScaledVector(width, (k * W) / 2);
       positions.push(q.x, q.y, q.z);
+      across.push(k);
     }
     if (i < N) {
       const a = i * 2;
@@ -68,6 +70,7 @@ const dataUrl = await page.evaluate((SIZE) => {
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('across', new THREE.Float32BufferAttribute(across, 1));
   geo.setIndex(index);
   geo.computeVertexNormals();
 
@@ -75,24 +78,25 @@ const dataUrl = await page.evaluate((SIZE) => {
   // calculé directement dans le shader.
   const metal = new THREE.ShaderMaterial({
     side: THREE.DoubleSide,
-    vertexShader: `varying vec3 vN; varying vec3 vW;
+    vertexShader: `attribute float across; varying float vAcross; varying vec3 vN; varying vec3 vW;
       void main(){
+        vAcross = across;
         vN = normalize(mat3(modelMatrix) * normal);
         vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz;
         gl_Position = projectionMatrix * viewMatrix * w;
       }`,
-    fragmentShader: `uniform vec3 uCam; varying vec3 vN; varying vec3 vW;
+    fragmentShader: `uniform vec3 uCam; varying float vAcross; varying vec3 vN; varying vec3 vW;
       vec3 studio(vec3 d){
         float y = d.y;
         float az = atan(d.z, d.x);
-        vec3 col = mix(vec3(0.015), vec3(0.3), smoothstep(-0.9, 0.7, y));
+        vec3 col = mix(vec3(0.07), vec3(0.5), smoothstep(-0.9, 0.7, y));
         // panneaux lumineux tout autour (boîtes à lumière) : le ruban passe du sombre au clair
         float p = 0.0;
         p += 1.4 * exp(-pow((az - 0.6) * 2.2, 2.0));
         p += 0.9 * exp(-pow((az + 1.9) * 2.6, 2.0));
         p += 1.1 * exp(-pow((az - 2.6) * 2.4, 2.0));
         p += 0.6 * exp(-pow((az + 0.5) * 3.0, 2.0));
-        col += vec3(p * 0.75) * smoothstep(-0.75, -0.1, y) * (1.0 - smoothstep(0.6, 0.9, y));
+        col += vec3(p * 0.95) * smoothstep(-0.75, -0.1, y) * (1.0 - smoothstep(0.6, 0.9, y));
         col += vec3(1.0) * smoothstep(0.7, 0.95, y);
         return col;
       }
@@ -104,7 +108,11 @@ const dataUrl = await page.evaluate((SIZE) => {
         vec3 col = studio(r) * vec3(0.86, 0.88, 0.91);
         // léger brossé : stries le long du ruban
         col *= 0.975 + 0.025 * sin(vW.y * 220.0);
-        col = col / (col + vec3(0.6)) * 1.3;
+        col = col / (col + vec3(0.55)) * 1.42;
+        // métal clair, jamais blanc pur, et un fin liseré sombre sur les bords du ruban :
+        // la forme reste lisible une fois traduite en pastilles
+        col = mix(vec3(0.22), vec3(0.86), clamp(col, 0.0, 1.0));
+        col *= 1.0 - 0.55 * smoothstep(0.86, 1.0, abs(vAcross));
         gl_FragColor = vec4(pow(clamp(col, 0.0, 1.0), vec3(1.0 / 1.1)), 1.0);
       }`,
     uniforms: { uCam: { value: camera.position } },
