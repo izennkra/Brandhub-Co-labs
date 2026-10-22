@@ -94,6 +94,41 @@ describe('bibliothèque de l’Illustration', () => {
     expect(engineWrites).toEqual(['images/depart', 'presets/x']);
   });
 
+  it('charge les images toutes ensemble et sait d’avance lesquelles sont enregistrées', async () => {
+    const source = await withSaved();
+    const { db, core, lib } = setup();
+    for (const col of ['images', 'imagesrc', 'imgsettings'])
+      for (const [id, data] of Object.entries(await source.db.all(col))) await db.set(col, id, data);
+    const engineGet = vi.fn(async (_col: string, _id: string) => ({ src: 'lent', _col, _id }));
+    const store = core.Store as unknown as { get: typeof engineGet };
+    store.get = engineGet;
+    let seen: unknown = null;
+    let savedDuring = false;
+    core.loadLibrary = async () => {
+      seen = await store.get('imagesrc', 'cadenas');
+      core.imgList = [{ id: 'cadenas', name: 'Cadenas', canvas, tone: {} }];
+      savedDuring = lib.isSaved(0);
+    };
+    expect(lib.loaded).toBe(false);
+    await lib.load();
+    expect(seen).toEqual({ src: 'data:,cadenas' });
+    expect(engineGet).not.toHaveBeenCalled();
+    expect(savedDuring).toBe(true);
+    expect(store.get).toBe(engineGet); // le moteur retrouve sa lecture normale
+    expect(lib.loaded).toBe(true);
+  });
+
+  it('bibliothèque vide : les images de départ déposées par le moteur comptent comme enregistrées', async () => {
+    const { db, core, lib } = setup();
+    core.loadLibrary = async () => {
+      // le moteur range ses images de départ dans la bibliothèque partagée, puis les affiche
+      await db.set('images', 'depart', { name: 'Départ' });
+      core.imgList = [{ id: 'depart', name: 'Départ', canvas, tone: {} }];
+    };
+    await lib.load();
+    expect(lib.isSaved(0)).toBe(true);
+  });
+
   it('un visiteur ajoute une illustration pour tous, avec ses réglages (sans boucle ni tons)', async () => {
     const { db, core, lib, toasts } = await withSaved();
     core.imgList.push({ id: 'chat', name: 'Chat', canvas, src: 'data:,chat', tone: { imgBright: 3 } });

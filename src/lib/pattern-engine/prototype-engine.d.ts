@@ -96,6 +96,7 @@ export type PrototypeEngine = {
     readonly kind: 'claude' | 'api' | 'local';
     readonly readOnly: boolean;
     list: (collection: string) => Promise<Array<{ id: string; data: EngineSettings }>>;
+    get: (collection: string, id: string) => Promise<EngineSettings | null>;
     put: (collection: string, id: string, data: unknown) => Promise<void>;
     del: (collection: string, id: string) => Promise<void>;
   };

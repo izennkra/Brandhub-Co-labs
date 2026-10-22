@@ -4,6 +4,7 @@ import { CONTROLS, isVisible, type Control } from '../../lib/pattern-engine/cont
 import { fmtDate } from '../../lib/pattern-engine/presets';
 import { useEditor } from '../../lib/resources/editor';
 import { ColorPicker } from '../engine/ColorPicker';
+import { EditorAccess } from '../engine/EditorAccess';
 import { ImageList } from '../engine/ImageList';
 import { PresetList } from '../engine/PresetList';
 import { Toggle } from '../engine/Toggle';
@@ -126,13 +127,15 @@ export function EditorPanel({
                     onDelete={(id) => void engine.presets.remove(id)}
                   />
                 )}
-                {images && (
+                {images && !engine.library.loaded && <p>Chargement des illustrations…</p>}
+                {images && engine.library.loaded && (
                   <ImageList
                     images={engine.actions.images()}
                     onPick={engine.actions.pickImage}
                     onMove={engine.actions.moveImage}
                     onDelete={(index) => void engine.actions.deleteImage(index)}
                     onRename={engine.actions.renameImage}
+                    forAll={engine.library.canEdit()}
                     save={{
                       label: engine.library.saveLabel(),
                       note: engine.library.note(),
@@ -140,6 +143,7 @@ export function EditorPanel({
                     }}
                   />
                 )}
+                {images && engine.library.loaded && engine.library.shared && <EditorAccess />}
                 {colors && (
                   <ColorPicker
                     palette={engine.core.PALETTE}

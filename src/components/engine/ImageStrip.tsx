@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { Icon } from '../Icon';
-import { useArmedDelete, useReorder, type ImageItem } from './imageHooks';
+import { deleteWording, useArmedDelete, useReorder, type ImageItem } from './imageHooks';
 import styles from './ImageStrip.module.css';
 
 // Bandeau de vignettes sous la scène de l'Illustration (Figma ; prototype renderThumbs, ligne 2866) :
@@ -13,6 +13,7 @@ export function ImageStrip({
   onDelete,
   onToggleLoop,
   onAdd,
+  forAll = false,
 }: {
   images: ImageItem[];
   loop: boolean;
@@ -21,6 +22,7 @@ export function ImageStrip({
   onDelete: (index: number) => void;
   onToggleLoop: (index: number) => void;
   onAdd: (files: File[]) => void;
+  forAll?: boolean;
 }) {
   const remove = useArmedDelete(onDelete);
   const reorder = useReorder(onMove);
@@ -50,8 +52,11 @@ export function ImageStrip({
             className={styles.delete}
             data-armed={remove.armed === index}
             aria-label={
-              remove.armed === index ? `Confirmer la suppression de ${image.name}` : `Supprimer ${image.name}`
+              remove.armed === index
+                ? deleteWording(image, forAll).confirm
+                : deleteWording(image, forAll).label
             }
+            title={deleteWording(image, forAll).title}
             onClick={() => remove.request(index)}
           >
             {remove.armed === index ? '?' : <Icon name="cross-medium" size="xs" />}

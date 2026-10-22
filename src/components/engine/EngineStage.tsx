@@ -17,6 +17,8 @@ export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']>
   const [status, setStatus] = useState<Status>('loading');
   const live = useEngine(true);
   const illustration = mode === 'illustration' ? live : null;
+  // Bibliothèque pas encore chargée : le moteur montrerait ses images de démonstration.
+  const waiting = mode === 'illustration' && (!live || !live.library.loaded);
 
   useEffect(() => {
     const element = host.current;
@@ -44,8 +46,16 @@ export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']>
   }, [mode]);
 
   return (
-    <div ref={host} className={styles.stage} aria-busy={status === 'loading'}>
+    <div
+      ref={host}
+      className={styles.stage}
+      aria-busy={status === 'loading' || waiting}
+      data-waiting={status === 'ready' && waiting}
+    >
       {status === 'loading' && <p className={styles.message}>Chargement du moteur…</p>}
+      {status === 'ready' && waiting && (
+        <p className={`${styles.message} ${styles.overlay}`}>Chargement des illustrations…</p>
+      )}
       {status === 'error' && (
         <p className={styles.message} role="alert">
           Le moteur n’a pas pu démarrer. Recharge la page ; si le problème continue, préviens l’équipe.
@@ -60,7 +70,7 @@ export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']>
         />
       )}
       <Toaster events={live?.events ?? null} />
-      {illustration && status === 'ready' && (
+      {illustration && status === 'ready' && !waiting && (
         <ImageStrip
           images={illustration.actions.images()}
           loop={Boolean(illustration.core.S.imgLoop)}
@@ -69,6 +79,7 @@ export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']>
           onDelete={(index) => void illustration.actions.deleteImage(index)}
           onToggleLoop={illustration.actions.toggleLoop}
           onAdd={(files) => void illustration.actions.addImages(files)}
+          forAll={illustration.library.canEdit()}
         />
       )}
     </div>

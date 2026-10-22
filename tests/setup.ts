@@ -84,6 +84,9 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
       canRemove: () => true,
     },
     library: {
+      loaded: true,
+      shared: false,
+      canEdit: () => true,
       saveLabel: () => 'Enregistrer l’illustration',
       note: () => 'Tes changements ne sont visibles que par toi, le temps de ta visite.',
       isSaved: () => false,

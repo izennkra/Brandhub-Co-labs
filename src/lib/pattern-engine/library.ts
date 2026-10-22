@@ -42,6 +42,8 @@ export function createLibrary(
   const saved = new Map<string, { name?: string; tone?: EngineSettings; settings?: Settings }>();
   // Réglages changés pendant la visite, par image (retrouvés quand on revient sur elle).
   const session = new WeakMap<Image, Settings>();
+  // Tant que la bibliothèque n'est pas chargée, le moteur montre ses images de démonstration :
+  // l'interface affiche « Chargement des illustrations… » à la place.
   let loaded = false;
   let seeding = false;
   let applied = false;
@@ -92,17 +94,18 @@ export function createLibrary(
     get loaded() {
       return loaded;
     },
+    /** Mode édition (ou site sans stockage partagé) : enregistrer et supprimer valent pour tous. */
+    canEdit,
+    /** Stockage partagé en ligne : le mode édition a un sens. */
+    get shared() {
+      return store.kind === 'api';
+    },
     /** L'image est-elle dans la bibliothèque de tous ? */
     isSaved: (index: number) => isSaved(core.imgList[index]),
 
     /** Remplace loadLibrary au démarrage : charge la bibliothèque, puis ce qui est enregistré. */
     async load() {
-      seeding = true;
-      try {
-        await core.loadLibrary();
-      } finally {
-        seeding = false;
-      }
+      // Ce qui est enregistré est connu avant que la liste s'affiche (pas de « non enregistrée » fugace).
       await store.ready;
       const [metas, sets] = await Promise.all([
         store.list('images').catch(() => []),
@@ -110,6 +113,30 @@ export function createLibrary(
       ]);
       const settings = new Map(sets.map((item) => [item.id, item.data?.s as Settings | undefined]));
       for (const meta of metas) saved.set(meta.id, { settings: settings.get(meta.id) });
+      // Le moteur demande les images une par une (plusieurs secondes) : on les charge toutes
+      // ensemble, puis on lui répond depuis ce cache.
+      const sources = new Map(
+        await Promise.all(
+          metas.map(
+            async (meta) => [meta.id, await store.get?.('imagesrc', meta.id).catch(() => null)] as const,
+          ),
+        ),
+      );
+      const engineGet = core.Store.get;
+      core.Store.get = (col, id) =>
+        col === 'imagesrc' && sources.get(id)
+          ? Promise.resolve(sources.get(id) as EngineSettings)
+          : engineGet.call(core.Store, col, id);
+      seeding = true;
+      try {
+        await core.loadLibrary();
+      } finally {
+        seeding = false;
+        core.Store.get = engineGet;
+      }
+      // bibliothèque vide au départ : le moteur vient d'y déposer ses images de départ
+      if (!metas.length)
+        for (const meta of await store.list('images').catch(() => [])) saved.set(meta.id, {});
       for (const image of core.imgList as Image[])
         if (image.id && saved.has(image.id))
           Object.assign(saved.get(image.id)!, { name: image.name, tone: { ...image.tone } });

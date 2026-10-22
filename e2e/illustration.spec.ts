@@ -54,8 +54,9 @@ test('Illustration : une image ajoutée ne reste que si on l’enregistre ; réo
   await page.reload();
   await expect.poll(() => names(page), { timeout: 15000 }).toEqual([demo[0], demo[1], 'carre', demo[2]]);
 
-  await panel(page).getByRole('button', { name: 'Supprimer carre' }).click();
-  await panel(page).getByRole('button', { name: 'Confirmer la suppression de carre' }).click();
+  // site sans stockage partagé : tout reste dans ce navigateur, la croix supprime pour de bon
+  await panel(page).getByRole('button', { name: 'Supprimer définitivement carre' }).click();
+  await panel(page).getByRole('button', { name: 'Confirmer la suppression définitive de carre' }).click();
   await expect.poll(() => names(page)).toEqual(demo);
   await page.reload();
   await expect.poll(() => names(page), { timeout: 15000 }).toEqual(demo);
