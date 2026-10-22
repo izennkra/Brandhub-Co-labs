@@ -88,6 +88,8 @@ vi.mock('../src/lib/pattern-engine/createEngine', async (importOriginal) => {
       shared: false,
       canEdit: () => true,
       saveLabel: () => 'Enregistrer l’illustration',
+      modelView: () => undefined,
+      setFlat: () => {},
       note: () => 'Tes changements ne sont visibles que par toi, le temps de ta visite.',
       isSaved: () => false,
     },

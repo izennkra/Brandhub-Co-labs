@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Icon } from '../Icon';
+import { Segmented } from './Segmented';
 import { deleteWording, useArmedDelete, useReorder, type ImageItem } from './imageHooks';
 import styles from './ImageList.module.css';
 
 // Section « Images » du panneau Illustration (Figma) : poignée, nom, crayon, croix ; image choisie encadrée.
 // Au clavier, la poignée déplace l'image avec les flèches haut et bas.
 // Renommer : crayon ou double-clic sur le nom ; Entrée ou clic ailleurs valide, Échap annule.
+// Illustration 3D choisie : « 3D / Aplatie » (image figée sous l'angle affiché, fond transparent).
 // Dessous : « Enregistrer l'illustration » (pour tous, avec ses réglages) et une note.
 export function ImageList({
   images,
@@ -14,6 +16,7 @@ export function ImageList({
   onDelete,
   onRename,
   forAll = false,
+  model,
   save,
 }: {
   images: ImageItem[];
@@ -23,6 +26,8 @@ export function ImageList({
   onRename?: (index: number, name: string) => void;
   /** Mode édition : la croix supprime définitivement les illustrations enregistrées. */
   forAll?: boolean;
+  /** Illustration 3D choisie : aplatie ou non. */
+  model?: { flat: boolean; onFlat: (flat: boolean) => void };
   save?: { label: string; note: string; onSave: () => Promise<void> };
 }) {
   const remove = useArmedDelete(onDelete);
@@ -117,6 +122,24 @@ export function ImageList({
           </li>
         ))}
       </ul>
+      {model && (
+        <div className={styles.model}>
+          <Segmented
+            label="Modèle 3D"
+            options={[
+              { label: 'En 3D', value: 0 },
+              { label: 'Aplati', value: 1 },
+            ]}
+            value={model.flat ? 1 : 0}
+            onChange={(value) => model.onFlat(value === 1)}
+          />
+          <p className={styles.note}>
+            {model.flat
+              ? 'Image figée sous cet angle, sur fond transparent. Repasse en 3D pour changer l’angle.'
+              : 'Tourne le modèle à la souris, puis aplatis-le pour figer cet angle.'}
+          </p>
+        </div>
+      )}
       {save && (
         <div className={styles.save}>
           <button

@@ -19,15 +19,23 @@ type Img = {
 function fakeModels() {
   const attached: string[] = [];
   const copies: string[] = [];
+  const states = new Map<Img, { yaw: number; pitch: number; flat: boolean }>();
   return {
     attached,
     copies,
+    states,
     views: {
       defs: [{ id: 'modele-prisme', name: 'Prisme (modèle 3D)', url: '/prisme.glb', yaw: 0, pitch: 0 }],
       blank: () => canvas,
-      attach: (image: Img, model: string) => {
+      attach: (image: Img, model: string, state?: { yaw?: number; pitch?: number; flat?: boolean }) => {
         (image as Img & { model?: string }).model = model;
         attached.push(`${image.id}:${model}`);
+        states.set(image, { yaw: state?.yaw ?? 0, pitch: state?.pitch ?? 0, flat: state?.flat === true });
+      },
+      stateOf: (image: Img) => states.get(image),
+      setFlat: (image: Img, flat: boolean) => {
+        const state = states.get(image);
+        if (state) state.flat = flat;
       },
       copyView: (_from: Img, to: Img) => void copies.push(to.name),
       isModel: () => true,
@@ -272,5 +280,31 @@ describe('bibliothèque de l’Illustration', () => {
       await next.db.set('images', id, data);
     await next.lib.load();
     expect(next.core.imgList.map((im) => im.id)).not.toContain('modele-prisme');
+  });
+
+  it('modèles 3D : « Enregistrer » garde pour tous l’angle et l’aplatissement', async () => {
+    const models = fakeModels();
+    const editor = setup({ editor: true, models });
+    await editor.lib.load();
+    editor.core.selImg = editor.core.imgList.findIndex((im) => im.id === 'modele-prisme');
+    expect(editor.lib.modelView()).toMatchObject({ flat: false });
+    // tourné puis aplati, puis enregistré
+    models.states.get(editor.core.imgList[editor.core.selImg])!.yaw = 1.2;
+    editor.lib.setFlat(true);
+    await editor.lib.save();
+    expect(await editor.db.get('images', 'modele-prisme')).toMatchObject({ yaw: 1.2, flat: true });
+
+    // un autre visiteur le retrouve aplati, sous le même angle
+    const next = setup({ models: fakeModels() });
+    for (const [id, data] of Object.entries(await editor.db.all('images')))
+      await next.db.set('images', id, data);
+    await next.lib.load();
+    next.core.selImg = next.core.imgList.findIndex((im) => im.id === 'modele-prisme');
+    expect(next.lib.modelView()).toEqual({ yaw: 1.2, pitch: 0, flat: true });
+
+    // repassé en 3D et enregistré : de nouveau en 3D pour tous
+    editor.lib.setFlat(false);
+    await editor.lib.save();
+    expect(await editor.db.get('images', 'modele-prisme')).toMatchObject({ flat: false });
   });
 });

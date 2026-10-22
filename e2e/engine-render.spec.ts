@@ -42,6 +42,7 @@ const setup = ({ seed, width, height }: { seed: number; width: number; height: n
   };
   w.__engineTestHooks = {
     beforeStart: () => (w.__reseed as () => void)(),
+    noModels: true, // le prototype n'a pas les modèles 3D
     onReady: (engine: unknown) => {
       w.__engine = engine;
     },

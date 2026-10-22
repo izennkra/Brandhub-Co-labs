@@ -136,6 +136,12 @@ export function EditorPanel({
                     onDelete={(index) => void engine.actions.deleteImage(index)}
                     onRename={engine.actions.renameImage}
                     forAll={engine.library.canEdit()}
+                    model={
+                      engine.library.modelView() && {
+                        flat: engine.library.modelView()!.flat,
+                        onFlat: engine.library.setFlat,
+                      }
+                    }
                     save={{
                       label: engine.library.saveLabel(),
                       note: engine.library.note(),
