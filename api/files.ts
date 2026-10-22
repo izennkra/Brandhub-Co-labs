@@ -75,7 +75,7 @@ export async function handleFiles(
   }
 }
 
-/** Vercel Blob (variable BLOB_READ_WRITE_TOKEN ajoutée par Vercel quand on relie Blob au projet). */
+/** Vercel Blob (réglages ajoutés par Vercel quand on relie Blob au projet). */
 export function blobFiles(): FileStore {
   return {
     async put(pathname, body, contentType) {
@@ -88,7 +88,11 @@ export function blobFiles(): FileStore {
   };
 }
 
+/** Blob est-il relié au projet ? Ancienne façon (jeton) ou nouvelle (BLOB_STORE_ID + connexion Vercel). */
+export const blobConfigured = (env: Record<string, string | undefined>) =>
+  Boolean(env.BLOB_READ_WRITE_TOKEN?.trim() || env.BLOB_STORE_ID?.trim());
+
 const handle = (request: Request) =>
-  handleFiles(request, process.env.BLOB_READ_WRITE_TOKEN ? blobFiles() : null, process.env.EDITOR_CODE);
+  handleFiles(request, blobConfigured(process.env) ? blobFiles() : null, process.env.EDITOR_CODE);
 
 export { handle as POST, handle as DELETE };
