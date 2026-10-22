@@ -7,13 +7,54 @@ declare module 'three' {
   export const NormalBlending: number;
   export const MathUtils: { degToRad: (degrees: number) => number };
 
+  export const sRGBEncoding: number;
+  export const DoubleSide: number;
+  export class Material {}
+  export class MeshPhongMaterial extends Material {
+    constructor(parameters?: Record<string, unknown>);
+  }
   export class Matrix4 {}
+  export class Euler {
+    x: number;
+    y: number;
+    z: number;
+    set(x: number, y: number, z: number): this;
+  }
+  export class Object3D {
+    position: Vector3;
+    rotation: Euler;
+    scale: Vector3 & { setScalar(value: number): Vector3 };
+    children: Object3D[];
+    add(...objects: Object3D[]): this;
+    remove(...objects: Object3D[]): this;
+    traverse(callback: (object: Object3D & { isMesh?: boolean; material?: Material }) => void): void;
+  }
+  export class Group extends Object3D {}
+  export class Sphere {
+    radius: number;
+    center: Vector3;
+  }
+  export class Box3 {
+    setFromObject(object: Object3D): this;
+    getCenter(target: Vector3): Vector3;
+    getBoundingSphere(target: Sphere): Sphere;
+  }
+  export class HemisphereLight extends Object3D {
+    constructor(sky?: number, ground?: number, intensity?: number);
+  }
+  export class DirectionalLight extends Object3D {
+    constructor(color?: number, intensity?: number);
+  }
+  export class AmbientLight extends Object3D {
+    constructor(color?: number, intensity?: number);
+  }
   export class Vector3 {
     x: number;
     y: number;
     z: number;
     constructor(x?: number, y?: number, z?: number);
     set(x: number, y: number, z: number): this;
+    sub(vector: Vector3): this;
     applyMatrix4(matrix: Matrix4): this;
     distanceTo(vector: Vector3): number;
   }
@@ -23,14 +64,16 @@ declare module 'three' {
     constructor(width: number, height: number, options?: Record<string, unknown>);
     dispose(): void;
   }
-  export class Scene {}
+  export class Scene extends Object3D {}
   export class Camera {
     position: Vector3;
+    lookAt(x: number, y: number, z: number): void;
     matrixWorldInverse: Matrix4;
     projectionMatrix: Matrix4;
     updateMatrixWorld(): void;
   }
   export class PerspectiveCamera extends Camera {
+    constructor(fov?: number, aspect?: number, near?: number, far?: number);
     aspect: number;
     fov: number;
     setViewOffset(
@@ -49,7 +92,11 @@ declare module 'three' {
     blending: number;
   }
   export class WebGLRenderer {
+    constructor(options?: Record<string, unknown>);
     domElement: HTMLCanvasElement;
+    outputEncoding: number;
+    setSize(width: number, height: number, updateStyle?: boolean): void;
+    setPixelRatio(ratio: number): void;
     capabilities: { maxTextureSize: number };
     setRenderTarget(target: WebGLRenderTarget | null): void;
     setClearColor(color: number, alpha: number): void;
@@ -63,5 +110,13 @@ declare module 'three' {
       height: number,
       buffer: Uint8Array,
     ): void;
+  }
+}
+
+// Chargeur de modèles .glb (exemples officiels de three r128), pour les illustrations en 3D.
+declare module 'three/examples/jsm/loaders/GLTFLoader.js' {
+  import type { Group } from 'three';
+  export class GLTFLoader {
+    loadAsync(url: string): Promise<{ scene: Group }>;
   }
 }

@@ -4,6 +4,34 @@ import { useEffect, useRef, useState } from 'react';
 // saved : enregistrée pour tous ; sinon, l'image ne vit que le temps de la visite.
 export type ImageItem = { name: string; thumb: string; inLoop: boolean; selected: boolean; saved?: boolean };
 
+/**
+ * Ce que fait la croix, dit clairement : une image de la visite se supprime ; une illustration
+ * enregistrée se supprime pour tous en mode édition, sinon elle est seulement retirée de la visite.
+ */
+export function deleteWording(image: ImageItem, forAll: boolean) {
+  const name = image.name;
+  if (!image.saved)
+    return {
+      label: `Supprimer ${name}`,
+      confirm: `Confirmer la suppression de ${name}`,
+      armed: 'Supprimer ?',
+      title: 'Supprimer',
+    };
+  if (forAll)
+    return {
+      label: `Supprimer définitivement ${name}`,
+      confirm: `Confirmer la suppression définitive de ${name}`,
+      armed: 'Supprimer ?',
+      title: 'Supprimer définitivement, pour tout le monde',
+    };
+  return {
+    label: `Retirer ${name} pour cette visite`,
+    confirm: `Confirmer le retrait de ${name}`,
+    armed: 'Retirer ?',
+    title: 'Retirer pour cette visite (le mode édition supprime définitivement)',
+  };
+}
+
 // Retrait en deux temps, comme dans le prototype (deleteImage, ligne 2845) : le premier clic
 // demande confirmation pendant 3 secondes, le second retire l'image.
 export function useArmedDelete(onDelete: (index: number) => void) {

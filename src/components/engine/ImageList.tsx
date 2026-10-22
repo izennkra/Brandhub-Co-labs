@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Icon } from '../Icon';
-import { useArmedDelete, useReorder, type ImageItem } from './imageHooks';
+import { deleteWording, useArmedDelete, useReorder, type ImageItem } from './imageHooks';
 import styles from './ImageList.module.css';
 
 // Section « Images » du panneau Illustration (Figma) : poignée, nom, crayon, croix ; image choisie encadrée.
@@ -13,6 +13,7 @@ export function ImageList({
   onMove,
   onDelete,
   onRename,
+  forAll = false,
   save,
 }: {
   images: ImageItem[];
@@ -20,6 +21,8 @@ export function ImageList({
   onMove: (from: number, to: number) => void;
   onDelete: (index: number) => void;
   onRename?: (index: number, name: string) => void;
+  /** Mode édition : la croix supprime définitivement les illustrations enregistrées. */
+  forAll?: boolean;
   save?: { label: string; note: string; onSave: () => Promise<void> };
 }) {
   const remove = useArmedDelete(onDelete);
@@ -99,12 +102,17 @@ export function ImageList({
               data-armed={remove.armed === index}
               aria-label={
                 remove.armed === index
-                  ? `Confirmer la suppression de ${image.name}`
-                  : `Supprimer ${image.name}`
+                  ? deleteWording(image, forAll).confirm
+                  : deleteWording(image, forAll).label
               }
+              title={deleteWording(image, forAll).title}
               onClick={() => remove.request(index)}
             >
-              {remove.armed === index ? 'Supprimer ?' : <Icon name="cross-medium" size="xs" />}
+              {remove.armed === index ? (
+                deleteWording(image, forAll).armed
+              ) : (
+                <Icon name="cross-medium" size="xs" />
+              )}
             </button>
           </li>
         ))}

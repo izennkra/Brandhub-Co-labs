@@ -54,6 +54,25 @@ describe('ImageList (panneau)', () => {
     expect(screen.getByRole('textbox', { name: 'Nouveau nom de Cadenas' })).toBeInTheDocument();
   });
 
+  it('dit ce que fait la croix : retrait de la visite, ou suppression définitive en mode édition', async () => {
+    const user = userEvent.setup();
+    const saved = IMAGES.map((image) => ({ ...image, saved: true }));
+    const visitor = handlers();
+    const { unmount } = render(<ImageList images={saved} {...visitor} />);
+    await user.click(screen.getByRole('button', { name: 'Retirer Tomate pour cette visite' }));
+    await user.click(screen.getByRole('button', { name: 'Confirmer le retrait de Tomate' }));
+    expect(visitor.calls).toEqual(['retrait:1']);
+    unmount();
+
+    const editor = handlers();
+    render(<ImageList images={saved} {...editor} forAll />);
+    const cross = screen.getByRole('button', { name: 'Supprimer définitivement Tomate' });
+    expect(cross).toHaveAttribute('title', 'Supprimer définitivement, pour tout le monde');
+    await user.click(cross);
+    await user.click(screen.getByRole('button', { name: 'Confirmer la suppression définitive de Tomate' }));
+    expect(editor.calls).toEqual(['retrait:1']);
+  });
+
   it('retrait en deux temps : un premier clic demande confirmation', async () => {
     const user = userEvent.setup();
     const h = handlers();

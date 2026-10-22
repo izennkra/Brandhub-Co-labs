@@ -27,3 +27,18 @@
   color: var(--color-text-secondary);
   text-align: center;
 }
+
+/* message posé sur la scène (le canvas garde sa place) */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+/* bibliothèque en cours de chargement : on cache les images de démonstration du moteur */
+.stage[data-waiting='true'] canvas {
+  visibility: hidden;
+}

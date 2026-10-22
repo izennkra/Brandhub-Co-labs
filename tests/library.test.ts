@@ -15,7 +15,32 @@ type Img = {
 };
 
 // Moteur simulé : réglages, liste d'images, et le Store du moteur (qui écrivait tout pour tout le monde).
-function setup({ library = [] as Img[], editor = false } = {}) {
+// Modèles 3D simulés : on note ce que la bibliothèque leur demande.
+function fakeModels() {
+  const attached: string[] = [];
+  const copies: string[] = [];
+  return {
+    attached,
+    copies,
+    views: {
+      defs: [{ id: 'modele-prisme', name: 'Prisme (modèle 3D)', url: '/prisme.glb', yaw: 0, pitch: 0 }],
+      blank: () => canvas,
+      attach: (image: Img, model: string) => {
+        (image as Img & { model?: string }).model = model;
+        attached.push(`${image.id}:${model}`);
+      },
+      copyView: (_from: Img, to: Img) => void copies.push(to.name),
+      isModel: () => true,
+      tick: () => {},
+    },
+  };
+}
+
+function setup({
+  library = [] as Img[],
+  editor = false,
+  models = null as ReturnType<typeof fakeModels> | null,
+} = {}) {
   const db: StoreDb = memoryDb();
   const store = createStore({
     fetch: (input, init) => handleStore(new Request(`http://localhost${input}`, init), db, CODE),
@@ -56,6 +81,7 @@ function setup({ library = [] as Img[], editor = false } = {}) {
     isEditor: () => editor,
     toast: (m) => toasts.push(m),
     changed: () => {},
+    models: models?.views as never,
   });
   return { db, core, lib, toasts, engineWrites };
 }
@@ -92,6 +118,41 @@ describe('bibliothèque de l’Illustration', () => {
     await core.Store.put('imagesrc', 'nouvelle', {});
     await core.Store.put('presets', 'x', {});
     expect(engineWrites).toEqual(['images/depart', 'presets/x']);
+  });
+
+  it('charge les images toutes ensemble et sait d’avance lesquelles sont enregistrées', async () => {
+    const source = await withSaved();
+    const { db, core, lib } = setup();
+    for (const col of ['images', 'imagesrc', 'imgsettings'])
+      for (const [id, data] of Object.entries(await source.db.all(col))) await db.set(col, id, data);
+    const engineGet = vi.fn(async (_col: string, _id: string) => ({ src: 'lent', _col, _id }));
+    const store = core.Store as unknown as { get: typeof engineGet };
+    store.get = engineGet;
+    let seen: unknown = null;
+    let savedDuring = false;
+    core.loadLibrary = async () => {
+      seen = await store.get('imagesrc', 'cadenas');
+      core.imgList = [{ id: 'cadenas', name: 'Cadenas', canvas, tone: {} }];
+      savedDuring = lib.isSaved(0);
+    };
+    expect(lib.loaded).toBe(false);
+    await lib.load();
+    expect(seen).toEqual({ src: 'data:,cadenas' });
+    expect(engineGet).not.toHaveBeenCalled();
+    expect(savedDuring).toBe(true);
+    expect(store.get).toBe(engineGet); // le moteur retrouve sa lecture normale
+    expect(lib.loaded).toBe(true);
+  });
+
+  it('bibliothèque vide : les images de départ déposées par le moteur comptent comme enregistrées', async () => {
+    const { db, core, lib } = setup();
+    core.loadLibrary = async () => {
+      // le moteur range ses images de départ dans la bibliothèque partagée, puis les affiche
+      await db.set('images', 'depart', { name: 'Départ' });
+      core.imgList = [{ id: 'depart', name: 'Départ', canvas, tone: {} }];
+    };
+    await lib.load();
+    expect(lib.isSaved(0)).toBe(true);
   });
 
   it('un visiteur ajoute une illustration pour tous, avec ses réglages (sans boucle ni tons)', async () => {
@@ -180,5 +241,36 @@ describe('bibliothèque de l’Illustration', () => {
     expect(await editor.lib.remove(0)).toBe(true);
     expect(await editor.db.get('images', 'cadenas')).toBeNull();
     expect(await editor.db.get('imgsettings', 'cadenas')).toBeNull();
+  });
+
+  it('modèles 3D : proposés à tous d’office, cachés pour tous en mode édition, copiés avec leur modèle', async () => {
+    const models = fakeModels();
+    const visitor = setup({ library: [{ id: 'cadenas', name: 'Cadenas', canvas, tone: {} }], models });
+    await visitor.db.set('images', 'cadenas', { name: 'Cadenas', t: 1 });
+    await visitor.lib.load();
+    const names = visitor.core.imgList.map((im) => im.name);
+    expect(names).toContain('Prisme (modèle 3D)');
+    const index = visitor.core.imgList.findIndex((im) => im.id === 'modele-prisme');
+    expect(visitor.lib.isSaved(index)).toBe(true);
+    expect(models.attached).toContain('modele-prisme:modele-prisme');
+
+    // un visiteur enregistre une copie : elle garde son modèle 3D
+    visitor.core.selImg = index;
+    await visitor.lib.save();
+    const copy = visitor.core.imgList[index + 1];
+    expect(models.copies).toEqual([copy.name]);
+    expect(await visitor.db.get('images', copy.id!)).toMatchObject({ model: 'modele-prisme' });
+
+    // en mode édition, la croix le cache pour tous ; il ne revient pas au chargement suivant
+    const editor = setup({ editor: true, models: fakeModels() });
+    await editor.lib.load();
+    const builtIn = editor.core.imgList.findIndex((im) => im.id === 'modele-prisme');
+    expect(await editor.lib.remove(builtIn)).toBe(true);
+    expect(await editor.db.get('images', 'modele-prisme')).toMatchObject({ hidden: true });
+    const next = setup({ models: fakeModels() });
+    for (const [id, data] of Object.entries(await editor.db.all('images')))
+      await next.db.set('images', id, data);
+    await next.lib.load();
+    expect(next.core.imgList.map((im) => im.id)).not.toContain('modele-prisme');
   });
 });

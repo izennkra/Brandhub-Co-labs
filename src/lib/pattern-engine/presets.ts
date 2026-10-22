@@ -12,6 +12,7 @@ export type PresetStore = {
   readonly kind: string;
   readonly ready?: Promise<unknown>;
   list: (col: string) => Promise<Array<{ id: string; data: Record<string, unknown> }>>;
+  get?: (col: string, id: string) => Promise<unknown>;
   put: (col: string, id: string, data: unknown) => Promise<void>;
   del: (col: string, id: string) => Promise<void>;
 };

@@ -6,6 +6,8 @@ const PNG = Buffer.from(
   'base64',
 );
 
+// Bibliothèque de départ : les 2 modèles 3D (en tête) et les 3 images du moteur.
+const START = 5;
 const panel = (page: Page) => page.getByRole('complementary', { name: 'Éditeur' });
 const names = (page: Page) =>
   panel(page)
@@ -21,7 +23,7 @@ test('Illustration : une image ajoutée ne reste que si on l’enregistre ; réo
   await page.goto('/outils/illustration');
   const strip = page.getByRole('group', { name: 'Bande d’images' });
   await expect(strip).toBeVisible({ timeout: 15000 });
-  await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(3);
+  await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(START);
   const demo = await names(page);
   const add = () =>
     page
@@ -49,13 +51,16 @@ test('Illustration : une image ajoutée ne reste que si on l’enregistre ; réo
 
   await panel(page).getByRole('button', { name: 'Déplacer carre' }).focus();
   await page.keyboard.press('ArrowUp');
-  await expect.poll(() => names(page)).toEqual([demo[0], demo[1], 'carre', demo[2]]);
+  await expect.poll(() => names(page)).toEqual([...demo.slice(0, -1), 'carre', ...demo.slice(-1)]);
   await page.waitForTimeout(500);
   await page.reload();
-  await expect.poll(() => names(page), { timeout: 15000 }).toEqual([demo[0], demo[1], 'carre', demo[2]]);
+  await expect
+    .poll(() => names(page), { timeout: 15000 })
+    .toEqual([...demo.slice(0, -1), 'carre', ...demo.slice(-1)]);
 
-  await panel(page).getByRole('button', { name: 'Supprimer carre' }).click();
-  await panel(page).getByRole('button', { name: 'Confirmer la suppression de carre' }).click();
+  // site sans stockage partagé : tout reste dans ce navigateur, la croix supprime pour de bon
+  await panel(page).getByRole('button', { name: 'Supprimer définitivement carre' }).click();
+  await panel(page).getByRole('button', { name: 'Confirmer la suppression définitive de carre' }).click();
   await expect.poll(() => names(page)).toEqual(demo);
   await page.reload();
   await expect.poll(() => names(page), { timeout: 15000 }).toEqual(demo);
@@ -64,7 +69,7 @@ test('Illustration : une image ajoutée ne reste que si on l’enregistre ; réo
 test('Illustration : choisir une image dans le bandeau la montre dans la liste', async ({ page }) => {
   await page.goto('/outils/illustration');
   const strip = page.getByRole('group', { name: 'Bande d’images' });
-  await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(3);
+  await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(START);
   const [, second] = await names(page);
   await strip.getByRole('button', { name: `Afficher ${second}` }).click();
   await expect(panel(page).getByRole('button', { name: second, exact: true })).toHaveAttribute(
@@ -96,7 +101,7 @@ test('Illustration : les tons sont propres à chaque image, agissent sur le rend
   page,
 }) => {
   await page.goto('/outils/illustration');
-  await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(3);
+  await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(START);
   const [first, second] = await names(page);
   const bright = panel(page).getByRole('slider', { name: 'Luminosité' });
   await page.waitForTimeout(1500); // l'image d'ouverture a fini de se former
@@ -120,9 +125,26 @@ test('Illustration : les tons sont propres à chaque image, agissent sur le rend
 test('Illustration : « Boucle d’images » ajoute les coches de boucle dans le bandeau', async ({ page }) => {
   await page.goto('/outils/illustration');
   const strip = page.getByRole('group', { name: 'Bande d’images' });
-  await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(3);
+  await expect.poll(async () => (await names(page)).length, { timeout: 15000 }).toBe(START);
   await expect(strip.getByRole('button', { name: /dans la boucle/ })).toHaveCount(0);
   await panel(page).getByRole('button', { name: 'Animation' }).click();
   await panel(page).getByText('Boucle d’images').click();
-  await expect(strip.getByRole('button', { name: /dans la boucle/ })).toHaveCount(3);
+  await expect(strip.getByRole('button', { name: /dans la boucle/ })).toHaveCount(START);
+});
+
+test('Illustration : un modèle 3D tourne vraiment quand on le fait tourner', async ({ page }) => {
+  await page.goto('/outils/illustration');
+  const prism = panel(page).getByRole('button', { name: 'Prisme (modèle 3D)', exact: true });
+  await expect(prism).toBeVisible({ timeout: 15000 });
+  await prism.click();
+  await page.waitForTimeout(2500); // la vue du modèle a fini de se former
+  const scene = page.locator('main #scene');
+  const before = await scene.screenshot();
+  const box = (await scene.boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.4, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.7, box.y + box.height / 2, { steps: 12 });
+  await page.mouse.up();
+  await page.waitForTimeout(2500);
+  expect(Buffer.compare(before, await scene.screenshot())).not.toBe(0);
 });
