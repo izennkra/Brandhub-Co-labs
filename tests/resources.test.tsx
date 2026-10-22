@@ -17,14 +17,7 @@ import {
 import { lockEditor } from '../src/lib/resources/editor';
 import { iconSvgUrl, variantId } from '../src/lib/resources/icons';
 import { slug } from '../src/lib/resources/download';
-import {
-  logoVariants,
-  logoVersions,
-  recolorSvg,
-  sanitizeSvg,
-  versionLabel,
-  withBackground,
-} from '../src/lib/resources/logo';
+import { logoVariants, paintColors, recolorSvg, sanitizeSvg, versionLabel } from '../src/lib/resources/logo';
 import { nearestPantone } from '../src/lib/resources/pantone';
 import { LOCAL_EDITOR_CODE } from '../src/lib/store/store';
 
@@ -152,40 +145,39 @@ describe('déclinaisons des logos', () => {
     ]);
   });
 
-  it('donne deux versions par couleur : fond transparent, puis sur le fond le plus contrasté', () => {
+  it('écarte les couleurs identiques à l’œil et l’original quand il est déjà une couleur de la marque', () => {
+    const MONO =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path fill="#431604" d="M0 0h9v9z"/></svg>';
+    const brand = [
+      { name: 'Marron', hex: '#431604' },
+      { name: 'Orange', hex: '#EC5F14' },
+      { name: 'Blanc', hex: '#F8F7F2' },
+      { name: 'Neutre clair', hex: '#F8F7F2' },
+      { name: 'Neutre foncé', hex: '#431602' },
+    ];
+    expect(logoVariants(MONO, brand).map((v) => v.name)).toEqual(['Marron', 'Orange', 'Blanc']);
+    // logo de plusieurs couleurs, ou d'une couleur hors de la marque : l'original reste
+    expect(logoVariants(SOURCE, brand)[0].name).toBe('Original');
+    expect(logoVariants(MONO.replace('#431604', '#0000FF'), brand)[0].name).toBe('Original');
+    // forme sans couleur : noire par défaut
+    expect(paintColors('<svg xmlns="http://www.w3.org/2000/svg"><circle r="1"/></svg>')).toEqual(['#000000']);
+  });
+
+  it('chaque logo est sur fond transparent, nommé automatiquement', () => {
     const brand = [
       { name: 'Orange', hex: '#EC5F14' },
       { name: 'Brun', hex: '#431604' },
-      { name: 'Lin', hex: '#F1E2DA' },
     ];
-    const versions = logoVersions(logoVariants(SOURCE, brand), brand);
-    expect(versions.map(versionLabel)).toEqual([
+    const variants = logoVariants(SOURCE, brand);
+    expect(variants.map(versionLabel)).toEqual([
       'Original · fond transparent',
-      'Original · sur fond Lin',
       'Orange · fond transparent',
-      'Orange · sur fond Brun',
       'Brun · fond transparent',
-      'Brun · sur fond Lin',
-      'Lin · fond transparent',
-      'Lin · sur fond Brun',
     ]);
-    // nom de fichier composé automatiquement
-    expect(`${slug('Logo principal')}-${slug(versionLabel(versions[3]))}.png`).toBe(
-      'logo-principal-orange-sur-fond-brun.png',
+    expect(`${slug('Logo principal')}-${slug(versionLabel(variants[1]))}.png`).toBe(
+      'logo-principal-orange-fond-transparent.png',
     );
-    expect(versions[2].svg).not.toContain('<rect');
-    expect(versions[3].svg).toContain('fill="#431604"');
-  });
-
-  it('pose le logo sur un fond plein, avec une marge autour', () => {
-    const out = withBackground(SOURCE, '#431604');
-    const doc = new DOMParser().parseFromString(out, 'image/svg+xml').documentElement;
-    expect(doc.getAttribute('viewBox')).toBe('-2 -2 14 14');
-    expect(doc.getAttribute('width')).toBe('14');
-    const rect = doc.firstElementChild!;
-    expect(rect.nodeName).toBe('rect');
-    expect(rect.getAttribute('fill')).toBe('#431604');
-    expect(rect.getAttribute('width')).toBe('14');
+    for (const variant of variants) expect(variant.svg).not.toContain('<rect');
   });
 
   it('retire les scripts et les attributs « on… » d’un SVG déposé', () => {
@@ -270,15 +262,14 @@ describe('mode édition des Ressources', () => {
     const input = (await screen.findByLabelText(/Dépose le SVG de « Logo principal »/)) as HTMLInputElement;
     await user.upload(input, new File([LOGO], 'logo.svg', { type: 'image/svg+xml' }));
     const list = await screen.findByRole('list', { name: 'Logo principal' });
-    // original, orange, lin : chacun sur fond transparent et sur fond plein
-    expect(within(list).getAllByRole('listitem')).toHaveLength(6);
+    // original, orange, lin : un logo par couleur, sur fond transparent
+    expect(within(list).getAllByRole('listitem')).toHaveLength(3);
     for (const format of ['SVG', 'PNG', 'PDF'])
-      for (const fond of ['fond transparent', 'sur fond Lin'])
-        expect(
-          within(list).getByRole('button', {
-            name: `Télécharger Logo principal Orange · ${fond} en ${format}`,
-          }),
-        ).toBeInTheDocument();
+      expect(
+        within(list).getByRole('button', {
+          name: `Télécharger Logo principal Orange · fond transparent en ${format}`,
+        }),
+      ).toBeInTheDocument();
     expect(screen.getByLabelText(/Remplacer le SVG de « Logo principal »/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Ajouter une section/ }));
