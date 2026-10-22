@@ -13,6 +13,8 @@ import { Icon } from '../Icon';
 import styles from './EditorPanel.module.css';
 import { EngineControls } from './EngineControls';
 import { ExportPanel } from './ExportPanel';
+import { hasInfoTexts } from '../../lib/pattern-engine/infoTexts';
+import { InfoTexts } from './InfoTexts';
 import { PanelSection } from './PanelSection';
 import { useEngine } from './useEngine';
 
@@ -43,6 +45,8 @@ const COLORS_SECTION = 'Couleurs';
 const IMAGES_SECTION = 'Images';
 // Section des tons : bouton « Rétablir les tons » en réglage avancé, comme dans le prototype.
 const TONE_SECTION = 'Lumière et tons de l’image';
+// Section Volume du Motif : les textes de l'infographie s'y placent (sous-menu « Infographie »).
+const VOLUME_SECTION = 'Volume';
 
 // Panneau droit des pages Tool (Figma « Tool / … ») : en-tête repliable, sections, bouton Export.
 export function EditorPanel({
@@ -169,6 +173,11 @@ export function EditorPanel({
                 <EngineControls
                   engine={engine}
                   controls={controls}
+                  subStart={
+                    engineMode === 'motif' && section.title === VOLUME_SECTION && hasInfoTexts(engine.core.S)
+                      ? { Infographie: <InfoTexts engine={engine} /> }
+                      : undefined
+                  }
                   beforeSubs={
                     advanced &&
                     engineMode === 'illustration' &&

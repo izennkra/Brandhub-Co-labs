@@ -331,6 +331,15 @@ function createActions(
       syncAll();
     },
     /** Change un réglage de la table controls.ts, puis fait ce que faisait le prototype après ce changement. */
+    /**
+     * Textes de l'infographie (procTexts, procLabel, lineData, lineTexts, lineUnit, procSteps), comme les
+     * champs du prototype (lignes 2985-3040) ; un nouveau nombre d'étapes refait les renflements.
+     */
+    setInfo(patch: Record<string, string | number>) {
+      if ('procSteps' in patch && patch.procSteps !== core.S.procSteps) core.lineLobes = [];
+      Object.assign(core.S, patch);
+      syncAll();
+    },
     change(key: string, value: number | boolean, effect?: ControlEffect) {
       if (effect === 'setStructure') return actions.setStructure(value as Structure);
       if (effect === 'setShape') actions.setShape(value as Shape);

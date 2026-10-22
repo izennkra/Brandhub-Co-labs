@@ -28,10 +28,14 @@ export function EngineControls({
   engine,
   controls,
   beforeSubs,
+  subStart,
 }: {
   engine: Engine;
   controls: Control[];
   beforeSubs?: ReactNode; // placé juste avant le premier sous-menu (ex. « Rétablir les tons »)
+  // contenu placé en tête d'un sous-menu (ex. les textes de l'« Infographie ») ; le sous-menu
+  // apparaît pour lui seul quand aucun de ses réglages n'est affiché (réglages essentiels)
+  subStart?: Record<string, ReactNode>;
 }) {
   const S = engine.core.S;
   const change = (control: Control, value: number | boolean) =>
@@ -78,6 +82,8 @@ export function EngineControls({
   };
 
   const list = runs(controls);
+  for (const sub of Object.keys(subStart ?? {}))
+    if (!list.some((run) => run.sub === sub)) list.push({ sub, controls: [] });
   const firstSub = list.findIndex((run) => run.sub);
   return list
     .map((run, i) =>
@@ -89,7 +95,10 @@ export function EngineControls({
               <span>{run.sub}</span>
               <Icon name="chevron-down-small" size="xs" className={styles.chevron} />
             </summary>
-            <div className={styles.subBody}>{run.controls.map(field)}</div>
+            <div className={styles.subBody}>
+              {subStart?.[run.sub]}
+              {run.controls.map(field)}
+            </div>
           </details>
         </Fragment>
       ) : (
