@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { buildEnv, createAnimationGate, engineEvents } from '../src/lib/pattern-engine/createEngine';
+import {
+  buildEnv,
+  createAnimationGate,
+  engineEvents,
+  visitToast,
+} from '../src/lib/pattern-engine/createEngine';
 
 const REQUIRED: string[] = JSON.parse(
   readFileSync(
@@ -50,5 +55,15 @@ describe('couche d’adaptation du moteur', () => {
     expect(listener).toHaveBeenCalledTimes(1);
     expect((listener.mock.calls[0][0] as CustomEvent).detail).toBe('Ligne tracée.');
     engineEvents.removeEventListener('toast', listener);
+  });
+});
+
+describe('messages du moteur', () => {
+  it('une image ajoutée est annoncée comme temporaire, pas comme enregistrée', () => {
+    expect(visitToast('Image ajoutée et enregistrée.')).toMatch(/^Image ajoutée pour cette visite/);
+    expect(visitToast('3 images ajoutées et enregistrées.')).toBe(
+      '3 images ajoutées pour cette visite : enregistre celles à garder pour tous.',
+    );
+    expect(visitToast('Image illisible : a.png')).toBe('Image illisible : a.png');
   });
 });

@@ -47,11 +47,21 @@ type AnimationGate = ReturnType<typeof createAnimationGate>;
 // Image suivante du Layout editor : fournie par la scène quand la page est ouverte.
 export const libre: { tick: LayoutTick | null } = { tick: null };
 
+// Le moteur annonce chaque image ajoutée comme « enregistrée » : ce n'est plus vrai (library.ts),
+// elle ne vit que le temps de la visite tant qu'on ne clique pas sur « Enregistrer l'illustration ».
+export function visitToast(message: string) {
+  if (message === 'Image ajoutée et enregistrée.')
+    return 'Image ajoutée pour cette visite : « Enregistrer l’illustration » la garde pour tous.';
+  const many = /^(\d+) images ajoutées et enregistrées\.$/.exec(message);
+  if (many) return `${many[1]} images ajoutées pour cette visite : enregistre celles à garder pour tous.`;
+  return message;
+}
+
 export function buildEnv(gate: AnimationGate): EngineEnv {
   const syncers: Array<() => void> = [];
   return {
     THREE,
-    toast: (message) => engineEvents.dispatchEvent(new CustomEvent('toast', { detail: message })),
+    toast: (message) => engineEvents.dispatchEvent(new CustomEvent('toast', { detail: visitToast(message) })),
     syncers,
     onLibraryChanged: () => engineEvents.dispatchEvent(new Event('library')),
     recState: null,
