@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// Captures de référence des 10 pages à 1440 px (cadre validé face au Figma, tâche 10).
+// Captures de référence des 11 pages à 1440 px (cadre validé face au Figma, tâche 10).
 // Après un changement visuel voulu : npm run test:e2e -- visual --update-snapshots
 const PAGES = [
   'outils/motif',
@@ -13,6 +13,7 @@ const PAGES = [
   'ressources/imagerie',
   'ressources/patterns',
   'ressources/inspiration',
+  'ressources/qr-code',
 ];
 
 for (const path of PAGES) {

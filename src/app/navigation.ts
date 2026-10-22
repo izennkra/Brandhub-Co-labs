@@ -147,6 +147,16 @@ export const RESOURCE_PAGES: ResourcePageDef[] = [
       'Clique sur un nom pour le renommer.',
     ],
   },
+  {
+    path: '/ressources/qr-code',
+    label: 'QR code',
+    icon: 'qr-code',
+    description: 'Des QR codes dans le style des illustrations.',
+    editTips: [
+      'Colle un lien, puis « Styliser dans l’Illustration » : le QR prend la trame et les réglages des icônes.',
+      'Dans l’Illustration, « Enregistrer l’illustration » le garde pour tous.',
+    ],
+  },
 ];
 
 export const SECTIONS: Section[] = [

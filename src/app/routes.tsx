@@ -5,6 +5,7 @@ import { ImageryPage } from '../pages/resources/ImageryPage';
 import { InspirationPage } from '../pages/resources/InspirationPage';
 import { LogoPage } from '../pages/resources/LogoPage';
 import { PatternsPage } from '../pages/resources/PatternsPage';
+import { QrPage } from '../pages/resources/QrPage';
 import { ResourcePage } from '../pages/resources/ResourcePage';
 import { TypographyPage } from '../pages/resources/TypographyPage';
 import { ToolPage } from '../pages/tool/ToolPage';
@@ -24,6 +25,7 @@ const RESOURCE_CONTENT: Record<string, () => React.ReactNode> = {
   '/ressources/imagerie': ImageryPage,
   '/ressources/patterns': PatternsPage,
   '/ressources/inspiration': InspirationPage,
+  '/ressources/qr-code': QrPage,
 };
 
 export const routes: RouteObject[] = [
