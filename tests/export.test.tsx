@@ -4,7 +4,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { routes } from '../src/app/routes';
 import { EXPORT_SCALES } from '../src/lib/pattern-engine/export-options';
-import { stamp } from '../src/lib/pattern-engine/exporter';
+import { illustrationFileName, stamp } from '../src/lib/pattern-engine/exporter';
 import { getEngine } from '../src/lib/pattern-engine/createEngine';
 
 async function openExport(path = '/outils/motif') {
@@ -26,6 +26,20 @@ describe('bloc Export du panneau (Figma + dock du prototype)', () => {
   it('propose les tailles du Figma et nomme les fichiers comme le prototype', () => {
     expect(EXPORT_SCALES).toEqual([1, 2, 3, 4, 6]);
     expect(stamp(new Date(2026, 9, 22, 9, 5, 7))).toBe('20261022-090507');
+  });
+
+  it('Illustration : toutes les illustrations d’un coup, dans un dossier .zip bien nommé', async () => {
+    expect(illustrationFileName(0, 'Échinacée pourpre', 'png')).toBe('01-echinacee-pourpre.png');
+    expect(illustrationFileName(11, 'QR colabs.fr', 'webp')).toBe('12-qr-colabs-fr.webp');
+    const { user, S } = await openExport('/outils/illustration');
+    S.expTab = 0;
+    S.exported = 0;
+    S.exportedAll = 0;
+    await user.click(screen.getByRole('button', { name: 'Image' }));
+    await user.click(screen.getByRole('switch', { name: 'Toutes les illustrations' }));
+    await user.click(screen.getByRole('button', { name: 'Exporter les 2 illustrations' }));
+    expect(S.exportedAll).toBe(1);
+    expect(S.exported).toBe(0);
   });
 
   it('Image : taille, format et arrière-plan transparent (absent en JPEG)', async () => {
