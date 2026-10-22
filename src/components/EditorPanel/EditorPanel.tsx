@@ -132,6 +132,7 @@ export function EditorPanel({
                     onPick={engine.actions.pickImage}
                     onMove={engine.actions.moveImage}
                     onDelete={(index) => void engine.actions.deleteImage(index)}
+                    onRename={engine.actions.renameImage}
                     save={{
                       label: engine.library.saveLabel(),
                       note: engine.library.note(),

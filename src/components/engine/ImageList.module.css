@@ -101,3 +101,16 @@
   color: var(--color-text-secondary);
   font-size: var(--text-xs);
 }
+
+/* champ de renommage, à la place du nom */
+.rename {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--size-control-compact);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}

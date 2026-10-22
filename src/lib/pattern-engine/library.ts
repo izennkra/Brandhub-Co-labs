@@ -38,8 +38,8 @@ export function createLibrary(
     changed: () => void;
   },
 ) {
-  // Illustrations enregistrées : identifiant → tons et réglages enregistrés.
-  const saved = new Map<string, { tone?: EngineSettings; settings?: Settings }>();
+  // Illustrations enregistrées : identifiant → nom, tons et réglages enregistrés.
+  const saved = new Map<string, { name?: string; tone?: EngineSettings; settings?: Settings }>();
   // Réglages changés pendant la visite, par image (retrouvés quand on revient sur elle).
   const session = new WeakMap<Image, Settings>();
   let loaded = false;
@@ -84,7 +84,7 @@ export function createLibrary(
       inLoop: image.inLoop !== false,
       t: image.t,
     });
-    saved.set(image.id, { tone: { ...image.tone }, settings });
+    saved.set(image.id, { name: image.name, tone: { ...image.tone }, settings });
     session.delete(image);
   };
 
@@ -111,7 +111,8 @@ export function createLibrary(
       const settings = new Map(sets.map((item) => [item.id, item.data?.s as Settings | undefined]));
       for (const meta of metas) saved.set(meta.id, { settings: settings.get(meta.id) });
       for (const image of core.imgList as Image[])
-        if (image.id && saved.has(image.id)) saved.get(image.id)!.tone = { ...image.tone };
+        if (image.id && saved.has(image.id))
+          Object.assign(saved.get(image.id)!, { name: image.name, tone: { ...image.tone } });
       loaded = true;
       changed();
       this.onAppChanged();
@@ -157,10 +158,18 @@ export function createLibrary(
       await store.ready;
       try {
         if (isSaved(image) && !canEdit()) {
-          // Une illustration de l'équipe ne change pas : la copie emporte les changements,
-          // l'original reprend ses tons enregistrés.
-          const copy: Image = { ...image, id: newId(), name: copyName(image.name), t: Date.now() };
-          image.tone = { ...saved.get(image.id!)!.tone };
+          // Une illustration de l'équipe ne change pas : la copie emporte les changements (nom compris),
+          // l'original reprend son nom et ses tons enregistrés.
+          const original = saved.get(image.id!)!;
+          const renamed = original.name !== undefined && image.name !== original.name;
+          const copy: Image = {
+            ...image,
+            id: newId(),
+            name: renamed ? image.name : copyName(image.name),
+            t: Date.now(),
+          };
+          image.tone = { ...original.tone };
+          image.name = original.name ?? image.name;
           session.delete(image);
           await write(copy, true);
           core.imgList.splice(index + 1, 0, copy);
@@ -203,12 +212,22 @@ export function createLibrary(
       return true;
     },
 
+    /** Renommer : pour la visite ; « Enregistrer » le garde pour tous (ou en fait une copie). */
+    rename(index: number, name: string) {
+      const image = core.imgList[index] as Image | undefined;
+      const clean = name.trim().slice(0, 80);
+      if (!image || !clean || clean === image.name) return false;
+      image.name = clean;
+      changed();
+      return true;
+    },
+
     /** Ordre et boucle : enregistrés pour tous en mode édition, sinon le temps de la visite. */
     persistMeta(image: Image) {
       if (!isSaved(image) || !canEdit()) return;
       store
         .put('images', image.id!, {
-          name: image.name,
+          name: saved.get(image.id!)?.name ?? image.name,
           tone: saved.get(image.id!)?.tone ?? image.tone,
           inLoop: image.inLoop !== false,
           t: image.t,

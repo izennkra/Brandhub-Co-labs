@@ -1999,4 +1999,47 @@ export const icons = {
       </>
     ),
   },
+  pencil: {
+    viewBox: '0 0 24 24',
+    stroke15: (_id) => (
+      <>
+        <g>
+          <path
+            d="M18.9142 3.41415L20.5858 5.08573C21.3668 5.86678 21.3668 7.13311 20.5858 7.91416L17.75 10.7499L7.83579 20.6642C7.46071 21.0392 6.95201 21.2499 6.42157 21.2499H2.75V17.5784C2.75 17.0479 2.96071 16.5392 3.33579 16.1642L13.25 6.24994L16.0858 3.41416C16.8668 2.63311 18.1332 2.63311 18.9142 3.41415Z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M13.25 6.25L17.75 10.75"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      </>
+    ),
+    stroke2: (_id) => (
+      <>
+        <g>
+          <path
+            d="M18.4142 3.91415L20.0858 5.58573C20.8668 6.36678 20.8668 7.63311 20.0858 8.41416L18 10.4999L7.79289 20.7071C7.60536 20.8946 7.351 20.9999 7.08579 20.9999H3V16.9142C3 16.6489 3.10536 16.3946 3.29289 16.2071L13.5 5.99994L15.5858 3.91416C16.3668 3.13311 17.6332 3.13311 18.4142 3.91415Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M13.5 6L18 10.5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      </>
+    ),
+  },
 } satisfies Record<string, IconDefinition>;

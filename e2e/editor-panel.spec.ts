@@ -140,3 +140,17 @@ test('panneau Illustration : textes sur une ligne et barres justes', async ({ pa
   while ((await closed.count()) > 0) await closed.first().click();
   expect(await layoutProblems(page)).toEqual([]);
 });
+
+test('l’effet au survol est désactivé à l’ouverture du Motif et de l’Illustration, et s’active', async ({
+  page,
+}) => {
+  const toggle = () => panel(page).getByRole('switch', { name: 'Effet au survol' });
+  for (const path of ['/outils/motif', '/outils/illustration']) {
+    await page.goto(path);
+    await panel(page).getByRole('button', { name: 'Survol' }).click();
+    await expect(toggle()).toBeVisible({ timeout: 15000 });
+    await expect(toggle()).not.toBeChecked();
+  }
+  await panel(page).getByText('Effet au survol').click();
+  await expect(toggle()).toBeChecked();
+});

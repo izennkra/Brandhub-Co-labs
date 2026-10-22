@@ -18,6 +18,7 @@ function handlers() {
     onMove: (from: number, to: number) => calls.push(`ordre:${from}>${to}`),
     onDelete: (i: number) => calls.push(`retrait:${i}`),
     onToggleLoop: (i: number) => calls.push(`boucle:${i}`),
+    onRename: (i: number, name: string) => calls.push(`nom:${i}:${name}`),
     onAdd: (files: File[]) => calls.push(`ajout:${files.map((f) => f.name).join(',')}`),
   };
 }
@@ -32,6 +33,25 @@ describe('ImageList (panneau)', () => {
     expect(screen.getByRole('button', { name: 'Cadenas' })).toHaveAttribute('aria-current', 'true');
     await user.click(screen.getByRole('button', { name: 'Tomate' }));
     expect(h.calls).toEqual(['choix:1']);
+  });
+
+  it('renomme avec le crayon (Entrée valide, Échap annule) ou par double-clic', async () => {
+    const user = userEvent.setup();
+    const h = handlers();
+    render(<ImageList images={IMAGES} {...h} />);
+    await user.click(screen.getByRole('button', { name: 'Renommer Tomate' }));
+    const field = screen.getByRole('textbox', { name: 'Nouveau nom de Tomate' });
+    expect(field).toHaveFocus();
+    await user.keyboard('Tomate cerise{Enter}');
+    expect(h.calls).toEqual(['nom:1:Tomate cerise']);
+
+    await user.click(screen.getByRole('button', { name: 'Renommer Fleurs' }));
+    await user.keyboard('Rien{Escape}');
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(h.calls).toEqual(['nom:1:Tomate cerise']);
+
+    await user.dblClick(screen.getByRole('button', { name: 'Cadenas' }));
+    expect(screen.getByRole('textbox', { name: 'Nouveau nom de Cadenas' })).toBeInTheDocument();
   });
 
   it('retrait en deux temps : un premier clic demande confirmation', async () => {

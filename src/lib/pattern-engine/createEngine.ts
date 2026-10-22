@@ -47,11 +47,21 @@ type AnimationGate = ReturnType<typeof createAnimationGate>;
 // Image suivante du Layout editor : fournie par la scène quand la page est ouverte.
 export const libre: { tick: LayoutTick | null } = { tick: null };
 
+// Le moteur annonce chaque image ajoutée comme « enregistrée » : ce n'est plus vrai (library.ts),
+// elle ne vit que le temps de la visite tant qu'on ne clique pas sur « Enregistrer l'illustration ».
+export function visitToast(message: string) {
+  if (message === 'Image ajoutée et enregistrée.')
+    return 'Image ajoutée pour cette visite : « Enregistrer l’illustration » la garde pour tous.';
+  const many = /^(\d+) images ajoutées et enregistrées\.$/.exec(message);
+  if (many) return `${many[1]} images ajoutées pour cette visite : enregistre celles à garder pour tous.`;
+  return message;
+}
+
 export function buildEnv(gate: AnimationGate): EngineEnv {
   const syncers: Array<() => void> = [];
   return {
     THREE,
-    toast: (message) => engineEvents.dispatchEvent(new CustomEvent('toast', { detail: message })),
+    toast: (message) => engineEvents.dispatchEvent(new CustomEvent('toast', { detail: visitToast(message) })),
     syncers,
     onLibraryChanged: () => engineEvents.dispatchEvent(new Event('library')),
     recState: null,
@@ -252,6 +262,10 @@ function createActions(
     pickImage(index: number) {
       library().pick(index);
     },
+    /** Renommer une image (le nom vaut pour la visite, jusqu'à « Enregistrer l'illustration »). */
+    renameImage(index: number, name: string) {
+      library().rename(index, name);
+    },
     /** Bouton « Enregistrer l'illustration » : pour tous, avec tous ses réglages. */
     saveIllustration() {
       return library().save();
@@ -386,6 +400,8 @@ async function createEngine(): Promise<Engine> {
   const env = buildEnv(gate);
   testHooks()?.beforeStart?.();
   const core = runPrototypeEngine(env);
+  // Effet au survol désactivé à l'ouverture (choix du porteur) ; il s'active dans le panneau.
+  core.S.hoverOn = false;
 
   // Démarrage repris de la fin du prototype (lignes 4405-4414), pour la partie moteur et dans le
   // même ordre : refreshColors() ; regenerate() ; resetView() ; loadLibrary() ;
