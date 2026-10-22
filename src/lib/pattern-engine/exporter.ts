@@ -2,6 +2,7 @@
 // (reference/prototype.html, lignes 3211 à 3517), ligne d'origine en commentaire.
 // Le moteur n'est pas modifié : on lit ses éléments (scène, caméra, pastilles) comme le faisait le prototype.
 import * as THREE from 'three';
+import { slug } from '../resources/download';
 import { EXPORT_FMTS, EXPORT_SCALES } from './export-options';
 import type { EngineRecState, PrototypeEngine } from './prototype-engine.js';
 
@@ -109,7 +110,21 @@ const nextFrame = () =>
     setTimeout(resolve, 100);
   });
 
-export function createExporter(core: PrototypeEngine, toast: (message: string) => void, syncAll: () => void) {
+/** Nom de fichier d'une illustration dans le dossier exporté : 01-cadenas.png, 02-microscope.png… */
+export const illustrationFileName = (index: number, name: string, ext: string) =>
+  `${String(index + 1).padStart(2, '0')}-${slug(name)}.${ext}`;
+
+export function createExporter(
+  core: PrototypeEngine,
+  toast: (message: string) => void,
+  syncAll: () => void,
+  // choisir une illustration avec ses propres réglages (library.pick)
+  pickImage: (index: number) => void = (index) => core.showImage(index),
+  // attendre que le moteur ait dessiné n images (createEngine)
+  afterFrames: (count: number) => Promise<void> = async (count) => {
+    for (let k = 0; k < count; k++) await nextFrame();
+  },
+) {
   const S = core.S;
 
   // Pendant un export du Motif, la scène passe en 16:9 (motifFrame) : le moteur la mesure à cette
@@ -217,8 +232,8 @@ export function createExporter(core: PrototypeEngine, toast: (message: string) =
     }
   }
 
-  // exportImage (ligne 3225) : rendu sur-échantillonné puis réduit, au format choisi.
-  async function exportImage() {
+  // Rendu de la scène au format choisi (taille, format, fond), prêt à enregistrer.
+  async function renderImage() {
     const k = EXPORT_SCALES[Number(S.expSize) | 0] ?? 2;
     const [fl, ext, type] = EXPORT_FMTS[Number(S.expFmt) | 0];
     const W = Math.round(core.VW * k),
@@ -250,8 +265,62 @@ export function createExporter(core: PrototypeEngine, toast: (message: string) =
       toast('Ce navigateur ne sait pas créer de WebP : export en PNG.');
     }
     if (!blob) throw new Error('image vide');
-    await saveFile(`brand-hub-co-labs-${stamp()}-${k}x.${realExt}`, blob);
-    if (realExt === ext) toast(`${fl} ${W}×${H} · ${(blob.size / 1048576).toFixed(1)} Mo`);
+    return { blob, k, W, H, fl, ext: realExt, asked: ext };
+  }
+
+  // exportImage (ligne 3225) : rendu sur-échantillonné puis réduit, au format choisi.
+  async function exportImage() {
+    const shot = await renderImage();
+    if (!shot) return;
+    const { blob, k, W, H, fl, ext, asked } = shot;
+    await saveFile(`brand-hub-co-labs-${stamp()}-${k}x.${ext}`, blob);
+    if (ext === asked) toast(`${fl} ${W}×${H} · ${(blob.size / 1048576).toFixed(1)} Mo`);
+  }
+
+  // Toutes les illustrations, une par une, avec leurs propres réglages et sans transition, à la même
+  // taille (la scène × la taille choisie), sur fond transparent ou coloré : un dossier dans un .zip.
+  async function exportAllImages() {
+    const list = core.imgList;
+    if (!list.length) return;
+    const from = core.selImg;
+    const loop = S.imgLoop;
+    // options choisies dans le bloc Export : les mêmes pour toutes (chaque illustration ramène ses réglages)
+    const options = { expSize: S.expSize, expFmt: S.expFmt, expBg: S.expBg };
+    const folder = `illustrations-${stamp()}`;
+    const files: Record<string, Uint8Array> = {};
+    let size = '';
+    S.imgLoop = false;
+    try {
+      for (let index = 0; index < list.length; index++) {
+        toast(`Illustration ${index + 1} / ${list.length}…`);
+        pickImage(index);
+        Object.assign(S, options);
+        core.curImg = core.selImg = index;
+        core.imgTr = null;
+        // deux images du moteur : la trame de cette illustration est en place
+        await afterFrames(2);
+        const shot = await renderImage();
+        if (!shot) return;
+        size = `${shot.W}×${shot.H}`;
+        files[`${folder}/${illustrationFileName(index, list[index].name, shot.ext)}`] = new Uint8Array(
+          await shot.blob.arrayBuffer(),
+        );
+      }
+    } finally {
+      S.imgLoop = loop;
+      pickImage(from);
+      Object.assign(S, options);
+      core.curImg = core.selImg = from;
+      core.imgTr = null;
+    }
+    const { zipSync } = await import('fflate');
+    // images déjà compressées : rangées telles quelles dans le .zip
+    const zipped = zipSync(files, { level: 0 });
+    await saveFile(
+      `brand-hub-co-labs-${folder}.zip`,
+      new Blob([zipped as BlobPart], { type: 'application/zip' }),
+    );
+    toast(`${list.length} illustrations exportées · ${size} chacune`);
   }
 
   // buildSVG (ligne 3369) : chaque pastille devient une forme, de l'arrière vers l'avant.
@@ -586,6 +655,8 @@ export function createExporter(core: PrototypeEngine, toast: (message: string) =
     },
     /** Bouton « Plugin » de l'onglet Figma. */
     copyForPlugin: () => run(copyFigmaPlugin),
+    /** Option « Toutes les illustrations » de l'onglet Image : un dossier .zip. */
+    exportAllImages: () => run(exportAllImages),
     buildSVG,
   };
 }

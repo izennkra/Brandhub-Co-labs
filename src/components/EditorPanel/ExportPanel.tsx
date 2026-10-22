@@ -61,6 +61,8 @@ export function Switch({
 // Les options et leurs effets sont ceux du dock d'export du prototype (renderDock, ligne 3258).
 export function ExportPanel({ engine }: { engine: Engine | null }) {
   const [open, setOpen] = useState(false);
+  // Illustration : exporter toutes les illustrations d'un coup (dossier .zip)
+  const [all, setAll] = useState(false);
   const bodyId = useId();
 
   if (!engine) {
@@ -84,7 +86,11 @@ export function ExportPanel({ engine }: { engine: Engine | null }) {
   const image = S.app === 'image';
   const loopOn = image && Boolean(S.imgLoop) && engine.core.loopList().length > 1;
   const busy = engine.exporter.busy;
-  const label = ['Exporter', 'Exporter le SVG', 'Enregistrer la vidéo', 'Copier pour Figma'][tab];
+  const count = image ? engine.core.imgList.length : 0;
+  const exportAll = image && tab === 0 && all;
+  const label = exportAll
+    ? `Exporter les ${count} illustrations`
+    : ['Exporter', 'Exporter le SVG', 'Enregistrer la vidéo', 'Copier pour Figma'][tab];
 
   return (
     <div className={styles.box} data-open={open}>
@@ -123,6 +129,17 @@ export function ExportPanel({ engine }: { engine: Engine | null }) {
                 checked={!S.expBg}
                 onChange={(on) => set('expBg', !on)}
               />
+            )}
+            {image && (
+              <>
+                <Switch label="Toutes les illustrations" checked={all} onChange={setAll} />
+                {all && (
+                  <p className={styles.note}>
+                    Un dossier .zip : chaque illustration à la même taille, avec ses réglages, nommée 01-nom,
+                    02-nom…
+                  </p>
+                )}
+              </>
             )}
           </>
         )}
@@ -195,7 +212,9 @@ export function ExportPanel({ engine }: { engine: Engine | null }) {
           type="button"
           className={styles.go}
           disabled={busy}
-          onClick={() => void engine.exporter.exportCurrent()}
+          onClick={() =>
+            void (exportAll ? engine.exporter.exportAllImages() : engine.exporter.exportCurrent())
+          }
         >
           {busy ? 'Export en cours…' : label}
         </button>

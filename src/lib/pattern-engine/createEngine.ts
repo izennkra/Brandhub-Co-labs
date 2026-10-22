@@ -400,12 +400,21 @@ async function createEngine(): Promise<Engine> {
   await registerGeistFamily();
   // Avant chaque image du moteur : une illustration 3D reprend la rotation demandée (models.ts).
   let models: ModelViews | null = null;
+  // Après chaque image du moteur : on prévient ceux qui l'attendaient (export de toutes les illustrations).
+  let waiters: (() => void)[] = [];
   const gate = createAnimationGate((callback) =>
     window.requestAnimationFrame((now) => {
       models?.tick(now);
       callback(now);
+      const done = waiters;
+      waiters = [];
+      done.forEach((resolve) => resolve());
     }),
   );
+  /** Attend que le moteur ait dessiné `count` images. */
+  const afterFrames = async (count: number) => {
+    for (let k = 0; k < count; k++) await new Promise<void>((resolve) => waiters.push(resolve));
+  };
   const env = buildEnv(gate);
   testHooks()?.beforeStart?.();
   const core = runPrototypeEngine(env);
@@ -465,7 +474,7 @@ async function createEngine(): Promise<Engine> {
     env.toast('La carte graphique a été saturée : recharge la page pour retrouver les motifs.'),
   );
 
-  const exporter = createExporter(core, env.toast, syncAll);
+  const exporter = createExporter(core, env.toast, syncAll, (index) => library.pick(index), afterFrames);
   const layout = createLayoutBridge(core, env.DL, libre, gate, env.toast, syncAll);
 
   // initPresets() : appelé au démarrage, comme à la fin du prototype (ligne 4411).
