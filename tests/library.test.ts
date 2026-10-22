@@ -5,7 +5,12 @@ import type { PrototypeEngine } from '../src/lib/pattern-engine/prototype-engine
 import { createStore } from '../src/lib/store/store';
 
 const CODE = 'colabs-2026';
-const canvas = { toDataURL: () => 'data:image/jpeg;base64,AAA' } as unknown as HTMLCanvasElement;
+const canvas = {
+  width: 700,
+  height: 700,
+  toDataURL: () => 'data:image/jpeg;base64,AAA',
+  getContext: () => null,
+} as unknown as HTMLCanvasElement;
 type Img = {
   id?: string;
   name: string;
@@ -306,5 +311,35 @@ describe('bibliothèque de l’Illustration', () => {
     editor.lib.setFlat(false);
     await editor.lib.save();
     expect(await editor.db.get('images', 'modele-prisme')).toMatchObject({ flat: false });
+  });
+});
+
+describe('taille de chaque illustration', () => {
+  it('part de la taille d’origine ; « Enregistrer » garde la taille pour tous, avec l’image d’origine', async () => {
+    const editor = await withSaved(true);
+    editor.core.selImg = 0;
+    expect(editor.lib.sizeOf()).toBe(1);
+    editor.lib.setSize(0.7);
+    expect(editor.lib.sizeOf()).toBe(0.7);
+    editor.lib.setSize(9); // limitée
+    expect(editor.lib.sizeOf()).toBe(1.5);
+    editor.lib.setSize(0.7);
+    await editor.lib.save();
+    expect(await editor.db.get('images', 'cadenas')).toMatchObject({ size: 0.7 });
+
+    // au chargement suivant, l'illustration reprend sa taille
+    const next = setup({
+      library: [{ id: 'cadenas', name: 'Cadenas', canvas, src: 'data:,cadenas', tone: {} }],
+    });
+    for (const col of ['images', 'imagesrc', 'imgsettings'])
+      for (const [id, data] of Object.entries(await editor.db.all(col))) await next.db.set(col, id, data);
+    await next.lib.load();
+    next.core.selImg = 0;
+    expect(next.lib.sizeOf()).toBe(0.7);
+
+    // revenue à 100 % et enregistrée : plus de taille à part
+    editor.lib.setSize(1);
+    await editor.lib.save();
+    expect(await editor.db.get('images', 'cadenas')).not.toHaveProperty('size');
   });
 });

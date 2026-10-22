@@ -2,6 +2,7 @@ import { useState, type Ref } from 'react';
 import type { EditorSection, ToolPageDef } from '../../app/navigation';
 import { CONTROLS, isVisible, type Control } from '../../lib/pattern-engine/controls';
 import { fmtDate } from '../../lib/pattern-engine/presets';
+import { SIZE_MAX, SIZE_MIN } from '../../lib/pattern-engine/sizing';
 import { useEditor } from '../../lib/resources/editor';
 import { ColorPicker } from '../engine/ColorPicker';
 import { EditorAccess } from '../engine/EditorAccess';
@@ -136,6 +137,12 @@ export function EditorPanel({
                     onDelete={(index) => void engine.actions.deleteImage(index)}
                     onRename={engine.actions.renameImage}
                     forAll={engine.library.canEdit()}
+                    size={{
+                      value: engine.library.sizeOf(),
+                      min: SIZE_MIN,
+                      max: SIZE_MAX,
+                      onChange: engine.library.setSize,
+                    }}
                     model={
                       engine.library.modelView() && {
                         flat: engine.library.modelView()!.flat,

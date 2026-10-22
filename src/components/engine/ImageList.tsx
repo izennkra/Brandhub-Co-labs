@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Icon } from '../Icon';
 import { Segmented } from './Segmented';
+import { Slider } from './Slider';
 import { deleteWording, useArmedDelete, useReorder, type ImageItem } from './imageHooks';
 import styles from './ImageList.module.css';
 
 // Section « Images » du panneau Illustration (Figma) : poignée, nom, crayon, croix ; image choisie encadrée.
 // Au clavier, la poignée déplace l'image avec les flèches haut et bas.
 // Renommer : crayon ou double-clic sur le nom ; Entrée ou clic ailleurs valide, Échap annule.
+// « Taille de l'image » : taille de l'illustration choisie dans son carré (100 % = taille d'origine).
 // Illustration 3D choisie : « 3D / Aplatie » (image figée sous l'angle affiché, fond transparent).
 // Dessous : « Enregistrer l'illustration » (pour tous, avec ses réglages) et une note.
 export function ImageList({
@@ -16,6 +18,7 @@ export function ImageList({
   onDelete,
   onRename,
   forAll = false,
+  size,
   model,
   save,
 }: {
@@ -26,6 +29,8 @@ export function ImageList({
   onRename?: (index: number, name: string) => void;
   /** Mode édition : la croix supprime définitivement les illustrations enregistrées. */
   forAll?: boolean;
+  /** Taille de l'illustration choisie (1 = taille d'origine). */
+  size?: { value: number; min: number; max: number; onChange: (size: number) => void };
   /** Illustration 3D choisie : aplatie ou non. */
   model?: { flat: boolean; onFlat: (flat: boolean) => void };
   save?: { label: string; note: string; onSave: () => Promise<void> };
@@ -122,6 +127,19 @@ export function ImageList({
           </li>
         ))}
       </ul>
+      {size && images.length > 0 && (
+        <div className={styles.model}>
+          <Slider
+            label="Taille de l’image"
+            min={Math.round(size.min * 100)}
+            max={Math.round(size.max * 100)}
+            step={1}
+            value={Math.round(size.value * 100)}
+            format={(value) => `${value} %`}
+            onChange={(value) => size.onChange(value / 100)}
+          />
+        </div>
+      )}
       {model && (
         <div className={styles.model}>
           <Segmented
