@@ -1,0 +1,187 @@
+/* Bloc Export (Figma « Tool / Layout editor », nœud 2337:8054) : fond orange, groupes clairs. */
+.box,
+.toggle {
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-text);
+}
+
+.box {
+  display: flex;
+  flex-direction: column;
+}
+
+.box[data-open='true'] {
+  padding-bottom: var(--space-3);
+}
+
+.toggle,
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--size-control);
+  padding: 0 var(--space-3);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.toggle {
+  cursor: not-allowed;
+}
+
+/* replié, le bloc s'ouvre vers le haut : chevron tourné vers le haut */
+.chevronUp {
+  transform: rotate(180deg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+}
+
+.body[hidden] {
+  display: none;
+}
+
+.group {
+  display: flex;
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.segment {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--size-control-compact);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.segment:hover {
+  background: var(--color-control);
+}
+
+.segment[aria-pressed='true'] {
+  background: var(--color-control);
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: var(--size-control);
+  padding: 0 var(--space-1) 0 var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+/* interrupteur : même dessin que celui du panneau (Toggle.module.css) */
+.switchInput {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.track {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--size-toggle-width);
+  height: var(--size-toggle-height);
+  margin-right: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+}
+
+.track::after {
+  content: '';
+  position: absolute;
+  top: calc((var(--size-toggle-height) - var(--size-toggle-knob)) / 2);
+  left: calc((var(--size-toggle-height) - var(--size-toggle-knob)) / 2);
+  width: var(--size-toggle-knob);
+  height: var(--size-toggle-knob);
+  border-radius: var(--radius-xs);
+  background: var(--color-dark);
+}
+
+.switchInput:checked + .track {
+  background: var(--color-control-active);
+}
+
+.switchInput:checked + .track::after {
+  left: auto;
+  right: calc((var(--size-toggle-height) - var(--size-toggle-knob)) / 2);
+}
+
+.switchInput:focus-visible + .track {
+  outline: var(--size-focus-ring) solid var(--color-focus);
+  outline-offset: var(--size-focus-ring);
+}
+
+.duration {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-right: var(--space-2);
+}
+
+.number {
+  width: var(--space-12);
+  min-height: var(--size-control-compact);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-text);
+  font: inherit;
+  text-align: right;
+}
+
+.note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
+}
+
+.secondary,
+.go {
+  min-height: var(--size-control);
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  cursor: pointer;
+}
+
+.secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.go {
+  background: var(--color-dark);
+  color: var(--color-text-inverse);
+}
+
+.secondary:disabled,
+.go:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}

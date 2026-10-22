@@ -27,6 +27,35 @@ export type EngineImage = {
   thumb?: string;
 };
 
+// Infographie (étiquettes du mode Données / Process), lue par l'export SVG et Figma.
+export type EngineInfoItem = {
+  on: boolean;
+  n: number;
+  x: number;
+  y: number;
+  text: string;
+  topText: string;
+  top: { fs: number; fw: number; padX: number; h: number };
+  bot: { kind: 'card' | 'text'; w: number; padX: number; padY: number; fs: number; fw: number; lh: number };
+};
+export type EngineInfo = {
+  items: EngineInfoItem[];
+  sc: number;
+  top: number;
+  bot: number;
+  kind: string;
+  col: unknown;
+};
+export type EngineInfoGeom = { dTop: number; dBot: number; cardY: number; base: (line: number) => number };
+// Enregistrement vidéo : lu par la boucle du moteur à chaque image.
+export type EngineRecState = {
+  t: number;
+  dur: number;
+  done: (() => void) | null;
+  build: boolean;
+  tail: number;
+};
+
 export type PrototypeEngine = {
   readonly S: EngineSettings;
   readonly canvas: HTMLCanvasElement;
@@ -57,7 +86,46 @@ export type PrototypeEngine = {
     del: (collection: string, id: string) => Promise<void>;
   };
   readonly storeReady: Promise<void>;
-  readonly orbit: { theta: number; phi: number; radius: number };
+  readonly orbit: { theta: number; phi: number; radius: number; target: ThreeModule.Vector3 };
+  // Export (dock d'export du prototype, lignes 3211-3440)
+  readonly VW: number;
+  readonly VH: number;
+  readonly camera: ThreeModule.PerspectiveCamera;
+  readonly panelShift: (width: number) => number;
+  readonly pillMat: ThreeModule.ShaderMaterial;
+  readonly pillScene: ThreeModule.Scene;
+  readonly quadMat: ThreeModule.ShaderMaterial;
+  readonly quadScene: ThreeModule.Scene;
+  readonly quadCam: ThreeModule.Camera;
+  readonly rt: ThreeModule.WebGLRenderTarget;
+  readonly lastInfo: EngineInfo | null;
+  readonly drawInfoCanvas: (ctx: CanvasRenderingContext2D, info: EngineInfo, k: number) => void;
+  readonly infoSVG: (info: EngineInfo, k?: number) => string;
+  readonly infoGeom: (info: EngineInfo, item: EngineInfoItem) => EngineInfoGeom;
+  readonly bgCol: [number, number, number];
+  readonly lastFog: { near: number; far: number };
+  readonly LSTEP: number;
+  readonly lastN: number;
+  readonly sPos: Float32Array;
+  readonly sSeed: Float32Array;
+  readonly sCol: Float32Array;
+  readonly dPos: Float32Array;
+  readonly dSeed: Float32Array;
+  readonly dSize: Float32Array;
+  readonly dCol: Float32Array;
+  readonly HEX: Record<string, string>;
+  readonly imgSets: unknown[];
+  readonly buildImageSets: () => void;
+  readonly imgLoopDur: () => number;
+  readonly loopList: () => unknown[];
+  recState: EngineRecState | null;
+  recording: boolean;
+  drawP: number;
+  lobes: unknown[];
+  syn: unknown[];
+  synAcc: number;
+  spawnAcc: number;
+  links: unknown[];
   readonly TONE_KEYS: readonly string[];
   readonly toneFromS: () => EngineSettings;
   curImg: number;

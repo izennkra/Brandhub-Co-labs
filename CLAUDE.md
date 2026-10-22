@@ -16,13 +16,10 @@ App web de hub de marque (logos, couleurs, typos, icônes, patterns) avec un mot
 - Fais un commit clair après chaque étape qui fonctionne (message qui dit ce qui a changé).
 - À la fin de chaque tâche, push la branche sur GitHub et propose-moi d'ouvrir une pull request.
 
-## Méthode (Agent Skills d'Addy Osmani)
-Les skills sont dans `.claude/skills/`, les commandes dans `.claude/commands/`.
-- **Spec avant de coder** : commence par `/spec` (skill `spec-driven-development`), puis `/plan` pour découper en petites étapes.
-- **Construire** : `/build` pour avancer étape par étape.
-- **Tests** : `/test` (skill `test-driven-development`) — chaque fonctionnalité est vérifiée par des tests.
-- **Review** : `/review` (skill `code-review-and-quality`) avant de proposer la pull request.
-- Avant une mise en ligne : `/ship`.
+## Méthode (rapide, décidée le 22/10/2026)
+Pas de process lourd : on code directement ce qui est cadré, sans spec ni plan écrits.
+- **On garde** : des tests pour chaque fonctionnalité (avec 1 ou 2 erreurs volontaires qui doivent les faire échouer), lint + tests + build avant chaque commit, un contrôle visuel quand l'affichage change, la validation des maquettes et des vrais choix.
+- **On enlève** : documents de spec, de plan et de relecture, questions « on enchaîne ? ».
 
 ## Règles clés du projet
 
@@ -50,7 +47,7 @@ Guide : https://visual.systems/modules/icon/llms.txt · Source : https://visual.
 
 - **Registre** : `src/components/icons.registry.tsx`. Ajouter une icône = la chercher (`/api/modules/icon/search?set=central&q=…&variant=round-outlined-radius-2-stroke-1.5`), puis copier ses deux variantes (trait 1,5 et 2) sous son nom Central. Garder la mention de licence en tête du fichier.
 - **Tailles** : `<Icon size="xs|sm|md|lg">` (12 / 16 / 20 / 24 px, tokens `--icon-*`), jamais une taille en pixels. Central n'a pas de trait réglable : `xs` et `sm` utilisent la variante trait 2, `md` et `lg` la variante trait 1,5. Le trait affiché reste ainsi entre 1 et 1,5 px.
-- **Licence** : Central Icons est une licence commerciale (iconists). Izenn possède ou achète la licence (confirmé le 21/10/2026). À vérifier avant la mise en ligne (`/ship`).
+- **Licence** : Central Icons est une licence commerciale (iconists). Izenn possède ou achète la licence (confirmé le 21/10/2026). À vérifier avant la mise en ligne.
 
 ## Autres modules VisualSystem (seulement si besoin, sur proposition)
 

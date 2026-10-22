@@ -1,7 +1,7 @@
 # Passation : Brand Hub · Co-labs
 
 > Document de reprise pour la prochaine IA (ou personne) qui travaille sur ce projet.
-> Mis à jour le 22/10/2026 (soir). Branche en cours : `feature/data-store` (code fait, poussé, en attente du test du porteur).
+> Mis à jour le 22/10/2026 (soir). `data-store` fusionnée (PR n° 3). Branche en cours : `feature/export`. **Nouvel ordre décidé par le porteur : Export → Ressources → Layout editor** (Vercel et profil éditeur après).
 > **Lire aussi, dans cet ordre** : `CLAUDE.md` (règles), `CAPABILITY-MAP.md` (carte), puis la section 5 ci-dessous (où on en est exactement).
 
 ---
@@ -40,17 +40,7 @@ Puis, plus tard :
 
 > **Depuis le 22/10/2026 : on va vite.** Le porteur demande de ne plus suivre le process à la lettre et d'enlever toutes les étapes inutiles : pas de `SPEC-*.md` ni de `tasks/plan.md` pour une partie déjà cadrée, pas de `/review` en document séparé, pas de question « on enchaîne ? ». **On garde** : tests + 1 ou 2 erreurs volontaires, porte de qualité avant chaque commit, contrôle visuel si l'affichage change, moteur intouché, validation des maquettes.
 
-**Méthode** : les Agent Skills d'Addy Osmani (`.claude/skills/`, commandes dans `.claude/commands/`). Si `/spec`, `/plan`, `/build`, `/review`, `/ship` ne sont pas chargées automatiquement, lire `.claude/commands/<nom>.md` et la skill correspondante.
-
-1. **`/spec`** : poser **toutes** les questions de cadrage en une fois (choix cliquables), écrire `SPEC-<partie>.md`.
-2. **`/plan`** : `tasks/plan.md` + `tasks/todo.md` (petites tâches, critères d'acceptation, points de contrôle). L'ancien plan terminé va dans `tasks/archive/`.
-3. **`/build`** : les tâches **s'enchaînent sans demander « on enchaîne ? »**, un commit par tâche. On s'arrête **seulement** aux points de contrôle (le porteur teste) et quand une **maquette** doit être validée. Dans chaque tâche :
-   - tests d'abord (rouge), puis code (vert) ;
-   - **1 ou 2 erreurs volontaires ciblées** (« mutations ») qui doivent faire échouer le test, puis on remet le code ;
-   - contrôle visuel dans le navigateur **seulement si l'affichage change** ;
-   - commit + push.
-4. **`/review`** en fin de partie (5 axes) → `docs/review-<partie>.md`.
-5. **Pull request** vers `main`, proposée au porteur. On **ne fusionne que sur son accord explicite**.
+**Méthode** : les Agent Skills d'Addy Osmani ont été **supprimées du projet le 22/10/2026** (trop longues). On code directement, voir `CLAUDE.md` § Méthode. Pas de `SPEC-*.md`, de `tasks/` ni de `docs/review-*.md` pour les nouvelles parties.
 
 **Git** : une branche par partie (`feature/…`), jamais de travail direct sur `main`. Messages en français. Chaque commit se termine par :
 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
@@ -76,8 +66,11 @@ RENDER=$(npx playwright test --project=rendu-identique --no-deps 2>&1)
 |---|---|
 | `app-shell` (structure, navigation, design system) | ✅ terminée, fusionnée (PR n° 1) |
 | `pattern-engine` (Motif + Illustration) | ✅ **terminée, fusionnée dans `main` le 22/10/2026 (PR n° 2, commit `4fa7434`)**. Relecture : `docs/review-pattern-engine.md`. Plan archivé : `tasks/archive/pattern-engine-*.md` |
-| `data-store` (stockage partagé) | 🟡 **codé et poussé : le porteur teste, puis étapes Vercel et PR** |
-| `editor-access` (profil éditeur, mot de passe) | à faire |
+| `data-store` (stockage partagé) | ✅ **terminée, testée par le porteur, fusionnée le 22/10/2026 (PR n° 3, commit `583eb8c`)**. Étapes Vercel données au porteur (projet, Upstash, Blob, redéploiement) |
+| `export` (bloc Export du Figma : Image, SVG, Vidéo, Figma) | 🟡 **codé et poussé** (branche `feature/export`) : le porteur teste, puis PR. Code : `exporter.ts` (recopié du prototype), `export-options.ts` (léger), `ExportPanel.tsx`. Tailles 1x à 6x de la scène (Figma) au lieu de HD/2K/4K/6K. Le Layout editor reste « Export » désactivé |
+| `resources` (pages Ressource) | ensuite (voir décisions ci-dessous) |
+| `layout-editor` | après les Ressources |
+| `editor-access` (profil éditeur, mot de passe) | plus tard ; un simple « code » protège déjà la modification des Ressources |
 | `resources` (pages Ressource) | à faire |
 | `layout-editor` | à faire |
 | Temps 2 : `brand-settings`, `logo-variants`, `pattern-embed` | à faire, après les Ressources |
@@ -196,7 +189,15 @@ npx playwright test visual --update-snapshots   # après un changement visuel VO
 
 ## 10. Prochaines étapes
 
-1. **`data-store`** (branche `feature/data-store`) : le porteur teste les préréglages en local (`npm run dev`, page Motif) ; puis étapes Vercel (projet, Upstash, Blob) ; pull request.
-2. Puis, en version rapide (section 4) : `editor-access`, `resources` (avec `/api/files` et Vercel Blob), `layout-editor`.
+**Décisions du porteur (22/10/2026, nuit)** :
+- **Ordre** : Export → Ressources → Layout editor. Vercel et profil éditeur ensuite.
+- **Export** : le bloc orange du Figma (Image / SVG / Vidéo / Figma, 1x à 6x, PNG / WebP / JPEG, arrière-plan transparent), recopié du prototype (lignes 3211-3440 et 4300-4400), pour Motif, Illustration puis les frames du Layout editor.
+- **Ressources, contenu** : vide pour l'instant. Couleurs à zéro, logos vides, typographie en Geist. Il faut concevoir une **interface de remplissage rapide et fluide** (à proposer et faire valider).
+- **Ressources, droits** : seules les personnes qui ont **le code** peuvent modifier le contenu.
+- **Architecture des pages** (Figma + références) : Logo (groupes de cartes + Télécharger), Typographie (famille, fichiers, échelle), Couleur (marque, neutres, dégradés, copie du code), Iconographie (filtres + grille Central), Inspiration (mosaïque 4 colonnes). **Imagerie** : au choix de l'IA (mosaïque avec filtres). **Patterns prédéfinis** : une grille comme Inspiration, remplie de **layouts de patterns** faits dans le Layout editor, **filtrables par format**.
+
+
+1. `export` (test du porteur + PR), puis `resources` (avec `/api/files` et Vercel Blob), puis `layout-editor`.
+2. **Vercel** (étapes déjà données au porteur) et `editor-access`.
 3. **Export** (PNG, WebP, JPEG, SVG, vidéo, Figma) : à planifier (les réglages d'export du prototype ne sont pas dans `controls.ts`).
 4. **Temps 2** : `brand-settings`, `logo-variants`, `pattern-embed`.
