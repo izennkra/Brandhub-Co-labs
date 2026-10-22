@@ -87,10 +87,11 @@ describe('bloc Export du panneau (Figma + dock du prototype)', () => {
 
   it('Layout editor : exporte le frame en image ou en vidéo', async () => {
     const { user, S } = await openExport('/outils/layout-editor');
-    expect(within(group('Type d’export')).getAllByRole('button').map((b) => b.textContent)).toEqual([
-      'Image',
-      'Vidéo',
-    ]);
+    expect(
+      within(group('Type d’export'))
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Image', 'Vidéo']);
     await user.click(screen.getByRole('button', { name: '3x' }));
     await user.click(screen.getByRole('button', { name: 'WebP' }));
     expect(screen.getByText('3240 × 5760 px')).toBeInTheDocument();
@@ -99,7 +100,7 @@ describe('bloc Export du panneau (Figma + dock du prototype)', () => {
     await user.click(screen.getByRole('button', { name: 'Vidéo' }));
     await user.click(screen.getByRole('button', { name: 'Enregistrer la vidéo' }));
     expect(S.layoutVideo).toBe(8);
-    // rien dans le frame : rien à enregistrer dans les Patterns prédéfinis
-    expect(screen.getByRole('button', { name: /Enregistrer dans Patterns prédéfinis/ })).toBeDisabled();
+    // page d'essai : rien n'est enregistré
+    expect(screen.queryByRole('button', { name: /Patterns prédéfinis/ })).not.toBeInTheDocument();
   });
 });

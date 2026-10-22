@@ -4,7 +4,7 @@
 import type { LayoutDoc, PatternLayer } from '../layout/doc';
 import { EXPORT_FMTS } from './export-options';
 import { pickVideoMime, saveFile } from './exporter';
-import type { EngineLayer, EngineSettings, PrototypeEngine } from './prototype-engine.js';
+import type { EngineImage, EngineLayer, EngineSettings, PrototypeEngine } from './prototype-engine.js';
 
 /** Échelles de l'export d'un frame (dock du Design libre, ligne 4371). */
 export const LAYOUT_SCALES = [1, 2, 3] as const;
@@ -48,6 +48,43 @@ export function createLayoutBridge(
   let exporting = false;
   let busy = false;
 
+  // Réglage d'un calque : dans S s'il est en cours d'édition, sinon dans ses propres réglages.
+  const settingOf = (L: PatternLayer, key: string) => (L === dl.live ? core.S[key] : L.settings[key]);
+  const keyOf = (image: EngineImage, index: number) => image.id ?? `image-${index}`;
+
+  // Bibliothèque vue par un calque d'illustration en boucle : ses images, dans son ordre, toutes
+  // dans la boucle. L'outil Illustration garde la sienne.
+  function libraryFor(L: PatternLayer): EngineImage[] | null {
+    if (L.app !== 'image' || !settingOf(L, 'imgLoop') || L.loop.length < 2) return null;
+    const key = L.loop.join('|') + '#' + core.imgList.length;
+    if (L._list?.key !== key) {
+      const byKey = new Map(core.imgList.map((image, i) => [keyOf(image, i), image]));
+      const images = L.loop.flatMap((k) => (byKey.has(k) ? [{ ...byKey.get(k)!, inLoop: true }] : []));
+      L._list = { key, images };
+      if (L.eng) (L.eng as { imgDirty: boolean }).imgDirty = true; // trames à recalculer
+    }
+    return L._list.images as EngineImage[];
+  }
+
+  // renderLayerTo (ligne 2608), avec deux ajustements le temps du rendu, puis tout est remis :
+  // - la largeur du calque devient sa largeur de référence : agrandir le calque agrandit aussi les
+  //   pastilles et les traits, le motif grandit d'un bloc et reste net (le moteur règle PXK sur L.w) ;
+  // - la bibliothèque d'images devient celle de la boucle du calque.
+  function draw(L: PatternLayer, pw: number, ph: number, dt: number, ctx: CanvasRenderingContext2D) {
+    const width = L.w,
+      library = core.imgList,
+      own = libraryFor(L);
+    L.w = L.ref || width;
+    if (own) core.imgList = own;
+    try {
+      core.renderLayerTo(L, L === dl.live, pw, ph, dt, ctx);
+    } finally {
+      L.w = width;
+      core.imgList = library;
+    }
+    L._cam0 ??= JSON.parse(JSON.stringify(L.cam ?? null)) ?? undefined;
+  }
+
   // composeFrame (ligne 4304) : fond, puis chaque calque à sa place, tourné, à l'échelle sc.
   async function compose(
     doc: LayoutDoc,
@@ -88,7 +125,12 @@ export function createLayoutBridge(
         tmp.set(L.id, t);
         t.width = Math.max(2, Math.round(dw * k));
         t.height = Math.max(2, Math.round(dh * k));
-        core.renderLayerTo(L, L === dl.live, t.width, t.height, dt, t.getContext('2d')!);
+        draw(L, t.width, t.height, dt, t.getContext('2d')!);
+        const bg = L.bgOn && core.HEX[String(settingOf(L, 'bg'))];
+        if (bg) {
+          ctx.fillStyle = bg;
+          ctx.fillRect(-dw / 2, -dh / 2, dw, dh);
+        }
         ctx.drawImage(t, -dw / 2, -dh / 2, dw, dh);
       }
       ctx.restore();
@@ -198,7 +240,26 @@ export function createLayoutBridge(
         (L.eng as { imgDirty: boolean }).imgDirty = true;
         core.imgDirty = false;
       }
-      core.renderLayerTo(L, L === dl.live, canvas.width, canvas.height, dt, canvas.getContext('2d')!);
+      draw(L, canvas.width, canvas.height, dt, canvas.getContext('2d')!);
+    },
+    /** Couleur du fond du motif (« Fond » de ses Couleurs). */
+    bgOf(L: PatternLayer) {
+      return core.HEX[String(settingOf(L, 'bg'))];
+    },
+    /** Boucle entre les illustrations, propre au calque. */
+    loopOn(L: PatternLayer) {
+      return Boolean(settingOf(L, 'imgLoop'));
+    },
+    setLoop(L: PatternLayer, on: boolean) {
+      if (L === dl.live) core.S.imgLoop = on;
+      else L.settings.imgLoop = on;
+      if (L.eng) Object.assign(L.eng as object, { imgTime: 0, imgTr: null });
+      L.dirty = true;
+      syncAll();
+    },
+    /** Images de la bibliothèque : clé (pour la boucle) et nom. */
+    library() {
+      return core.imgList.map((image, i) => ({ key: keyOf(image, i), name: image.name }));
     },
 
     // exportFrameImage (ligne 4324)

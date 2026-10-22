@@ -5,7 +5,7 @@ import {
   layoutStore,
   newImageLayer,
   newPatternLayer,
-  serialize,
+  type PatternLayer,
 } from '../src/lib/layout/doc';
 import { formatOf } from '../src/lib/resources/formats';
 
@@ -53,19 +53,36 @@ describe('Layout editor : le frame et ses calques', () => {
     expect(layoutStore.selected).toBeNull();
   });
 
-  it('enregistre le document sans l’état interne du moteur ni l’aperçu', () => {
-    const layer = newPatternLayer('image', { app: 'image', dots: ['brun'] });
-    Object.assign(layer, { eng: { nodes: [] }, dirty: true, _cv: {}, _acc: 1 });
+  it('manipulation 3D : tourne la caméra du motif, zoome dedans (100 à 800 %) et recentre', () => {
+    const layer = newPatternLayer('motif', { app: 'motif' });
     layoutStore.addLayer(layer);
-    const saved = JSON.parse(serialize(layoutStore.doc));
-    expect(Object.keys(saved.layers[0]).sort()).not.toEqual(
-      expect.arrayContaining(['eng', 'dirty', '_cv', '_acc']),
-    );
-    expect(saved.layers[0]).toMatchObject({
-      name: 'Illustration 1',
-      app: 'image',
-      settings: { dots: ['brun'] },
-    });
+    layoutStore.set3d(true);
+    expect(layoutStore.mode3d).toBe(true);
+    // le moteur a dessiné le calque une première fois : sa caméra existe
+    layer.cam = { theta: 0, phi: 1.5, radius: 40 };
+    layer._cam0 = { theta: 0, phi: 1.5, radius: 40 };
+    layoutStore.orbit(layer.id, 100, 0);
+    expect((layer.cam as { theta: number }).theta).toBeCloseTo(-0.7);
+    layoutStore.zoomInto(layer.id, 0.25, 0, 100);
+    expect(layer.zoom).toBe(8); // plafonné à 800 %
+    expect(Math.abs(layer.pan![0])).toBeLessThanOrEqual(0.5 - 0.5 / 8);
+    layoutStore.recenter(layer.id);
+    expect([layer.zoom, layer.pan, (layer.cam as { theta: number }).theta]).toEqual([1, [0, 0], 0]);
+    // un calque image ne se manipule pas en 3D
+    layoutStore.addLayer(newImageLayer('Logo', 'data:,', 100, 100));
+    expect(layoutStore.mode3d).toBe(false);
+  });
+
+  it('un motif garde sa largeur de référence : agrandi, il grandit d’un bloc', () => {
+    layoutStore.addLayer(newPatternLayer('motif', { app: 'motif' }));
+    const layer = layoutStore.doc.layers[0] as PatternLayer;
+    layoutStore.updateLayer(layer.id, { w: 2160, h: 3840 });
+    expect([layer.ref, layer.w]).toEqual([1080, 2160]);
+  });
+
+  it('chaque visite repart d’un frame vide : rien n’est enregistré', () => {
+    layoutStore.addLayer(newPatternLayer('image', { app: 'image' }));
+    expect(localStorage.length).toBe(0);
   });
 
   it('reconnaît les formats connus, sinon « Libre »', () => {

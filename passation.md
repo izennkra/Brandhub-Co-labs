@@ -1,6 +1,6 @@
 # Passation : Brand Hub · Co-labs
 
-> Mise à jour le 22/10/2026. Branche en cours : `feature/resources`.
+> Mise à jour le 22/10/2026. Branche en cours : `feature/layout-editor`.
 > À lire aussi : `CLAUDE.md` (règles du projet).
 
 ## 1. Le projet en bref
@@ -40,9 +40,9 @@
 | Structure de l'appli, navigation, design system | ✅ dans `main` (PR n° 1) |
 | Moteur : Motif + Illustration | ✅ dans `main` (PR n° 2) |
 | Stockage partagé + préréglages partagés | ✅ dans `main` (PR n° 3) |
-| **Export** (Image, SVG, Vidéo, Figma) | 🟡 testé par le porteur, **PR n° 4 ouverte**, pas encore fusionnée |
-| **Ressources** (7 pages + mode édition) | 🟡 branche `feature/resources` (partie de `feature/export`), poussée, **dernière série à faire tester, puis PR** |
-| **Layout editor** | ⏳ **prochaine partie** |
+| **Export** (Image, SVG, Vidéo, Figma) | ✅ dans `main` (PR n° 4) |
+| **Ressources** (7 pages + mode édition) | ✅ dans `main` (PR n° 5) |
+| **Layout editor** | 🟡 branche `feature/layout-editor`, poussée, **à faire tester, puis PR** |
 | Vercel (mise en ligne), profil éditeur complet | après |
 
 ### Ressources : ce qui existe
@@ -68,14 +68,23 @@
 - **Patterns prédéfinis** : mosaïque filtrée par format. Elle est vide : elle sera remplie par les layouts du Layout editor (collection `res-layouts`).
 - **Fichiers** : `/api/files` envoie vers Vercel Blob. Sans Blob, les images sont réduites et gardées dans les données.
 
+### Layout editor : ce qui existe
+
+- **Page d'essai** : chaque visite part d'un frame vide, **rien n'est enregistré** (décision du porteur, 22/10/2026). On teste, on exporte.
+- **Un seul frame** (Figma `Tool / Layout editor Motif`, nœud `2337:7799`) : formats 1:1, 4:5, 9:16, 16:9, 4:3, A4, Bannière, ou taille libre ; fond (Fill) ; rognage.
+- **Plan de travail** : molette pour se déplacer, ⌘ / Ctrl + molette (ou pincement) pour zoomer, boutons − / + / ajuster en bas à gauche, glisser le fond ou Espace + glisser pour se déplacer.
+- **Calques** : Motif, Illustration (copies de l'outil, modifiables sans toucher l'outil) et Image. Déplacer, redimensionner (Maj : proportions), X / Y / W / H / rotation, alignements, ordre, masquer, supprimer.
+- **Jamais flou** : l'aperçu est calculé à la taille affichée, et un motif agrandi grandit d'un bloc (pastilles comprises) grâce à sa largeur de référence (`ref`).
+- **Manipulation 3D** (bouton ou double-clic) : glisser tourne le motif, Maj + glisser recadre, molette zoome dedans ; « Zoom du motif » 100 à 800 % et « Recentrer le motif ».
+- **Couleurs** du motif choisi : fond du motif (peint sous le calque, désactivable) et pastilles, plus Pastilles, Survol, Rotation.
+- **Boucle d'illustrations** propre au calque : cases à cocher et ordre libre ; la bibliothèque de l'outil Illustration ne change pas.
+- **Export** du frame : image (×1 à ×3, PNG, WebP, JPEG) ou vidéo.
+- Côté moteur : `renderLayerTo`, `settingsGet`, `settingsSet` exposés via `EXPORTS` (SHA inchangé) ; tout le reste dans `src/lib/pattern-engine/layout.ts` et `src/lib/layout/doc.ts`.
+
 ## 5. Prochaines étapes
 
-1. Faire tester au porteur la dernière série (page Couleur revue avec nuances automatiques, cartes Typographie), puis ouvrir la **PR des Ressources**. La PR n° 4 (Export) peut être fusionnée avant, sur son accord.
-2. **Layout editor**, décision du porteur : **simple**. C'est **une seule frame**, comme sur la maquette Figma (`Tool / Layout editor Motif`, nœud `2337:7799`), où l'on place son motif dans un format. Pas de plan de travail à plusieurs frames.
-   - Le panneau du Figma : Layout (X, Y, W, H, rotation, alignements, rognage), Format, Calques, Fill, Pastilles, Survol, Rotation, Couleurs, puis le bloc Export.
-   - Brancher le bloc Export sur la frame (il est aujourd'hui grisé sur cette page).
-   - Enregistrer un layout doit l'ajouter à la page **Patterns prédéfinis** (`res-layouts` : nom, format, aperçu).
-   - Point de départ : le « Design libre » du prototype (lignes 3603 et suivantes), à simplifier.
+1. Faire tester le **Layout editor** au porteur, puis ouvrir sa PR.
+2. **Patterns prédéfinis** : la page reste vide, puisque le Layout editor n'enregistre plus rien. À décider avec le porteur : permettre d'y déposer des images en mode édition (comme Inspiration) ?
 3. **Mise en ligne Vercel** : créer le projet, relier Upstash Redis et Vercel Blob depuis le Marketplace, ajouter `EDITOR_CODE`, puis redéployer.
 4. Avant la mise en ligne : vérifier la **licence Central Icons** (commerciale). On montre maintenant toute la bibliothèque sur la page Iconographie.
 

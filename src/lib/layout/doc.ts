@@ -4,7 +4,8 @@ import { formatOf, LAYOUT_SIZES } from '../resources/formats';
 
 // Document du Layout editor : un seul frame (format, fond, rognage) et ses calques, du dessous
 // vers le dessus. Repris du « Design libre » du prototype (ligne 3604), simplifié à un frame.
-// Gardé dans ce navigateur ; il ne charge pas le moteur (le panneau l'importe seul).
+// Page d'essai : chaque visite part d'un frame vide, rien n'est enregistré (décision du 22/10/2026).
+// Ce fichier ne charge pas le moteur (le panneau l'importe seul).
 
 type Box = {
   id: string;
@@ -20,9 +21,19 @@ export type PatternLayer = Box &
   EngineLayer & {
     type: 'pattern';
     anim: boolean;
-    /** Aperçu dessiné par le moteur (élément de la page, jamais enregistré). */
+    /** Largeur de référence des pastilles : agrandir le calque agrandit tout le motif (jamais flou). */
+    ref: number;
+    /** Le fond du motif (couleur « Fond » de ses Couleurs) est peint sous le motif. */
+    bgOn: boolean;
+    /** Boucle de l'illustration : images de la bibliothèque, dans l'ordre choisi. */
+    loop: string[];
+    /** Aperçu dessiné par le moteur (élément de la page). */
     _cv?: HTMLCanvasElement;
     _acc?: number;
+    /** Cadrage 3D d'origine (« Recentrer le motif »). */
+    _cam0?: unknown;
+    /** Bibliothèque propre à la boucle (calculée par le moteur). */
+    _list?: { key: string; images: unknown[] };
   };
 export type ImageLayer = Box & { type: 'image'; src: string };
 export type Layer = PatternLayer | ImageLayer;
@@ -37,7 +48,6 @@ export type LayoutDoc = {
   layers: Layer[];
 };
 
-const KEY = 'bhc.layout.v1';
 const newId = () => 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 export const emptyDoc = (): LayoutDoc => ({
@@ -49,49 +59,26 @@ export const emptyDoc = (): LayoutDoc => ({
   layers: [],
 });
 
-/** Document en texte : sans l'état interne du moteur ni les éléments de la page. */
-export const serialize = (doc: LayoutDoc) =>
-  JSON.stringify(doc, (key, value) =>
-    key.startsWith('_') || key === 'eng' || key === 'dirty' ? undefined : (value as unknown),
-  );
-
-function load(): LayoutDoc | null {
-  try {
-    const text = localStorage.getItem(KEY);
-    const doc = text ? (JSON.parse(text) as LayoutDoc) : null;
-    return doc && Array.isArray(doc.layers) ? doc : null;
-  } catch {
-    return null;
-  }
-}
-
 // ---------- état partagé (scène et panneau) ----------
 // Les calques de motif sont modifiés en place par le moteur : on garde les mêmes objets et on
 // prévient les vues avec un numéro de version.
-let doc: LayoutDoc = load() ?? emptyDoc();
+let doc: LayoutDoc = emptyDoc();
 let selected: string | null = null;
+let mode3d = false; // « Manipuler en 3D » : glisser tourne le motif choisi, la molette zoome dedans
 let version = 0;
-let saveTimer: ReturnType<typeof setTimeout> | undefined;
-let beforeSave: (() => void) | null = null;
 const listeners = new Set<() => void>();
 
-function save() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    beforeSave?.();
-    try {
-      localStorage.setItem(KEY, serialize(doc));
-    } catch {
-      // navigateur plein (images lourdes) : le layout reste affiché, il n'est simplement pas gardé
-    }
-  }, 400);
-}
-
-function emit(persist = true) {
+function emit() {
   version++;
   listeners.forEach((listener) => listener());
-  if (persist) save();
 }
+
+const clampPan = (L: PatternLayer) => {
+  const z = Math.max(1, L.zoom || 1),
+    m = 0.5 - 0.5 / z;
+  const [x, y] = L.pan ?? [0, 0];
+  L.pan = [Math.max(-m, Math.min(m, x)), Math.max(-m, Math.min(m, y))];
+};
 
 const clampRound = (n: number) => Math.round(Number.isFinite(n) ? n : 0);
 
@@ -105,15 +92,19 @@ export const layoutStore = {
   layer(id: string | null) {
     return doc.layers.find((layer) => layer.id === id) ?? null;
   },
-  /** Appelé avant chaque enregistrement (réglages du motif en cours d'édition). */
-  onBeforeSave(fn: (() => void) | null) {
-    beforeSave = fn;
+  get mode3d() {
+    return mode3d;
   },
   select(id: string | null) {
     selected = id && doc.layers.some((layer) => layer.id === id) ? id : null;
-    emit(false);
+    if (layoutStore.layer(selected)?.type !== 'pattern') mode3d = false;
+    emit();
   },
-  /** Le document a changé ailleurs (réglages du motif) : enregistrer et redessiner. */
+  set3d(on: boolean) {
+    mode3d = on && layoutStore.layer(selected)?.type === 'pattern';
+    emit();
+  },
+  /** Le document a changé ailleurs (réglages du motif) : redessiner. */
   touch() {
     emit();
   },
@@ -159,21 +150,74 @@ export const layoutStore = {
     if (layer.type === 'pattern') layer.dirty = true;
     emit();
   },
-  /** Options d'un calque de motif : animé ou fixe, image de l'illustration. */
-  updatePattern(id: string, patch: Partial<Pick<PatternLayer, 'anim' | 'imgIndex'>>) {
+  /** Options d'un calque de motif : animé ou fixe, image de l'illustration, fond, boucle. */
+  updatePattern(
+    id: string,
+    patch: Partial<Pick<PatternLayer, 'anim' | 'imgIndex' | 'bgOn' | 'loop' | 'zoom'>>,
+  ) {
     const layer = layoutStore.layer(id);
     if (layer?.type !== 'pattern') return;
     Object.assign(layer, patch, { dirty: true });
+    if (patch.zoom !== undefined) clampPan(layer);
+    emit();
+  },
+  // ---------- manipulation 3D (prototype, lignes 3852 à 3940) ----------
+  /** Glisser : le motif tourne (caméra du calque). */
+  orbit(id: string, dx: number, dy: number) {
+    const layer = layoutStore.layer(id);
+    const cam = layer?.type === 'pattern' ? (layer.cam as { theta: number; phi: number } | undefined) : null;
+    if (!layer || !cam) return;
+    cam.theta -= dx * 0.007;
+    cam.phi = Math.min(Math.PI - 0.05, Math.max(0.05, cam.phi - dy * 0.007));
+    (layer as PatternLayer).dirty = true;
+    emit();
+  },
+  /** Maj + glisser : recadre dans le motif zoomé (dx, dy en part du calque). */
+  panCrop(id: string, dx: number, dy: number) {
+    const layer = layoutStore.layer(id);
+    if (layer?.type !== 'pattern') return;
+    const z = Math.max(1, layer.zoom || 1);
+    const [x, y] = layer.pan ?? [0, 0];
+    layer.pan = [x - dx / z, y - dy / z];
+    clampPan(layer);
+    layer.dirty = true;
+    emit();
+  },
+  /** Zoom dans le motif autour d'un point (u, v : de -0,5 à 0,5 dans le calque), 100 à 800 %. */
+  zoomInto(id: string, u: number, v: number, factor: number) {
+    const layer = layoutStore.layer(id);
+    if (layer?.type !== 'pattern') return;
+    const z0 = Math.max(1, layer.zoom || 1),
+      z1 = Math.max(1, Math.min(8, z0 * factor));
+    const [px, py] = layer.pan ?? [0, 0];
+    const fx = px + u / z0,
+      fy = py + v / z0;
+    layer.zoom = z1;
+    layer.pan = [fx - u / z1, fy - v / z1];
+    clampPan(layer);
+    layer.dirty = true;
+    emit();
+  },
+  /** « Recentrer le motif » : cadrage 3D d'origine, sans zoom. */
+  recenter(id: string) {
+    const layer = layoutStore.layer(id);
+    if (layer?.type !== 'pattern') return;
+    if (layer._cam0) layer.cam = JSON.parse(JSON.stringify(layer._cam0));
+    Object.assign(layer, { zoom: 1, pan: [0, 0], dirty: true });
     emit();
   },
   addLayer(layer: Layer) {
     doc.layers.push(layer);
     selected = layer.id;
+    mode3d = false;
     emit();
   },
   removeLayer(id: string) {
     doc.layers = doc.layers.filter((layer) => layer.id !== id);
-    if (selected === id) selected = null;
+    if (selected === id) {
+      selected = null;
+      mode3d = false;
+    }
     emit();
   },
   /** Monte (+1) ou descend (-1) un calque dans la pile. */
@@ -202,7 +246,8 @@ export const layoutStore = {
   reset(next: LayoutDoc = emptyDoc()) {
     doc = next;
     selected = null;
-    emit(false);
+    mode3d = false;
+    emit();
   },
 };
 
@@ -226,6 +271,11 @@ export function newPatternLayer(app: 'motif' | 'image', settings: EngineSettings
     settings,
     imgIndex: 0,
     anim: true,
+    ref: doc.w,
+    bgOn: true,
+    loop: [],
+    zoom: 1,
+    pan: [0, 0],
   };
 }
 
@@ -255,5 +305,5 @@ function subscribe(listener: () => void) {
 /** Le document, le calque choisi ; la vue se redessine à chaque changement. */
 export function useLayout() {
   useSyncExternalStore(subscribe, () => version);
-  return { doc, selected, layer: layoutStore.layer(selected) };
+  return { doc, selected, layer: layoutStore.layer(selected), mode3d };
 }

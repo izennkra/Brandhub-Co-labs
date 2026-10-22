@@ -1,5 +1,6 @@
 import { useState, type ReactNode, type Ref } from 'react';
-import { layoutStore, useLayout, type Layer } from '../../lib/layout/doc';
+import { layoutStore, useLayout, type Layer, type PatternLayer } from '../../lib/layout/doc';
+import type { Engine } from '../../lib/pattern-engine/createEngine';
 import { CONTROLS, isVisible } from '../../lib/pattern-engine/controls';
 import { LAYOUT_FORMATS } from '../../lib/resources/formats';
 import { formatName } from '../../lib/layout/doc';
@@ -9,6 +10,7 @@ import { EngineControls } from '../EditorPanel/EngineControls';
 import { PanelSection } from '../EditorPanel/PanelSection';
 import { useEngine } from '../EditorPanel/useEngine';
 import { ColorPicker } from '../engine/ColorPicker';
+import { Slider } from '../engine/Slider';
 import swatches from '../engine/ColorPicker.module.css';
 import { Toggle } from '../engine/Toggle';
 import { Icon, type IconName } from '../Icon';
@@ -73,6 +75,153 @@ function NumberField({
   );
 }
 
+/** Boucle d'une illustration : les images cochées passent dans l'ordre de la liste (propre au calque). */
+function LoopList({ engine, layer }: { engine: Engine; layer: PatternLayer }) {
+  const library = engine.layout.library();
+  const thumbs = engine.actions.images();
+  const known = new Set(library.map((image) => image.key));
+  const chosen = layer.loop.filter((key) => known.has(key));
+  const rows = [
+    ...chosen.map((key) => library.findIndex((image) => image.key === key)),
+    ...library.flatMap((image, index) => (chosen.includes(image.key) ? [] : [index])),
+  ];
+  const setLoop = (loop: string[]) => layoutStore.updatePattern(layer.id, { loop });
+  const move = (key: string, step: number) => {
+    const next = [...chosen],
+      i = next.indexOf(key),
+      j = i + step;
+    if (j < 0 || j >= next.length) return;
+    [next[i], next[j]] = [next[j], next[i]];
+    setLoop(next);
+  };
+  return (
+    <>
+      <ol className={styles.loop} aria-label="Illustrations de la boucle">
+        {rows.map((index) => {
+          const { key, name } = library[index];
+          const position = chosen.indexOf(key);
+          return (
+            <li key={key} data-off={position < 0 || undefined}>
+              <label className={styles.loopName}>
+                <input
+                  type="checkbox"
+                  checked={position >= 0}
+                  onChange={(event) =>
+                    setLoop(event.target.checked ? [...chosen, key] : chosen.filter((k) => k !== key))
+                  }
+                />
+                {thumbs[index]?.thumb && <img src={thumbs[index].thumb} alt="" />}
+                <span>{position >= 0 ? `${position + 1}. ${name}` : name}</span>
+              </label>
+              {position >= 0 && (
+                <span className={styles.loopActions}>
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label={`Avancer ${name} dans la boucle`}
+                    disabled={position === 0}
+                    onClick={() => move(key, -1)}
+                  >
+                    <Icon name="arrow-up" size="xs" />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label={`Reculer ${name} dans la boucle`}
+                    disabled={position === chosen.length - 1}
+                    onClick={() => move(key, 1)}
+                  >
+                    <Icon name="arrow-down" size="xs" />
+                  </button>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      {chosen.length < 2 && (
+        <p className={styles.hint}>Coche au moins deux illustrations pour lancer la boucle.</p>
+      )}
+    </>
+  );
+}
+
+/** Réglages propres à un calque de motif : copie de l'outil, animation, 3D, zoom, image ou boucle. */
+function PatternOptions({
+  engine,
+  layer,
+  mode3d,
+}: {
+  engine: Engine | null;
+  layer: PatternLayer;
+  mode3d: boolean;
+}) {
+  const loopOn = engine?.layout.loopOn(layer) ?? false;
+  return (
+    <>
+      <p className={styles.hint}>
+        Copie {layer.app === 'image' ? 'de l’illustration' : 'du motif'} de l’outil : tes réglages ici ne
+        changent pas l’outil.
+      </p>
+      <Toggle
+        label="Animé"
+        checked={layer.anim}
+        onChange={(anim) => layoutStore.updatePattern(layer.id, { anim })}
+      />
+      <button
+        type="button"
+        className={styles.action}
+        aria-pressed={mode3d}
+        onClick={() => layoutStore.set3d(!mode3d)}
+      >
+        <Icon name="3d-box-top" size="sm" /> {mode3d ? 'Terminer la manipulation 3D' : 'Manipuler en 3D'}
+      </button>
+      <Slider
+        label="Zoom du motif"
+        min={100}
+        max={800}
+        step={5}
+        value={Math.round((layer.zoom || 1) * 100)}
+        format={(v) => `${v} %`}
+        onChange={(v) => layoutStore.updatePattern(layer.id, { zoom: v / 100 })}
+      />
+      <button type="button" className={styles.action} onClick={() => layoutStore.recenter(layer.id)}>
+        Recentrer le motif
+      </button>
+      {layer.app === 'image' && engine && (
+        <>
+          <Toggle
+            label="Boucle entre les illustrations"
+            checked={loopOn}
+            onChange={(on) => engine.layout.setLoop(layer, on)}
+          />
+          {loopOn ? (
+            <LoopList engine={engine} layer={layer} />
+          ) : (
+            engine.layout.library().length > 1 && (
+              <label className={styles.select}>
+                <span>Image</span>
+                <select
+                  value={layer.imgIndex}
+                  onChange={(event) =>
+                    layoutStore.updatePattern(layer.id, { imgIndex: Number(event.target.value) })
+                  }
+                >
+                  {engine.layout.library().map((image, index) => (
+                    <option key={image.key} value={index}>
+                      {image.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
 export function LayoutPanel({
   onHide,
   toggleRef,
@@ -81,7 +230,7 @@ export function LayoutPanel({
   toggleRef: Ref<HTMLButtonElement>;
 }) {
   const engine = useEngine(true);
-  const { doc, selected, layer } = useLayout();
+  const { doc, selected, layer, mode3d } = useLayout();
   const [advanced, setAdvanced] = useState(() => {
     try {
       return localStorage.getItem(ADVANCED_KEY) === '1';
@@ -168,30 +317,7 @@ export function LayoutPanel({
                   </button>
                 ))}
               </div>
-              {pattern && (
-                <Toggle
-                  label="Animé"
-                  checked={pattern.anim}
-                  onChange={(anim) => layoutStore.updatePattern(pattern.id, { anim })}
-                />
-              )}
-              {pattern?.app === 'image' && engine && engine.actions.images().length > 1 && (
-                <label className={styles.select}>
-                  <span>Image</span>
-                  <select
-                    value={pattern.imgIndex}
-                    onChange={(event) =>
-                      layoutStore.updatePattern(pattern.id, { imgIndex: Number(event.target.value) })
-                    }
-                  >
-                    {engine.actions.images().map((image, index) => (
-                      <option key={index} value={index}>
-                        {image.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
+              {pattern && <PatternOptions engine={engine} layer={pattern} mode3d={mode3d} />}
             </>
           ) : (
             <>
@@ -361,11 +487,22 @@ export function LayoutPanel({
           />
         )}
         {ENGINE_SECTIONS.map((section) => (
-          <PanelSection key={section} title={section}>
+          <PanelSection
+            key={`${section}-${live?.id ?? ''}`}
+            title={section}
+            defaultOpen={Boolean(live) && section === 'Couleurs'}
+          >
             {!engine || !live ? (
               <p className={styles.hint}>Choisis un motif ou une illustration dans Calques pour le régler.</p>
             ) : (
               <>
+                {section === 'Couleurs' && (
+                  <Toggle
+                    label="Fond du motif"
+                    checked={live.bgOn}
+                    onChange={(bgOn) => layoutStore.updatePattern(live.id, { bgOn })}
+                  />
+                )}
                 {section === 'Couleurs' && (
                   <ColorPicker
                     palette={engine.core.PALETTE}

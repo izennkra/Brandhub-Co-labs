@@ -1,73 +1,28 @@
-import { useEffect, useId, useState } from 'react';
-import { formatName, layoutStore, useLayout } from '../../lib/layout/doc';
+import { useId, useState } from 'react';
+import { layoutStore, useLayout } from '../../lib/layout/doc';
 import type { Engine } from '../../lib/pattern-engine/createEngine';
 import { EXPORT_FMTS } from '../../lib/pattern-engine/export-options';
-import { slug } from '../../lib/resources/download';
-import { restoreEditor, unlockEditor, useEditor } from '../../lib/resources/editor';
-import { imageSize, saveResourceFile } from '../../lib/resources/files';
-import { useCollection } from '../../lib/resources/useCollection';
-import type { GalleryImage } from '../resources/Gallery';
 import { Choice, Switch } from '../EditorPanel/ExportPanel';
 import styles from '../EditorPanel/ExportPanel.module.css';
 import { Icon } from '../Icon';
-import own from './LayoutPanel.module.css';
 
 // Bloc Export du Layout editor (Figma « Tool / Layout editor Motif ») branché sur le frame :
 // image (×1 à ×3, PNG, WebP, JPEG) ou vidéo des motifs animés, comme le dock du Design libre
-// (ligne 4366). Puis « Enregistrer dans Patterns prédéfinis » (collection res-layouts).
+// (ligne 4366). Rien n'est enregistré : la page sert à essayer et à exporter.
 const TABS = ['Image', 'Vidéo'] as const;
 const SCALES = ['1x', '2x', '3x'];
 
 export function LayoutExport({ engine }: { engine: Engine | null }) {
   const { doc } = useLayout();
-  const { unlocked } = useEditor();
-  const layouts = useCollection<GalleryImage>('res-layouts');
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState(0);
   const [scale, setScale] = useState(0);
   const [fmt, setFmt] = useState(0);
   const [transparent, setTransparent] = useState(false);
   const [seconds, setSeconds] = useState(8);
-  const [asking, setAsking] = useState(false);
-  const [code, setCode] = useState('');
-  const [codeError, setCodeError] = useState(false);
-  const [saving, setSaving] = useState(false);
   const bodyId = useId();
-  // code déjà saisi dans cet onglet (page Ressource) : pas besoin de le redemander
-  useEffect(restoreEditor, []);
-
-  const toast = (detail: string) => engine?.events.dispatchEvent(new CustomEvent('toast', { detail }));
-  const busy = !engine || engine.layout.busy || saving;
+  const busy = !engine || engine.layout.busy;
   const factor = [1, 2, 3][scale];
-
-  const save = async () => {
-    if (!engine) return;
-    if (!unlocked) return setAsking(true);
-    setSaving(true);
-    try {
-      engine.layout.syncLive();
-      const blob = await engine.layout.preview(layoutStore.doc);
-      if (!blob) return;
-      const url = await saveResourceFile(new File([blob], `${slug(doc.name)}.png`, { type: 'image/png' }));
-      const { width, height } = await imageSize(url);
-      await layouts.add({ name: doc.name, url, width, height, tag: formatName(doc) });
-      toast(`« ${doc.name} » est enregistré dans Patterns prédéfinis.`);
-    } catch {
-      toast('L’enregistrement n’a pas abouti.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const unlock = async () => {
-    const ok = await unlockEditor(code);
-    setCodeError(!ok);
-    if (ok) {
-      setAsking(false);
-      setCode('');
-      void save();
-    }
-  };
 
   return (
     <div className={styles.box} data-open={open}>
@@ -137,47 +92,8 @@ export function LayoutExport({ engine }: { engine: Engine | null }) {
               : engine.layout.exportVideo(layoutStore.doc, seconds))
           }
         >
-          {engine?.layout.busy && !saving
-            ? 'Export en cours…'
-            : tab === 0
-              ? 'Exporter'
-              : 'Enregistrer la vidéo'}
+          {engine?.layout.busy ? 'Export en cours…' : tab === 0 ? 'Exporter' : 'Enregistrer la vidéo'}
         </button>
-
-        <button
-          type="button"
-          className={styles.secondary}
-          disabled={busy || !doc.layers.length}
-          onClick={() => void save()}
-        >
-          <Icon name="bookmark-plus" size="sm" />{' '}
-          {saving ? 'Enregistrement…' : 'Enregistrer dans Patterns prédéfinis'}
-        </button>
-        {asking && (
-          <form
-            className={own.unlock}
-            onSubmit={(event) => {
-              event.preventDefault();
-              void unlock();
-            }}
-          >
-            <label className={own.fieldLabel}>
-              <span>Code éditeur, pour ajouter aux Ressources</span>
-              <input
-                type="password"
-                className={own.input}
-                value={code}
-                autoComplete="off"
-                aria-invalid={codeError}
-                onChange={(event) => setCode(event.target.value)}
-              />
-            </label>
-            {codeError && <p role="alert">Ce code ne fonctionne pas.</p>}
-            <button type="submit" className={styles.secondary} disabled={!code}>
-              Déverrouiller et enregistrer
-            </button>
-          </form>
-        )}
       </div>
     </div>
   );

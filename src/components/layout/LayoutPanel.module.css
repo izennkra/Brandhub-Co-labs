@@ -226,3 +226,72 @@
   color: var(--color-text);
   font: inherit;
 }
+
+/* bouton d'action d'une section (« Manipuler en 3D », « Recentrer le motif ») */
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--size-control-compact);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-control-group);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.action:hover,
+.action[aria-pressed='true'] {
+  background: var(--color-control-active);
+}
+
+/* boucle : une ligne par illustration, vignette, rang dans la boucle, monter / descendre */
+.loop {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.loop li {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+}
+
+.loop li[data-off] {
+  color: var(--color-text-secondary);
+}
+
+.loopName {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: var(--size-control-compact);
+  padding: 0 var(--space-1);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.loopName span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loopName img {
+  width: var(--size-control-compact);
+  height: var(--size-control-compact);
+  border-radius: var(--radius-xs);
+  object-fit: cover;
+}
+
+.loopActions {
+  display: flex;
+}
