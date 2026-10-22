@@ -31,7 +31,7 @@ async function download(page: Page, button: string, timeout = 30000) {
   return { name: file.suggestedFilename(), data: await readFile((await file.path())!) };
 }
 
-test('Image : un PNG à 2 fois la taille de la scène', async ({ page }) => {
+test('Image : un PNG en 16:9, à 2 fois la hauteur de la scène', async ({ page }) => {
   await openExport(page);
   await page.getByRole('button', { name: '2x' }).click();
   await page.getByRole('button', { name: 'PNG' }).click();
@@ -42,7 +42,11 @@ test('Image : un PNG à 2 fois la taille de la scène', async ({ page }) => {
   const { name, data } = await download(page, 'Exporter');
   expect(name).toMatch(/^brand-hub-co-labs-\d{8}-\d{6}-2x\.png$/);
   expect(data.subarray(1, 4).toString()).toBe('PNG');
-  expect({ w: data.readUInt32BE(16), h: data.readUInt32BE(20) }).toEqual({ w: size.w * 2, h: size.h * 2 });
+  // le Motif s'exporte toujours en 16:9, quel que soit le format de la scène
+  expect({ w: data.readUInt32BE(16), h: data.readUInt32BE(20) }).toEqual({
+    w: Math.round((size.h * 16) / 9) * 2,
+    h: size.h * 2,
+  });
 });
 
 test('SVG : le fil et les pastilles en formes vectorielles', async ({ page }) => {
@@ -52,6 +56,8 @@ test('SVG : le fil et les pastilles en formes vectorielles', async ({ page }) =>
   expect(name).toMatch(/\.svg$/);
   const svg = data.toString();
   expect(svg).toContain('<g id="Pastilles">');
+  const [, w, h] = svg.match(/viewBox="0 0 (\d+) (\d+)"/)!.map(Number);
+  expect(w / h).toBeCloseTo(16 / 9, 2);
   expect(svg.match(/<rect /g)?.length ?? 0).toBeGreaterThan(100);
 });
 
