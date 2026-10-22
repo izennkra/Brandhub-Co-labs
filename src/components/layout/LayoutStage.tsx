@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { formatName, layoutStore, useLayout, type Layer, type PatternLayer } from '../../lib/layout/doc';
 import type { Engine } from '../../lib/pattern-engine/createEngine';
+import type { Win } from '../../lib/pattern-engine/layout';
 import { useEngine } from '../EditorPanel/useEngine';
 import { Icon } from '../Icon';
 import { Toaster } from '../Toaster';
@@ -36,16 +37,52 @@ type Drag =
   | { kind: 'rotate'; id: string; cx: number; cy: number; a0: number; r0: number }
   | { kind: 'pan'; x: number; y: number; view: View; moved: boolean };
 
-// libreTick (ligne 3765) : chaque calque de motif visible est dessiné par le moteur, à la taille
-// où il est affiché (pixels de l'écran) : l'aperçu reste net quel que soit le zoom.
-function createTick(engine: Engine, view: { current: View }) {
+// Partie visible d'un calque (en part du calque, repère non tourné) : l'écran, et le frame s'il rogne.
+function visiblePart(L: Layer, v: View, screen: { w: number; h: number }) {
+  const doc = layoutStore.doc;
+  let X0 = -v.x / v.s,
+    Y0 = -v.y / v.s,
+    X1 = (screen.w - v.x) / v.s,
+    Y1 = (screen.h - v.y) / v.s;
+  if (doc.clip)
+    [X0, Y0, X1, Y1] = [Math.max(X0, 0), Math.max(Y0, 0), Math.min(X1, doc.w), Math.min(Y1, doc.h)];
+  if (X0 >= X1 || Y0 >= Y1) return null;
+  const a = (-L.r * Math.PI) / 180,
+    c = Math.cos(a),
+    s = Math.sin(a),
+    cx = L.x + L.w / 2,
+    cy = L.y + L.h / 2;
+  const us: number[] = [],
+    vs: number[] = [];
+  for (const [X, Y] of [
+    [X0, Y0],
+    [X1, Y0],
+    [X0, Y1],
+    [X1, Y1],
+  ]) {
+    us.push(((X - cx) * c - (Y - cy) * s) / L.w + 0.5);
+    vs.push(((X - cx) * s + (Y - cy) * c) / L.h + 0.5);
+  }
+  const u0 = Math.max(0, Math.min(...us)),
+    u1 = Math.min(1, Math.max(...us)),
+    v0 = Math.max(0, Math.min(...vs)),
+    v1 = Math.min(1, Math.max(...vs));
+  return u0 < u1 && v0 < v1 ? { u0, u1, v0, v1 } : null;
+}
+
+const FULL = 2048; // jusqu'à cette taille (pixels de l'écran), le calque est dessiné en entier
+
+// libreTick (ligne 3765) : chaque calque de motif visible est dessiné par le moteur, à la taille où
+// il est affiché (pixels de l'écran) : l'aperçu reste net quel que soit le zoom. Un grand calque
+// (très zoomé) n'est dessiné que sur sa partie visible, pour ne pas saturer la carte graphique.
+function createTick(engine: Engine, view: { current: View }, screen: { current: { w: number; h: number } }) {
   let n = 0;
   return (dt: number) => {
     const bridge = engine.layout;
     if (bridge.exporting) return;
     n++;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const cap = Math.min(4096, bridge.maxTexture);
+    const v = view.current;
     const list = layoutStore.doc.layers.filter(
       (l): l is PatternLayer => l.type === 'pattern' && !l.hidden && Boolean(l._cv),
     );
@@ -54,11 +91,40 @@ function createTick(engine: Engine, view: { current: View }) {
     list.forEach((L, i) => {
       L._acc = (L._acc ?? 0) + dt;
       const cv = L._cv!;
-      let pw = L.w * view.current.s * dpr,
-        ph = L.h * view.current.s * dpr;
-      const k = Math.min(1, cap / Math.max(pw, ph));
-      pw = Math.max(16, Math.round(pw * k));
-      ph = Math.max(16, Math.round(ph * k));
+      const Dw = L.w * v.s * dpr,
+        Dh = L.h * v.s * dpr;
+      let win: Win | null = null;
+      if (Math.max(Dw, Dh) > FULL) {
+        const part = visiblePart(L, v, screen.current);
+        if (!part) return; // hors de l'écran : rien à dessiner
+        // fenêtre aux proportions du calque, un peu plus grande que la partie visible
+        const f = Math.min(1, 1.2 * Math.max(part.u1 - part.u0, part.v1 - part.v0));
+        const keep = (c: number) => Math.min(1 - f / 2, Math.max(f / 2, c));
+        const old = L._win;
+        const inside =
+          old &&
+          old.f <= f * 1.4 &&
+          old.f >= f / 1.2 &&
+          part.u0 >= old.cx - old.f / 2 &&
+          part.u1 <= old.cx + old.f / 2 &&
+          part.v0 >= old.cy - old.f / 2 &&
+          part.v1 <= old.cy + old.f / 2;
+        win = inside ? old! : { cx: keep((part.u0 + part.u1) / 2), cy: keep((part.v0 + part.v1) / 2), f };
+      }
+      if ((win ?? undefined) !== L._win) {
+        L._win = win ?? undefined;
+        L.dirty = true;
+        const f = win?.f ?? 1;
+        Object.assign(cv.style, {
+          left: `${((win?.cx ?? 0.5) - f / 2) * 100}%`,
+          top: `${((win?.cy ?? 0.5) - f / 2) * 100}%`,
+          width: `${f * 100}%`,
+          height: `${f * 100}%`,
+        });
+      }
+      const f = win?.f ?? 1;
+      const pw = Math.max(16, Math.round(Dw * f)),
+        ph = Math.max(16, Math.round(Dh * f));
       // jamais agrandi à l'affichage de plus de 3 % : au-delà, le calque est recalculé
       if (cv.width < pw * 0.97 || cv.width > pw * 1.25 || Math.abs(cv.height / cv.width - ph / pw) > 0.01) {
         cv.width = pw;
@@ -69,7 +135,7 @@ function createTick(engine: Engine, view: { current: View }) {
       if (!turn && !L.dirty) return;
       const step = L.anim ? Math.min(0.1, L._acc) : 0;
       L._acc = 0;
-      bridge.render(L, cv, step);
+      bridge.render(L, cv, step, win);
       L.dirty = false;
     });
   };
@@ -82,6 +148,7 @@ export function LayoutStage() {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [custom, setCustom] = useState<View | null>(null); // null : frame ajusté à l'écran
   const viewRef = useRef<View>({ s: 1, x: 0, y: 0 });
+  const sizeRef = useRef({ w: 0, h: 0 });
   const drag = useRef<Drag | null>(null);
 
   const fit: View = (() => {
@@ -93,12 +160,13 @@ export function LayoutStage() {
   const view = custom ?? fit;
   useLayoutEffect(() => {
     viewRef.current = view;
+    sizeRef.current = size;
   });
 
   // Le moteur passe en mode layout tant que la page est ouverte.
   useEffect(() => {
     if (!engine) return;
-    engine.layout.enter(createTick(engine, viewRef));
+    engine.layout.enter(createTick(engine, viewRef, sizeRef));
     const onSettings = () => {
       if (engine.layout.live) {
         engine.layout.live.dirty = true;

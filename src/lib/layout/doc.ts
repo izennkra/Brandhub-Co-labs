@@ -30,6 +30,8 @@ export type PatternLayer = Box &
     /** Aperçu dessiné par le moteur (élément de la page). */
     _cv?: HTMLCanvasElement;
     _acc?: number;
+    /** Partie dessinée dans l'aperçu (calque très zoomé) ; absente : tout le calque. */
+    _win?: { cx: number; cy: number; f: number };
     /** Cadrage d'origine, après le premier ajustement (« Recentrer la forme »). */
     _fit0?: { cam: unknown; zoom: number };
     /** Bibliothèque propre à la boucle (calculée par le moteur). */

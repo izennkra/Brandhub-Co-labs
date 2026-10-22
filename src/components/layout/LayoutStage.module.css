@@ -45,6 +45,12 @@
   cursor: move;
 }
 
+.layer canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
 .layer canvas,
 .layer img {
   display: block;

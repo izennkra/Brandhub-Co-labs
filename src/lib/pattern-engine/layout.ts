@@ -6,6 +6,43 @@ import { EXPORT_FMTS } from './export-options';
 import { pickVideoMime, saveFile } from './exporter';
 import type { EngineImage, EngineLayer, EngineSettings, PrototypeEngine } from './prototype-engine.js';
 
+/** Partie d'un calque dessinée seule : centre (cx, cy) et taille f, en part du calque. */
+export type Win = { cx: number; cy: number; f: number };
+
+// Côté le plus long dessiné d'un coup par la carte graphique : au-delà, elle peut saturer et
+// « décrocher » (plus rien ne s'affiche ensuite). Les grands calques sont dessinés par morceaux.
+// Réglable par les tests (comparaison d'un export en un morceau et en plusieurs).
+export const limits = { tile: 2048 };
+
+// Un morceau (x0, y0, w, h : repère du calque, centre en 0, tourné de a autour de cx, cy) touche-t-il
+// le frame (W × H) ?
+function tileInFrame(
+  x0: number,
+  y0: number,
+  w: number,
+  h: number,
+  a: number,
+  cx: number,
+  cy: number,
+  W: number,
+  H: number,
+) {
+  const c = Math.cos(a),
+    s = Math.sin(a);
+  const xs: number[] = [],
+    ys: number[] = [];
+  for (const [x, y] of [
+    [x0, y0],
+    [x0 + w, y0],
+    [x0, y0 + h],
+    [x0 + w, y0 + h],
+  ]) {
+    xs.push(cx + x * c - y * s);
+    ys.push(cy + x * s + y * c);
+  }
+  return Math.max(...xs) > 0 && Math.min(...xs) < W && Math.max(...ys) > 0 && Math.min(...ys) < H;
+}
+
 /** Échelles de l'export d'un frame (dock du Design libre, ligne 4371). */
 export const LAYOUT_SCALES = [1, 2, 3] as const;
 
@@ -91,6 +128,37 @@ export function createLayoutBridge(
     }
   }
 
+  /**
+   * Dessine seulement une partie carrée-proportionnelle du calque : la fenêtre (cx, cy : centre ; f :
+   * taille, en part du calque). Le moteur la cadre comme son propre zoom (même rendu, en morceaux).
+   * Renvoie le coin haut-gauche réellement dessiné (fenêtre gardée dans l'image du moteur).
+   */
+  function drawWindow(L: PatternLayer, canvas: HTMLCanvasElement, dt: number, win: Win) {
+    const ctx = canvas.getContext('2d')!;
+    if (win.f >= 1) {
+      draw(L, canvas.width, canvas.height, dt, ctx);
+      return { x: 0, y: 0 };
+    }
+    const z = Math.max(1, L.zoom || 1),
+      [px, py] = L.pan ?? [0, 0],
+      half = win.f / (2 * z);
+    // en coordonnées de l'image du moteur (0 à 1), gardée à l'intérieur
+    const lo = (p: number) => 0.5 + p - 0.5 / z;
+    const vx = Math.min(1 - half, Math.max(half, lo(px) + win.cx / z)),
+      vy = Math.min(1 - half, Math.max(half, lo(py) + win.cy / z));
+    const zoom0 = L.zoom,
+      pan0 = L.pan;
+    L.zoom = z / win.f;
+    L.pan = [vx - 0.5, vy - 0.5];
+    try {
+      draw(L, canvas.width, canvas.height, dt, ctx);
+    } finally {
+      L.zoom = zoom0;
+      L.pan = pan0;
+    }
+    return { x: (vx - half - lo(px)) * z, y: (vy - half - lo(py)) * z };
+  }
+
   // Bords de ce qui est dessiné (pixels assez opaques), en part de l'image ; null si rien.
   function bounds(ctx: CanvasRenderingContext2D, size: number) {
     const { data } = ctx.getImageData(0, 0, size, size);
@@ -117,7 +185,7 @@ export function createLayoutBridge(
     ctx: CanvasRenderingContext2D,
     fill: boolean,
   ) {
-    const tmp = new Map<string, HTMLCanvasElement>();
+    const tile = document.createElement('canvas');
     const W = Math.round(doc.w * sc),
       H = Math.round(doc.h * sc);
     ctx.clearRect(0, 0, W, H);
@@ -143,14 +211,29 @@ export function createLayoutBridge(
         if (!img.complete) await new Promise((r) => ((img.onload = r), (img.onerror = r)));
         ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
       } else {
-        const cap = core.renderer.capabilities.maxTextureSize;
-        const k = Math.min(1, cap / Math.max(dw, dh));
-        const t = tmp.get(L.id) ?? document.createElement('canvas');
-        tmp.set(L.id, t);
-        t.width = Math.max(2, Math.round(dw * k));
-        t.height = Math.max(2, Math.round(dh * k));
-        draw(L, t.width, t.height, dt, t.getContext('2d')!);
-        ctx.drawImage(t, -dw / 2, -dh / 2, dw, dh);
+        // par morceaux : jamais plus de limits.tile pixels de côté à la fois pour la carte graphique ;
+        // les morceaux hors du frame rogné sont sautés. Seul le premier fait avancer l'animation.
+        const N = Math.max(1, Math.ceil(Math.max(dw, dh) / limits.tile));
+        const a = ((L.r || 0) * Math.PI) / 180,
+          cx = (L.x + L.w / 2) * sc,
+          cy = (L.y + L.h / 2) * sc;
+        let step = dt;
+        for (let j = 0; j < N; j++)
+          for (let i = 0; i < N; i++) {
+            const x0 = -dw / 2 + (i * dw) / N,
+              y0 = -dh / 2 + (j * dh) / N;
+            if (doc.clip && !tileInFrame(x0, y0, dw / N, dh / N, a, cx, cy, W, H)) continue;
+            const pad = N > 1 ? 1 + (2 * 8 * N) / Math.max(dw, dh) : 1; // 8 px de marge autour du morceau
+            const f = pad / N;
+            tile.width = Math.max(2, Math.round(dw * f));
+            tile.height = Math.max(2, Math.round(dh * f));
+            const at = drawWindow(L, tile, step, { cx: (i + 0.5) / N, cy: (j + 0.5) / N, f });
+            step = 0;
+            // la partie exacte du morceau, prise dans l'image dessinée
+            const sx = ((i / N - at.x) / f) * tile.width,
+              sy = ((j / N - at.y) / f) * tile.height;
+            ctx.drawImage(tile, sx, sy, tile.width / (N * f), tile.height / (N * f), x0, y0, dw / N, dh / N);
+          }
       }
       ctx.restore();
     }
@@ -204,6 +287,7 @@ export function createLayoutBridge(
     },
     palette: core.PALETTE,
     hex: core.HEX,
+    limits,
 
     /** Entrée dans le Layout editor : le moteur passe en mode « libre » et appelle tick à chaque image. */
     enter(tick: LayoutTick) {
@@ -253,13 +337,14 @@ export function createLayoutBridge(
       delete settings._wr;
       return Object.assign(settings, { app, paused: false });
     },
-    render(L: PatternLayer, canvas: HTMLCanvasElement, dt: number) {
+    render(L: PatternLayer, canvas: HTMLCanvasElement, dt: number, win: Win | null = null) {
       // trame de l'image à recalculer pendant le réglage (libreTick, ligne 3784)
       if (L === dl.live && core.imgDirty && L.eng) {
         (L.eng as { imgDirty: boolean }).imgDirty = true;
         core.imgDirty = false;
       }
-      draw(L, canvas.width, canvas.height, dt, canvas.getContext('2d')!);
+      if (win) drawWindow(L, canvas, dt, win);
+      else draw(L, canvas.width, canvas.height, dt, canvas.getContext('2d')!);
     },
     /**
      * Mesure la forme d'un calque (rotation automatique et boucle comprises) : elle est dessinée en

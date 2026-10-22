@@ -80,7 +80,7 @@
 - **Mode 3D** (double-clic ou bouton) : glisser tourne la forme, la poignée ✥ la déplace, coins ou molette l'agrandissent, le rond la fait pivoter ; « Ajuster le calque à la forme », « Recentrer la forme ».
 - **Couleurs** de la forme choisie : pastilles, plus Pastilles, Survol, Rotation.
 - **Boucle d'illustrations** propre au calque : cases à cocher et ordre libre ; la bibliothèque de l'outil Illustration ne change pas.
-- **Export** du frame : image (×1 à ×3, PNG, WebP, JPEG) ou vidéo.
+- **Export** du frame : image (×1 à ×3, PNG, WebP, JPEG) ou vidéo. Les motifs sont dessinés **par morceaux de 2048 px au plus** (`limits.tile`) : un calque à bord perdu en 3x saturait la carte graphique, qui « décrochait » (export puis aperçu tout blancs). Même chose pour l'aperçu très zoomé : seule la partie visible est dessinée. Si la carte graphique décroche quand même, un message demande de recharger la page.
 - Côté moteur : `renderLayerTo`, `settingsGet`, `settingsSet` exposés via `EXPORTS` (SHA inchangé) ; tout le reste dans `src/lib/pattern-engine/layout.ts` et `src/lib/layout/doc.ts`.
 
 ## 5. Prochaines étapes

@@ -408,6 +408,11 @@ async function createEngine(): Promise<Engine> {
     actions.loadTone(Math.min(core.selImg, core.imgList.length - 1)),
   );
 
+  // Carte graphique saturée : le navigateur coupe le dessin. On le dit, plutôt qu'un écran vide.
+  canvas.addEventListener('webglcontextlost', () =>
+    env.toast('La carte graphique a été saturée : recharge la page pour retrouver les motifs.'),
+  );
+
   const exporter = createExporter(core, env.toast, syncAll);
   const layout = createLayoutBridge(core, env.DL, libre, gate, env.toast, syncAll);
 

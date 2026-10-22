@@ -167,3 +167,57 @@ test('export du frame en PNG, à la taille du format', async ({ page }) => {
   const data = await readFile((await file.path())!);
   expect({ w: data.readUInt32BE(16), h: data.readUInt32BE(20) }).toEqual({ w: 2160, h: 3840 });
 });
+
+test('export 3x : dessiné par morceaux, sans jamais saturer la carte graphique', async ({ page }) => {
+  test.setTimeout(90000);
+  await add(page, 'Motif');
+  // on note la plus grande taille demandée à la carte graphique pendant l'export
+  await page.evaluate(async () => {
+    const url = '/src/lib/pattern-engine/loadEngine.ts';
+    const { loadEngine } = (await import(url)) as {
+      loadEngine: () => Promise<{
+        core: { renderer: { setSize: (w: number, h: number, s?: boolean) => void } };
+      }>;
+    };
+    const { renderer } = (await loadEngine()).core;
+    const setSize = renderer.setSize.bind(renderer);
+    const w = window as Window & { __maxGpu?: number; __measure?: boolean };
+    w.__maxGpu = 0;
+    renderer.setSize = (width, height, style) => {
+      if (w.__measure)
+        w.__maxGpu = Math.max(w.__maxGpu!, width * devicePixelRatio, height * devicePixelRatio);
+      setSize(width, height, style);
+    };
+  });
+  await page.getByRole('button', { name: 'Export', expanded: false }).click();
+  await page.getByRole('button', { name: '3x' }).click();
+  await page.evaluate(() => ((window as Window & { __measure?: boolean }).__measure = true));
+  const [file] = await Promise.all([
+    page.waitForEvent('download', { timeout: 60000 }),
+    page.getByRole('button', { name: 'Exporter', exact: true }).click(),
+  ]);
+  const maxGpu = await page.evaluate(() => (window as Window & { __maxGpu?: number }).__maxGpu!);
+  expect(maxGpu).toBeGreaterThan(0);
+  expect(maxGpu).toBeLessThanOrEqual(2048 * 1.1);
+  // le motif est bien là, dans l'image entière (3240 × 5760)
+  const data = await readFile((await file.path())!);
+  const drawnShare = await page.evaluate(async (b64) => {
+    const img = new Image();
+    img.src = 'data:image/png;base64,' + b64;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = 270;
+    c.height = 480;
+    const x = c.getContext('2d')!;
+    x.drawImage(img, 0, 0, c.width, c.height);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    let n = 0;
+    for (let i = 0; i < d.length; i += 4)
+      if (Math.abs(d[i] - d[0]) + Math.abs(d[i + 1] - d[1]) + Math.abs(d[i + 2] - d[2]) > 30) n++;
+    return n / (c.width * c.height);
+  }, data.toString('base64'));
+  expect(drawnShare).toBeGreaterThan(0.03);
+  await page.evaluate(() => ((window as Window & { __measure?: boolean }).__measure = false));
+  // l'aperçu dessine toujours après l'export
+  await expect.poll(() => drawn(page)).toBeGreaterThan(500);
+});
