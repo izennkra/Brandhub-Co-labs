@@ -39,13 +39,32 @@ describe('sections verrouillées', () => {
     act(() => lockEditor());
     expect(await screen.findByText('Cette section est verrouillée pour le moment.')).toBeInTheDocument();
     expect(screen.queryByText('Aucune image d’inspiration pour l’instant.')).not.toBeInTheDocument();
+    // pour un visiteur, la section verrouillée n'est plus un lien : on ne peut pas l'ouvrir
+    expect(screen.queryByRole('link', { name: /Inspiration/ })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('navigation', { name: 'Navigation principale' }))
+        .getByText('Inspiration')
+        .closest('[aria-disabled="true"]'),
+    ).not.toBeNull();
+  });
+
+  it('un visiteur ne peut pas ouvrir une section verrouillée depuis le menu', async () => {
+    await getStore().put('res-locked', 'imagerie', { path: '/ressources/imagerie' });
+    renderAt('/ressources/logo');
+    const item = (await screen.findByText(', verrouillée')).closest('[aria-disabled="true"]') as HTMLElement;
+    expect(item).toHaveTextContent('Imagerie');
+    await userEvent.click(item);
+    expect(screen.getByRole('heading', { level: 1, name: 'Logo' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Couleur' })).toBeInTheDocument();
   });
 
   it('l’éditeur la rouvre : plus de cadenas', async () => {
     await getStore().put('res-locked', 'imagerie', { path: '/ressources/imagerie' });
     renderAt('/ressources/imagerie');
-    expect(await screen.findByRole('link', { name: 'Imagerie, verrouillée' })).toBeInTheDocument();
+    expect(await screen.findByText(', verrouillée')).toBeInTheDocument();
     const user = await unlock();
+    // avec le code, la section verrouillée reste un lien
+    expect(await screen.findByRole('link', { name: 'Imagerie, verrouillée' })).toBeInTheDocument();
     await user.click(screen.getByRole('switch', { name: 'Imagerie' }));
     expect(await screen.findByRole('link', { name: 'Imagerie' })).toBeInTheDocument();
   });

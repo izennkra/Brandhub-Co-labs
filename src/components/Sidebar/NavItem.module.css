@@ -13,6 +13,15 @@
   color: var(--color-text);
 }
 
+/* section verrouillée, pour un visiteur : pas cliquable, pas de survol */
+.disabled {
+  cursor: not-allowed;
+}
+
+.disabled:hover {
+  color: var(--color-text-secondary);
+}
+
 .active {
   color: var(--color-text);
   background: var(--color-control);
