@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
-import { downloadFile, slug } from '../../lib/resources/download';
-import { useDownloadAll } from '../../lib/resources/downloadAll';
+import { downloadFile, imageFileName } from '../../lib/resources/download';
 import { useEditor } from '../../lib/resources/editor';
 import { notify } from '../../lib/resources/events';
 import { imageSize, removeResourceFile, saveResourceFile } from '../../lib/resources/files';
@@ -15,11 +14,6 @@ import { Empty } from './Section';
 // Mosaïque d'images (Figma « Ressource / Inspiration ») : 4 colonnes, un clic agrandit l'image.
 // Sert aussi à l'Imagerie (filtre par thème) et aux Patterns prédéfinis (filtre par format).
 export type GalleryImage = { name: string; url: string; width: number; height: number; tag?: string };
-
-const extension = (url: string) =>
-  url.startsWith('data:image/webp')
-    ? 'webp'
-    : (url.match(/\.(png|jpe?g|webp|gif|avif|svg)(?:$|\?)/i)?.[1] ?? 'png');
 
 export function Gallery({
   collection,
@@ -47,17 +41,7 @@ export function Gallery({
     ...new Set([...(tags ?? []), ...images.items.map((i) => i.tag).filter(Boolean)]),
   ] as string[];
   const shown = filter ? images.items.filter((i) => i.tag === filter) : images.items;
-  const download = (image: GalleryImage) =>
-    downloadFile(image.url, `${slug(image.name)}.${extension(image.url)}`);
-
-  useDownloadAll(
-    'Télécharger toutes les images',
-    shown.length
-      ? async () => {
-          for (const image of shown) await download(image);
-        }
-      : null,
-  );
+  const download = (image: GalleryImage) => downloadFile(image.url, imageFileName(image));
 
   const addImages = async (files: File[]) => {
     for (const file of files) {

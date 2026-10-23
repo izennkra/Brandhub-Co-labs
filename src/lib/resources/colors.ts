@@ -151,3 +151,31 @@ export function shadeScale(input: string) {
     };
   });
 }
+
+// Palette en variables CSS (page Couleur et export complet des Ressources).
+// « marque » et « neutres » : groupes de la première version, repris dans les palettes.
+export const paletteGroup = (group?: string) =>
+  group === 'secondaire' || group === 'neutres' ? 'secondaire' : 'principale';
+
+export const cssName = (name: string) =>
+  name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+/** Toutes les couleurs (palette déjà triée) et les neutres en variables CSS, prêtes à coller dans un site. */
+export function paletteCss(
+  palette: { name: string; hex: string }[],
+  neutralSteps: { step: number; hex: string }[] | null,
+) {
+  const lines: string[] = [];
+  for (const color of palette) {
+    const name = cssName(color.name);
+    lines.push(`  --${name}: ${normalizeHex(color.hex)};`);
+    for (const { step, hex } of shadeScale(color.hex)) lines.push(`  --${name}-${step}: ${hex};`);
+  }
+  for (const { step, hex } of neutralSteps ?? []) lines.push(`  --neutres-${step}: ${hex};`);
+  return `:root {\n${lines.join('\n')}\n}\n`;
+}

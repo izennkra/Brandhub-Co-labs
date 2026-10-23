@@ -49,3 +49,49 @@
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+/* panneau ouvert : en-tête qui le replie (comme l'Éditeur des pages Tool) */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-control);
+  padding: 0;
+  border: 0;
+  border-bottom: var(--size-divider) solid var(--color-divider);
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.panelHeader:hover {
+  color: var(--color-text);
+}
+
+.panelBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* export de toutes les ressources, en bas du panneau (comme « Export » dans les pages Tool) */
+.exportButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: var(--size-control);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.exportButton[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

@@ -51,6 +51,15 @@ export async function svgToPng(svg: string, size = 2048) {
   );
 }
 
+const imageExtension = (url: string) =>
+  url.startsWith('data:image/webp')
+    ? 'webp'
+    : (url.match(/\.(png|jpe?g|webp|gif|avif|svg)(?:$|\?)/i)?.[1] ?? 'png');
+
+/** Nom de fichier d'une image de galerie (Imagerie, Patterns, Inspiration). */
+export const imageFileName = (image: { name: string; url: string }) =>
+  `${slug(image.name)}.${imageExtension(image.url)}`;
+
 export async function copyToClipboard(text: string) {
   try {
     await navigator.clipboard.writeText(text);

@@ -1,6 +1,7 @@
 import { useEffect, type Ref } from 'react';
 import { useLocation } from 'react-router';
 import { rememberPage, sectionOf } from '../../app/navigation';
+import { useSectionLocks } from '../../lib/resources/sectionLocks';
 import { CoLabsLogo } from '../CoLabsLogo';
 import { Icon } from '../Icon';
 import { ModeSwitch } from './ModeSwitch';
@@ -19,6 +20,7 @@ type SidebarProps = {
 export function Sidebar({ drawer = false, onClose, closeRef }: SidebarProps) {
   const { pathname } = useLocation();
   const section = sectionOf(pathname);
+  const locks = useSectionLocks();
 
   useEffect(() => {
     rememberPage(section, pathname);
@@ -55,6 +57,7 @@ export function Sidebar({ drawer = false, onClose, closeRef }: SidebarProps) {
                 to={page.path}
                 label={page.label}
                 icon={page.icon}
+                locked={section.id === 'resource' && locks.isLocked(page.path)}
                 onNavigate={drawer ? onClose : undefined}
               />
             </li>

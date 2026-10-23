@@ -1,4 +1,5 @@
-import { hexToOklab, isLight, normalizeHex } from './colors';
+import { hexToOklab, isLight, neutralScale, normalizeHex } from './colors';
+import { slug, svgToPng } from './download';
 
 // Déclinaisons des logos : un SVG déposé une fois est recoloré dans chaque couleur de la marque,
 // puis exporté en SVG, PNG ou PDF.
@@ -125,4 +126,45 @@ export async function svgToPdf(svg: string) {
   } finally {
     host.remove();
   }
+}
+
+// Exports des logos (page Logo et export complet des Ressources).
+export type LogoFormat = 'svg' | 'png' | 'pdf';
+export const LOGO_FORMATS: LogoFormat[] = ['svg', 'png', 'pdf'];
+
+/** Couleurs de la marque : palette principale, palette secondaire, puis les deux neutres extrêmes. */
+export function brandLogoColors(colors: LogoColor[], neutral?: { light: string; dark: string }) {
+  const brand: LogoColor[] = colors.filter((c) => normalizeHex(c.hex));
+  if (neutral && normalizeHex(neutral.light) && normalizeHex(neutral.dark)) {
+    const scale = neutralScale(neutral.light, neutral.dark);
+    brand.push({ name: 'Neutre clair', hex: scale[0].hex }, { name: 'Neutre foncé', hex: scale[10].hex });
+  }
+  return brand;
+}
+
+export async function renderLogo(variant: LogoVariant, format: LogoFormat): Promise<Blob> {
+  if (format === 'svg') return new Blob([variant.svg], { type: 'image/svg+xml' });
+  return format === 'png' ? svgToPng(variant.svg) : svgToPdf(variant.svg);
+}
+
+// ex. « logo-principal-orange-fond-transparent.png »
+export const logoFileName = (section: string, version: LogoVariant, format: LogoFormat) =>
+  `${slug(section)}-${slug(versionLabel(version))}.${format}`;
+
+/** Toutes les versions d'une ou plusieurs sections, dans les trois formats, rangées par section et format. */
+export async function logoZipEntries(sections: { name: string; variants: LogoVariant[] }[]) {
+  const entries: { name: string; data: Blob }[] = [];
+  for (const { name, variants } of sections)
+    for (const variant of variants)
+      for (const format of LOGO_FORMATS) {
+        try {
+          entries.push({
+            name: `${slug(name)}/${format}/${logoFileName(name, variant, format)}`,
+            data: await renderLogo(variant, format),
+          });
+        } catch {
+          // une version qui ne s'exporte pas n'empêche pas les autres
+        }
+      }
+  return entries;
 }
