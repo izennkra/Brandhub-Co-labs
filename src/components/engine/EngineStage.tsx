@@ -6,6 +6,7 @@ import { useEngine } from '../EditorPanel/useEngine';
 import styles from './EngineStage.module.css';
 import { Toaster } from '../Toaster';
 import { ImageStrip } from './ImageStrip';
+import { forwardPinchZoom } from './pinchZoom';
 import { SceneToolbar } from './SceneToolbar';
 
 type Status = 'loading' | 'ready' | 'error';
@@ -19,6 +20,9 @@ export function EngineStage({ mode }: { mode: NonNullable<ToolPageDef['engine']>
   const illustration = mode === 'illustration' ? live : null;
   // Bibliothèque pas encore chargée : le moteur montrerait ses images de démonstration.
   const waiting = mode === 'illustration' && (!live || !live.library.loaded);
+
+  // Pincement du trackpad : zoom à la bonne vitesse, sans zoomer la page (voir pinchZoom.ts).
+  useEffect(() => (host.current ? forwardPinchZoom(host.current) : undefined), []);
 
   useEffect(() => {
     const element = host.current;
