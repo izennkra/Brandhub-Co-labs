@@ -43,6 +43,17 @@ describe('Slider', () => {
     const row = slider.parentElement as HTMLElement;
     expect(row.style.getPropertyValue('--progress')).toBe('1');
   });
+
+  it('jauge vide au minimum, à mi-course au milieu, pleine au maximum', () => {
+    render(<SliderHarness initial={1} />);
+    const slider = screen.getByRole('slider', { name: 'Renflements' });
+    const row = slider.parentElement as HTMLElement;
+    expect(row.style.getPropertyValue('--progress')).toBe('0');
+    fireEvent.change(slider, { target: { value: '6.5' } });
+    expect(row.style.getPropertyValue('--progress')).toBe('0.5');
+    fireEvent.change(slider, { target: { value: '12' } });
+    expect(row.style.getPropertyValue('--progress')).toBe('1');
+  });
 });
 
 describe('Toggle', () => {
