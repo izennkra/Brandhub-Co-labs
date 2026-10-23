@@ -17,3 +17,9 @@
   color: var(--color-text);
   background: var(--color-control);
 }
+
+/* cadenas d'une section verrouillée, calé à droite */
+.lock {
+  margin-left: auto;
+  color: var(--color-text);
+}

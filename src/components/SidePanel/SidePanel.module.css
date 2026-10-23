@@ -1,4 +1,7 @@
 .panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   flex-shrink: 0;
   width: var(--size-panel);
   padding: var(--space-4);

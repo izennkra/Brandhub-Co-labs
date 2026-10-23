@@ -1,6 +1,28 @@
 import { useState } from 'react';
+import { RESOURCE_PAGES } from '../../app/navigation';
 import { useEditor } from '../../lib/resources/editor';
+import { useSectionLocks } from '../../lib/resources/sectionLocks';
+import { Toggle } from '../engine/Toggle';
 import styles from './resources.module.css';
+
+// Mode édition : un interrupteur par section pour la verrouiller (ou la rouvrir) aux visiteurs.
+function SectionLocks() {
+  const locks = useSectionLocks();
+  return (
+    <fieldset className={styles.locks} disabled={!locks.loaded}>
+      <legend className={styles.panelTitle}>Sections verrouillées</legend>
+      <p>Les visiteurs voient un cadenas et ne peuvent pas ouvrir la section, ni l’exporter.</p>
+      {RESOURCE_PAGES.map((page) => (
+        <Toggle
+          key={page.path}
+          label={page.label}
+          checked={locks.isLocked(page.path)}
+          onChange={(on) => void locks.setLocked(page.path, page.label, on)}
+        />
+      ))}
+    </fieldset>
+  );
+}
 
 // Panneau latéral des Ressources : le code déverrouille la modification du contenu.
 export function ResourceEditorPanel({ tips }: { tips: string[] }) {
@@ -21,6 +43,7 @@ export function ResourceEditorPanel({ tips }: { tips: string[] }) {
             ))}
           </ul>
         )}
+        <SectionLocks />
         <button type="button" className={styles.button} onClick={lock}>
           Verrouiller
         </button>

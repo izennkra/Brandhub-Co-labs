@@ -5,15 +5,16 @@ import { EditableText } from '../../components/resources/EditableText';
 import styles from '../../components/resources/resources.module.css';
 import { Empty, Section } from '../../components/resources/Section';
 import {
+  cssName,
   formatCmyk,
   formatRgb,
   neutralScale,
   normalizeHex,
+  paletteGroup,
   shadeScale,
   wantsDarkText,
 } from '../../lib/resources/colors';
-import { copyToClipboard, downloadBlob } from '../../lib/resources/download';
-import { useDownloadAll } from '../../lib/resources/downloadAll';
+import { copyToClipboard } from '../../lib/resources/download';
 import { useEditor } from '../../lib/resources/editor';
 import { notify } from '../../lib/resources/events';
 import { nearestPantone } from '../../lib/resources/pantone';
@@ -35,8 +36,7 @@ type Color = {
 };
 type Neutrals = { light: string; dark: string };
 
-const groupOf = (color: Color): Group =>
-  color.group === 'secondaire' || color.group === 'neutres' ? 'secondaire' : 'principale';
+const groupOf = (color: Color): Group => paletteGroup(color.group);
 
 const PALETTES: { id: Group; title: string; short: string; hint: string }[] = [
   {
@@ -54,14 +54,6 @@ const PALETTES: { id: Group; title: string; short: string; hint: string }[] = [
 ];
 
 const HEX_ERROR = 'Code HEX non valable : 6 caractères, par exemple EC5F14.';
-const cssName = (name: string) =>
-  name
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-
 const copy = async (value: string) =>
   notify((await copyToClipboard(value)) ? `Copié : ${value}` : 'La copie n’a pas été autorisée.');
 
@@ -260,24 +252,6 @@ export function ColorPage() {
   const neutralSteps = light && dark ? neutralScale(light, dark) : null;
   const palette = PALETTES.flatMap((p) =>
     colors.items.filter((c) => groupOf(c) === p.id && normalizeHex(c.hex)),
-  );
-
-  // « Tout télécharger » : toutes les couleurs en variables CSS, prêtes à coller dans un site.
-  const cssVariables = () => {
-    const lines: string[] = [];
-    for (const color of palette) {
-      const name = cssName(color.name);
-      lines.push(`  --${name}: ${normalizeHex(color.hex)};`);
-      for (const { step, hex } of shadeScale(color.hex)) lines.push(`  --${name}-${step}: ${hex};`);
-    }
-    for (const { step, hex } of neutralSteps ?? []) lines.push(`  --neutres-${step}: ${hex};`);
-    return `:root {\n${lines.join('\n')}\n}\n`;
-  };
-  useDownloadAll(
-    'Télécharger la palette (CSS)',
-    palette.length || neutralSteps
-      ? async () => downloadBlob(new Blob([cssVariables()], { type: 'text/css' }), 'palette.css')
-      : null,
   );
 
   // Les neutres sont un seul document : créé à la première saisie.

@@ -5,18 +5,20 @@ import { DropZone } from '../../components/resources/DropZone';
 import { EditableText } from '../../components/resources/EditableText';
 import styles from '../../components/resources/resources.module.css';
 import { Empty, Section } from '../../components/resources/Section';
-import { neutralScale, normalizeHex } from '../../lib/resources/colors';
-import { downloadBlob, downloadZip, slug, svgToPng } from '../../lib/resources/download';
-import { useDownloadAll } from '../../lib/resources/downloadAll';
+import { downloadBlob, downloadZip, slug } from '../../lib/resources/download';
 import { useEditor } from '../../lib/resources/editor';
 import { notify } from '../../lib/resources/events';
 import { readAsText } from '../../lib/resources/files';
 import {
+  brandLogoColors,
+  LOGO_FORMATS,
+  logoFileName,
   logoVariants,
+  logoZipEntries,
+  renderLogo,
   sanitizeSvg,
-  svgToPdf,
   versionLabel,
-  type LogoColor,
+  type LogoFormat,
   type LogoVariant,
 } from '../../lib/resources/logo';
 import { useCollection } from '../../lib/resources/useCollection';
@@ -35,22 +37,11 @@ const DEFAULT_SECTIONS = [
   { id: 'symbole', name: 'Symbole' },
 ];
 
-type Format = 'svg' | 'png' | 'pdf';
-const FORMATS: Format[] = ['svg', 'png', 'pdf'];
 const svgUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
-async function render(variant: LogoVariant, format: Format): Promise<Blob> {
-  if (format === 'svg') return new Blob([variant.svg], { type: 'image/svg+xml' });
-  return format === 'png' ? svgToPng(variant.svg) : svgToPdf(variant.svg);
-}
-
-// ex. « logo-principal-orange-fond-transparent.png »
-const fileName = (section: string, version: LogoVariant, format: Format) =>
-  `${slug(section)}-${slug(versionLabel(version))}.${format}`;
-
-async function downloadVariant(section: string, variant: LogoVariant, format: Format) {
+async function downloadVariant(section: string, variant: LogoVariant, format: LogoFormat) {
   try {
-    downloadBlob(await render(variant, format), fileName(section, variant, format));
+    downloadBlob(await renderLogo(variant, format), logoFileName(section, variant, format));
   } catch {
     notify(`Ce logo ne peut pas être exporté en ${format.toUpperCase()}.`);
   }
@@ -58,20 +49,7 @@ async function downloadVariant(section: string, variant: LogoVariant, format: Fo
 
 /** Toutes les versions d'une ou plusieurs sections, dans les trois formats, en un .zip. */
 async function zipVariants(zipName: string, sections: { name: string; variants: LogoVariant[] }[]) {
-  const entries: { name: string; data: Blob }[] = [];
-  for (const { name, variants } of sections)
-    for (const variant of variants)
-      for (const format of FORMATS) {
-        try {
-          entries.push({
-            name: `${slug(name)}/${format}/${fileName(name, variant, format)}`,
-            data: await render(variant, format),
-          });
-        } catch {
-          // une version qui ne s'exporte pas n'empêche pas les autres
-        }
-      }
-  await downloadZip(zipName, entries);
+  await downloadZip(zipName, await logoZipEntries(sections));
 }
 
 function VariantCard({ section, variant }: { section: string; variant: LogoVariant }) {
@@ -85,7 +63,7 @@ function VariantCard({ section, variant }: { section: string; variant: LogoVaria
         {section} — {versionLabel(variant)}
       </span>
       <div className={styles.cardActions}>
-        {FORMATS.map((format) => (
+        {LOGO_FORMATS.map((format) => (
           <button
             key={format}
             type="button"
@@ -108,24 +86,13 @@ export function LogoPage() {
   const neutrals = useCollection<Neutrals>('res-neutrals');
   const [zipping, setZipping] = useState<string | null>(null);
 
-  // Couleurs de la marque : palette principale, palette secondaire, puis les deux neutres extrêmes.
-  const brand: LogoColor[] = colors.items.filter((c) => normalizeHex(c.hex));
-  const neutral = neutrals.items[0];
-  if (neutral && normalizeHex(neutral.light) && normalizeHex(neutral.dark)) {
-    const scale = neutralScale(neutral.light, neutral.dark);
-    brand.push({ name: 'Neutre clair', hex: scale[0].hex }, { name: 'Neutre foncé', hex: scale[10].hex });
-  }
+  const brand = brandLogoColors(colors.items, neutrals.items[0]);
 
   // Les sections enregistrées, sinon celles proposées d'office (créées au premier dépôt).
   const list: (LogoSection & { id: string })[] = sections.items.length ? sections.items : DEFAULT_SECTIONS;
   const withLogo = list
     .filter((s) => s.svg)
     .map((s) => ({ name: s.name, variants: logoVariants(s.svg!, brand) }));
-
-  useDownloadAll(
-    'Télécharger tous les logos (SVG, PNG, PDF)',
-    withLogo.length ? () => zipVariants('logos.zip', withLogo) : null,
-  );
 
   const saveSection = (id: string, patch: Partial<LogoSection>) => {
     const stored = sections.items.find((s) => s.id === id);
