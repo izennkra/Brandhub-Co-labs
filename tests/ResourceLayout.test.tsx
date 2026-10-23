@@ -12,23 +12,32 @@ function renderAt(path: string) {
 
 const sidePanel = () => screen.queryByRole('complementary', { name: 'Panneau latéral' });
 const panelToggle = () => screen.getByRole('button', { name: 'Modifier les ressources' });
+const panelHeader = () => screen.getByRole('button', { name: 'Éditeur' });
+const exportButtons = () => screen.queryAllByRole('button', { name: /Exporter toutes les ressources/ });
 
 describe('habillage des pages Ressource', () => {
-  it('affiche le bouton de panneau, fermé au départ', () => {
+  it('affiche la bande (panneau et export), panneau fermé au départ', () => {
     renderAt('/ressources/logo');
     expect(panelToggle()).toHaveAttribute('aria-expanded', 'false');
     expect(sidePanel()).not.toBeInTheDocument();
+    expect(exportButtons()).toHaveLength(1);
   });
 
-  it('ouvre et ferme le panneau latéral', async () => {
+  it('ouvre le panneau à la place de la bande, puis le replie depuis son en-tête', async () => {
+    const user = userEvent.setup();
     renderAt('/ressources/logo');
-    await userEvent.click(panelToggle());
-    expect(panelToggle()).toHaveAttribute('aria-expanded', 'true');
+    await user.click(panelToggle());
     expect(sidePanel()).toBeVisible();
+    // plus de bande en plus : un seul bouton de panneau et un seul export, dans le panneau
+    expect(screen.queryByRole('button', { name: 'Modifier les ressources' })).not.toBeInTheDocument();
+    expect(panelHeader()).toHaveAttribute('aria-expanded', 'true');
+    expect(panelHeader()).toHaveFocus();
+    expect(exportButtons()).toHaveLength(1);
+    expect(sidePanel()).toContainElement(exportButtons()[0]);
 
-    await userEvent.click(panelToggle());
-    expect(panelToggle()).toHaveAttribute('aria-expanded', 'false');
+    await user.click(panelHeader());
     expect(sidePanel()).not.toBeInTheDocument();
+    expect(panelToggle()).toHaveFocus();
   });
 
   it('garde le panneau ouvert d’une page Ressource à l’autre', async () => {
@@ -38,17 +47,9 @@ describe('habillage des pages Ressource', () => {
     expect(sidePanel()).toBeVisible();
   });
 
-  it('désactive « Tout télécharger » quand la page est vide', async () => {
-    renderAt('/ressources/couleur');
-    expect(await screen.findByRole('button', { name: 'Rien à télécharger sur cette page' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
-  });
-
   it("n'apparaît pas sur les pages Tool", () => {
     renderAt('/outils/motif');
     expect(screen.queryByRole('button', { name: 'Modifier les ressources' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /télécharger/i })).not.toBeInTheDocument();
+    expect(exportButtons()).toHaveLength(0);
   });
 });

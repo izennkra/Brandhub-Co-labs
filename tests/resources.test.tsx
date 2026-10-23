@@ -231,10 +231,6 @@ describe('mode édition des Ressources', () => {
     expect(
       within(list).getByRole('button', { name: `Copier Pantone ${nearestPantone('#EC5F14')}` }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Télécharger la palette (CSS)' })).toHaveAttribute(
-      'aria-disabled',
-      'false',
-    );
     // les nuances de la couleur se construisent seules ; plus de section Dégradés
     const shades = screen.getByRole('list', { name: 'Orange' });
     expect(within(shades).getAllByRole('listitem')).toHaveLength(11);

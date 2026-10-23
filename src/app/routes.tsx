@@ -1,4 +1,5 @@
 import { Navigate, type RouteObject } from 'react-router';
+import { SectionGate } from '../components/resources/SectionGate';
 import { ColorPage } from '../pages/resources/ColorPage';
 import { IconographyPage } from '../pages/resources/IconographyPage';
 import { ImageryPage } from '../pages/resources/ImageryPage';
@@ -50,7 +51,7 @@ export const routes: RouteObject[] = [
             path: toRoute(page.path),
             element: (
               <ResourcePage title={page.label} description={page.description}>
-                {Content && <Content />}
+                <SectionGate path={page.path}>{Content && <Content />}</SectionGate>
               </ResourcePage>
             ),
           };

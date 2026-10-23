@@ -1,5 +1,3 @@
-import geistItalicUrl from '@fontsource-variable/geist/files/geist-latin-wght-italic.woff2?url';
-import geistUrl from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
 import { useEffect } from 'react';
 import { Icon } from '../../components/Icon';
 import { DeleteButton } from '../../components/resources/DeleteButton';
@@ -8,19 +6,21 @@ import { EditableText } from '../../components/resources/EditableText';
 import styles from '../../components/resources/resources.module.css';
 import { Section } from '../../components/resources/Section';
 import { copyToClipboard, downloadZip, slug } from '../../lib/resources/download';
-import { useDownloadAll } from '../../lib/resources/downloadAll';
 import { useEditor } from '../../lib/resources/editor';
 import { notify } from '../../lib/resources/events';
 import { removeResourceFile, saveResourceFile } from '../../lib/resources/files';
+import {
+  DEFAULT_FAMILY,
+  familyFiles,
+  type Family,
+  type FontFile,
+  type FontKind,
+} from '../../lib/resources/fonts';
 import { useCollection, type Entry } from '../../lib/resources/useCollection';
 import page from './TypographyPage.module.css';
 
 // Page Typographie (référence du Figma « Ressource / Typographie ») : la famille, ses fichiers
 // à télécharger, puis l'échelle typographique. Par défaut : Geist, la police de l'appli.
-// static : une graisse, à installer (TTF, OTF) ; variable : toutes les graisses dans un fichier ; web : WOFF2.
-type FontKind = 'static' | 'variable' | 'web';
-type FontFile = { label: string; url: string; filename: string; kind?: FontKind };
-type Family = { name: string; role: string; weights: string; css: string; files: FontFile[] };
 type Level = {
   name: string;
   weight: number;
@@ -28,64 +28,6 @@ type Level = {
   tracking: number;
   leading: number;
   sample: string;
-};
-
-// Fichiers de Geist (licence libre OFL, paquet officiel « geist ») : chaque variante en TTF, à installer,
-// les versions variables, et les fichiers web de l'appli.
-const GEIST = '/fonts/geist/';
-const GEIST_STATICS = [
-  ['Thin', 'Thin'],
-  ['Thin Italic', 'ThinItalic'],
-  ['ExtraLight', 'UltraLight'],
-  ['ExtraLight Italic', 'ExtraLightItalic'],
-  ['Light', 'Light'],
-  ['Light Italic', 'LightItalic'],
-  ['Regular', 'Regular'],
-  ['Italic', 'Italic'],
-  ['Medium', 'Medium'],
-  ['Medium Italic', 'MediumItalic'],
-  ['SemiBold', 'SemiBold'],
-  ['SemiBold Italic', 'SemiBoldItalic'],
-  ['Bold', 'Bold'],
-  ['Bold Italic', 'BoldItalic'],
-  ['ExtraBold Italic', 'ExtraBoldItalic'],
-  ['Black', 'Black'],
-  ['Black Italic', 'BlackItalic'],
-  ['UltraBlack', 'UltraBlack'],
-];
-
-const DEFAULT_FAMILY: Family = {
-  name: 'Geist',
-  role: 'Principale — interface, titres et texte',
-  weights: '400 Regular · 500 Medium · 600 Semibold · 700 Bold',
-  css: "font-family: 'Geist', system-ui, sans-serif;",
-  files: [
-    ...GEIST_STATICS.map(([label, file]) => ({
-      label: `Geist ${label}`,
-      url: `${GEIST}Geist-${file}.ttf`,
-      filename: `Geist-${file}.ttf`,
-      kind: 'static' as const,
-    })),
-    {
-      label: 'Geist Variable',
-      url: `${GEIST}Geist-Variable.ttf`,
-      filename: 'Geist-Variable.ttf',
-      kind: 'variable',
-    },
-    {
-      label: 'Geist Italic Variable',
-      url: `${GEIST}Geist-Italic-Variable.ttf`,
-      filename: 'Geist-Italic-Variable.ttf',
-      kind: 'variable',
-    },
-    { label: 'Geist (web)', url: geistUrl, filename: 'geist-variable.woff2', kind: 'web' },
-    {
-      label: 'Geist Italic (web)',
-      url: geistItalicUrl,
-      filename: 'geist-variable-italic.woff2',
-      kind: 'web',
-    },
-  ],
 };
 
 // Échelle par défaut : celle de la référence, en Geist.
@@ -130,11 +72,7 @@ const guessKind = (filename: string): FontKind =>
   /\.woff2?$/i.test(filename) ? 'web' : /variable|\[wght\]/i.test(filename) ? 'variable' : 'static';
 const kindOf = (file: FontFile) => file.kind ?? guessKind(file.filename);
 
-const downloadFamily = (family: Family) =>
-  downloadZip(`${slug(family.name)}.zip`, [
-    ...family.files.map((file) => ({ name: file.filename, data: file.url })),
-    ...(family.name === 'Geist' ? [{ name: 'OFL.txt', data: `${GEIST}OFL.txt` }] : []),
-  ]);
+const downloadFamily = (family: Family) => downloadZip(`${slug(family.name)}.zip`, familyFiles(family));
 
 // Les polices déposées sont chargées pour que les exemples s'affichent dans la bonne police.
 function useFontFaces(families: Family[]) {
@@ -366,10 +304,6 @@ export function TypographyPage() {
   const levels: (Level | Entry<Level>)[] = scale.items.length ? scale.items : DEFAULT_SCALE;
   const fontFamily = `'${familyList[0].name}', var(--font-sans)`;
   useFontFaces(familyList);
-
-  useDownloadAll('Télécharger les familles complètes (.zip)', async () => {
-    for (const family of familyList) await downloadFamily(family);
-  });
 
   // En mode édition, on part d'une copie modifiable de Geist si rien n'a encore été enregistré.
   const seedFamilies = () => families.add(DEFAULT_FAMILY, 'Police modifiable : tu peux la changer.');
