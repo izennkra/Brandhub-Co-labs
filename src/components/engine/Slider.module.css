@@ -1,7 +1,4 @@
 .row {
-  /* barre minimale : libellé + 40 px (prototype) ; à droite, la place de la valeur la plus large */
-  --base: calc(var(--label-w) + var(--space-10));
-  --reserve: calc(var(--value-w) + var(--space-4) + var(--space-3));
   position: relative;
   display: flex;
   align-items: center;
@@ -16,22 +13,9 @@
 .fill {
   position: absolute;
   inset: 0 auto 0 0;
-  width: calc(var(--base) + (100% - var(--base) - var(--reserve)) * var(--progress));
+  width: calc(100% * var(--progress)); /* 0 % = bord gauche, 100 % = bord droit */
   background: var(--color-slider-fill);
   pointer-events: none;
-}
-
-/* repère vertical au bout de la barre */
-.fill::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: var(--space-2);
-  width: var(--size-slider-handle);
-  height: var(--size-slider-handle-height);
-  border-radius: var(--size-slider-handle);
-  background: var(--color-text-secondary);
-  transform: translateY(-50%);
 }
 
 .label,

@@ -80,8 +80,6 @@
   --size-toggle-width: 32px;
   --size-toggle-height: 18px;
   --size-toggle-knob: 14px; /* pastille carrée de l'interrupteur (2 px de marge dans la piste) */
-  --size-slider-handle: 2px; /* repère vertical au bout de la barre de curseur */
-  --size-slider-handle-height: 14px;
   --size-swatch: 28px; /* pastille de couleur (Fond, Pastilles) : 7 tiennent sur la largeur du panneau */
   --size-thumb: 56px; /* vignette du bandeau d'images (Figma 85 ÷ 1,44, arrondi à la grille) */
   --size-content-max: 1320px; /* contenu des pages Ressource */
