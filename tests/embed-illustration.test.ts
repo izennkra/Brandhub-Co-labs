@@ -9,8 +9,7 @@ import {
   readSizes,
   startIndex,
   type Illustration,
-} from '../src/embed/illustrationSettings';
-import { getStore, openStore, seedStore } from '../src/embed/memoryStore';
+} from '../src/embed/illustration/settings';
 
 // Script d'intégration des illustrations (<colabs-illustration>) : réglages, liste, stockage en mémoire.
 const read = (attrs: Record<string, string>) => (name: string) => attrs[name] ?? null;
@@ -51,7 +50,7 @@ describe('illustrations : liste, départ, lecture', () => {
     expect(
       readOverrides(read({ fond: 'brun', couleurs: 'lin', survol: 'non', reglages: '{"imgCols":150}' })),
     ).toEqual({ bg: 'brun', dots: ['lin'], hoverOn: false, imgCols: 150 });
-    // fond transparent : géré à part (shared.ts), pas une couleur du moteur
+    // fond transparent : géré à part (core/engine.ts), pas une couleur du moteur
     expect(readOverrides(read({ fond: 'transparent' }))).toEqual({});
   });
 });
@@ -73,7 +72,7 @@ describe('illustrations : même taille pour toutes', () => {
   });
 });
 
-describe('illustrations : bibliothèque et stockage en mémoire', () => {
+describe('illustrations : documents de la bibliothèque', () => {
   it('documents au format de la bibliothèque de l’outil (nom, tons, ordre, image, réglages)', () => {
     const docs = libraryDocuments(LIST, ['data:a', 'data:b', 'data:c']);
     expect(docs.images.prisme).toEqual({
@@ -87,22 +86,6 @@ describe('illustrations : bibliothèque et stockage en mémoire', () => {
     // image ajoutée sans réglages : ceux de la première illustration, tons par défaut
     expect(docs.imgsettings.microscope).toEqual({ s: { bg: 'taupe', app: 'image' } });
     expect((docs.images.microscope as { tone: unknown }).tone).toEqual(DEFAULT_TONE);
-  });
-
-  it('stockage en mémoire : lecture après ouverture, écritures gardées en mémoire', async () => {
-    seedStore({ images: { a: { name: 'A' } } });
-    const store = getStore();
-    let read = false;
-    const listed = store.list('images').then((items) => ((read = true), items));
-    await Promise.resolve();
-    expect(read).toBe(false); // pas encore ouvert : la bibliothèque attend
-    openStore();
-    expect(await listed).toEqual([{ id: 'a', data: { name: 'A' } }]);
-    await store.put('images', 'b', { name: 'B' });
-    expect(await store.get('images', 'b')).toEqual({ name: 'B' });
-    await store.del('images', 'a');
-    expect(await store.get('images', 'a')).toBeNull();
-    expect(localStorage.length).toBe(0); // rien d'écrit chez le visiteur
   });
 });
 

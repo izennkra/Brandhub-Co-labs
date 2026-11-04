@@ -4,13 +4,26 @@
     {
       "name": "brandhub-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5173
     },
     {
-      "name": "embed-demo",
+      "name": "embed-motif",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "preview", "--config", "vite.embed.config.ts", "--port", "5180", "--strictPort"],
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--config",
+        "vite.embed.config.ts",
+        "--mode",
+        "motif",
+        "--port",
+        "5180",
+        "--strictPort"
+      ],
       "port": 5180
     },
     {

@@ -1,18 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-  FORMES,
-  isTransparent,
-  LIVE_KEYS,
-  NOT_WIDENED,
-  readAxes,
-  readFormat,
-  readSettings,
-} from '../src/embed/settings';
+import { FORMES, LIVE_KEYS, NOT_WIDENED, readMotifSettings } from '../src/embed/motif/settings';
 
 // Attributs de <colabs-motif> (script d'intégration sur un site) → réglages du moteur.
-const settings = (attrs: Record<string, string> = {}) => readSettings((name) => attrs[name] ?? null);
+const settings = (attrs: Record<string, string> = {}) => readMotifSettings((name) => attrs[name] ?? null);
 
-describe('script d’intégration : réglages du motif', () => {
+describe('motif : réglages', () => {
   it('par défaut : forme A, son tirage et son orientation, fond lin, points brun ciel lin', () => {
     const o = settings();
     expect(o._seed).toEqual(FORMES.A.tirage);
@@ -55,6 +47,10 @@ describe('script d’intégration : réglages du motif', () => {
     expect(settings({ elargir: 'oui' }).junction).toBeUndefined();
   });
 
+  it('fond transparent : la couleur du moteur ne change pas (la transparence est gérée à part)', () => {
+    expect(settings({ fond: 'transparent' }).bg).toBe('lin');
+  });
+
   it('couleurs, survol, particules et réglages avancés', () => {
     expect(settings({ fond: 'Brun', couleurs: 'orange, sauge inconnue' })).toMatchObject({
       bg: 'brun',
@@ -67,37 +63,7 @@ describe('script d’intégration : réglages du motif', () => {
   });
 });
 
-describe('script d’intégration : fond transparent et format', () => {
-  const read = (attrs: Record<string, string>) => (name: string) => attrs[name] ?? null;
-
-  it('fond transparent : reconnu, sans changer la couleur du moteur', () => {
-    expect(isTransparent(read({ fond: 'Transparent' }))).toBe(true);
-    expect(isTransparent(read({ fond: 'lin' }))).toBe(false);
-    expect(settings({ fond: 'transparent' }).bg).toBe('lin');
-  });
-
-  it('format : 16/9, 1:1, 4x5 → aspect-ratio CSS ; le reste est ignoré', () => {
-    expect(readFormat('16/9')).toBe('16 / 9');
-    expect(readFormat(' 1:1 ')).toBe('1 / 1');
-    expect(readFormat('4x5')).toBe('4 / 5');
-    expect(readFormat('2,35/1')).toBe('2.35 / 1');
-    expect(readFormat('carré')).toBeNull();
-    expect(readFormat('0/9')).toBeNull();
-    expect(readFormat(null)).toBeNull();
-  });
-});
-
-describe('script d’intégration : axes X, Y, Z et réglages en direct', () => {
-  const read = (attrs: Record<string, string>) => (name: string) => attrs[name] ?? null;
-
-  it('axes en degrés → radians, 0 par défaut, bornés à ±360', () => {
-    const [x, y, z] = readAxes(read({ 'axe-x': '90', 'axe-z': '-45' }));
-    expect(x).toBeCloseTo(Math.PI / 2);
-    expect(y).toBe(0);
-    expect(z).toBeCloseTo(-Math.PI / 4);
-    expect(readAxes(read({ 'axe-y': '999' }))[1]).toBeCloseTo(2 * Math.PI);
-  });
-
+describe('motif : réglages appliqués en direct', () => {
   it('orientation et couleurs ne font pas partie de la forme (pas de nouveau dessin)', () => {
     const shape = (attrs: Record<string, string>) => {
       const rest = settings(attrs);
@@ -115,7 +81,7 @@ describe('script d’intégration : axes X, Y, Z et réglages en direct', () => 
   });
 });
 
-describe('script d’intégration : réglages du survol', () => {
+describe('motif : réglages du survol', () => {
   it('survol détaillé : zone, taille, force, ouverture, reconstruction (bornés)', () => {
     expect(
       settings({

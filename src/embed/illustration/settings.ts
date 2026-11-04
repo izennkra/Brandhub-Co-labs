@@ -1,8 +1,18 @@
-import { readAdvanced, readColors, readHover, num, yesNo, type Read } from './settings';
+import {
+  COMMON_ATTRIBUTES,
+  num,
+  readAdvanced,
+  readColors,
+  readHover,
+  words,
+  yesNo,
+  type Read,
+} from '../core/attributes';
 
 // Réglages de <colabs-illustration> : liste des illustrations (fichier illustrations.json), lecture
-// (durée, automatique ou pilotée par le site), et réglages communs avec le motif (fond, couleurs,
-// survol, axes, format). Fichier sans moteur : testable seul.
+// (durée, automatique ou pilotée par le site), cadrage et taille de chacune. Les attributs communs
+// (fond, couleurs, survol, axes, format, réglages avancés) sont lus par core/attributes.ts.
+// Fichier sans moteur : testable seul.
 
 export const ILLUSTRATION_ATTRIBUTES = [
   'source',
@@ -14,19 +24,7 @@ export const ILLUSTRATION_ATTRIBUTES = [
   'tailles',
   'lecture',
   'boucle',
-  'fond',
-  'format',
-  'couleurs',
-  'axe-x',
-  'axe-y',
-  'axe-z',
-  'survol',
-  'survol-zone',
-  'survol-taille',
-  'survol-force',
-  'survol-ouverture',
-  'survol-reconstruction',
-  'reglages',
+  ...COMMON_ATTRIBUTES,
 ] as const;
 
 /** Une illustration du fichier illustrations.json. */
@@ -43,26 +41,8 @@ export type Illustration = {
   taille?: number;
 };
 
-// Taille de chaque illustration : bornes de l'outil (sizing.ts).
-export const SIZE_MIN = 0.3;
-export const SIZE_MAX = 1.5;
-const clampSize = (v: unknown) =>
-  typeof v === 'number' && Number.isFinite(v) ? Math.min(SIZE_MAX, Math.max(SIZE_MIN, v)) : 1;
-
-/**
- * Tailles par illustration : celles du fichier, remplacées par l'attribut « tailles »
- * (ex. « prisme:0.9 adn:1.1 »). Absente : 1 (taille d'origine).
- */
-export function readSizes(list: Illustration[], raw: string | null): Record<string, number> {
-  const sizes: Record<string, number> = {};
-  for (const { id, taille } of list) sizes[id] = clampSize(taille ?? 1);
-  for (const pair of words(raw)) {
-    const [id, value] = pair.split(':');
-    const n = Number(value?.replace(',', '.'));
-    if (id in sizes && Number.isFinite(n)) sizes[id] = clampSize(n);
-  }
-  return sizes;
-}
+/** Lecture : durée de chaque image (s), transition (s), automatique ou manuelle, en boucle ou non. */
+export type Playback = { duree: number; transition: number | undefined; auto: boolean; boucle: boolean };
 
 // Tons par défaut d'une image ajoutée sans réglages (valeurs de départ de l'outil).
 export const DEFAULT_TONE = {
@@ -75,11 +55,14 @@ export const DEFAULT_TONE = {
   imgInvert: false,
 };
 
-const words = (raw: string | null) =>
-  (raw ?? '')
-    .split(/[\s,]+/)
-    .map((w) => w.trim())
-    .filter(Boolean);
+/** Distance de la caméra, commune à toutes les illustrations (cadrage du moteur : 74). */
+export const DEFAULT_DISTANCE = 74;
+
+// Taille de chaque illustration : bornes de l'outil (sizing.ts).
+const SIZE_MIN = 0.3;
+const SIZE_MAX = 1.5;
+const clampSize = (v: unknown) =>
+  typeof v === 'number' && Number.isFinite(v) ? Math.min(SIZE_MAX, Math.max(SIZE_MIN, v)) : 1;
 
 /** Illustrations à afficher, dans l'ordre de l'attribut « images » (sinon toutes, dans l'ordre du fichier). */
 export function pickIllustrations(all: Illustration[], raw: string | null) {
@@ -98,18 +81,30 @@ export function startIndex(list: Illustration[], raw: string | null) {
   return Number.isInteger(n) && n >= 0 && n < list.length ? n : 0;
 }
 
-/** Distance de la caméra, commune à toutes les illustrations (cadrage du moteur : 74). */
-export const DEFAULT_DISTANCE = 74;
-export const readDistance = (read: Read) => num(read('distance'), 5, 180) ?? DEFAULT_DISTANCE;
-
-/** Lecture : durée de chaque image (s), transition (s), automatique ou manuelle, en boucle ou non. */
-export function readPlayback(read: Read) {
+export function readPlayback(read: Read): Playback {
   return {
     duree: num(read('duree'), 1, 120) ?? 6,
     transition: num(read('transition'), 0.2, 10),
     auto: read('lecture')?.trim().toLowerCase() !== 'manuelle',
     boucle: yesNo(read('boucle')) ?? true,
   };
+}
+
+export const readDistance = (read: Read) => num(read('distance'), 5, 180) ?? DEFAULT_DISTANCE;
+
+/**
+ * Tailles par illustration : celles du fichier, remplacées par l'attribut « tailles »
+ * (ex. « prisme:0.9 adn:1.1 », point décimal). Absente : 1 (taille d'origine).
+ */
+export function readSizes(list: Illustration[], raw: string | null): Record<string, number> {
+  const sizes: Record<string, number> = {};
+  for (const { id, taille } of list) sizes[id] = clampSize(taille ?? 1);
+  for (const pair of words(raw)) {
+    const [id, value] = pair.split(':');
+    const n = Number(value);
+    if (id in sizes && Number.isFinite(n)) sizes[id] = clampSize(n);
+  }
+  return sizes;
 }
 
 /** Réglages imposés à toutes les illustrations (fond, couleurs, survol, réglages avancés). */
@@ -119,21 +114,25 @@ export const readOverrides = (read: Read): Record<string, unknown> => ({
   ...readAdvanced(read('reglages')),
 });
 
+/** Réglages propres à une illustration ; sans réglages : ceux de la première qui en a. */
+export function settingsOf(list: Illustration[], illustration: Illustration | undefined) {
+  return illustration?.reglages ?? list.find((i) => i.reglages)?.reglages;
+}
+
 /**
- * Documents du stockage en mémoire (memoryStore.ts), au format de la bibliothèque de l'outil :
- * « images » (nom, tons, ordre), « imagesrc » (l'image), « imgsettings » (ses réglages).
+ * Documents du stockage en mémoire (core/memoryStore.ts), au format de la bibliothèque de l'outil :
+ * « images » (nom, tons, ordre, taille), « imagesrc » (l'image), « imgsettings » (ses réglages).
  */
 export function libraryDocuments(
   list: Illustration[],
   sources: string[],
   sizes: Record<string, number> = {},
 ) {
-  const fallback = list.find((i) => i.reglages)?.reglages;
   const images: Record<string, unknown> = {};
   const imagesrc: Record<string, unknown> = {};
   const imgsettings: Record<string, unknown> = {};
   list.forEach((illustration, i) => {
-    const { id, nom, tons, reglages = fallback } = illustration;
+    const { id, nom, tons } = illustration;
     const size = sizes[id] ?? 1;
     images[id] = {
       name: nom,
@@ -144,9 +143,10 @@ export function libraryDocuments(
       ...(size !== 1 ? { size } : {}),
     };
     imagesrc[id] = { src: sources[i] };
-    // même cadrage pour toutes : le point de vue enregistré dans l'outil (_view) n'est pas repris,
-    // sinon la taille sauterait d'une illustration à l'autre au moment de la transition
+    const reglages = settingsOf(list, illustration);
     if (reglages) {
+      // même cadrage pour toutes : le point de vue enregistré dans l'outil (_view) n'est pas repris,
+      // sinon la taille sauterait d'une illustration à l'autre au moment de la transition
       const own: Record<string, unknown> = { ...reglages, app: 'image' };
       delete own._view;
       imgsettings[id] = { s: own };

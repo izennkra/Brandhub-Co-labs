@@ -1,45 +1,39 @@
+import type { Engine } from '../../lib/pattern-engine/createEngine';
+import { isTransparent, readAxes } from '../core/attributes';
+import { engine, setAxes, setSetting, setTransparent } from '../core/engine';
+import { EngineElement } from '../core/EngineElement';
+import { seedStore } from '../core/memoryStore';
+import { loadIllustrations } from './manifest';
 import {
   ILLUSTRATION_ATTRIBUTES,
   libraryDocuments,
-  pickIllustrations,
   readDistance,
   readOverrides,
   readPlayback,
   readSizes,
+  settingsOf,
   startIndex,
   type Illustration,
-} from './illustrationSettings';
-import { seedStore } from './memoryStore';
-import { isTransparent, readAxes } from './settings';
-import { engine, EngineElement, setAxes, setTransparent } from './shared';
+  type Playback,
+} from './settings';
 
 // <colabs-illustration> : les illustrations Co-labs (une image rendue en particules) sur le site
-// d'un client, l'une après l'autre, avec la transition du moteur. Comportement commun (chargement,
-// pause, taille, navigation) : shared.ts ; mode d'emploi : embed-illustration/LISEZMOI.md.
-//
-// Branchement avec le site (ex. une liste de services avec une barre de temps) :
+// d'un client, l'une après l'autre, avec la transition du moteur. Mode d'emploi :
+// embed/illustration/LISEZMOI.md. La balise n'affiche que l'illustration ; le site s'y branche :
 // - lecture automatique : chaque image reste « duree » secondes, puis la suivante arrive ;
 // - événement « progression » (0 → 1) à chaque image affichée : pour remplir une barre de temps ;
 // - événement « changement » : quelle illustration s'affiche (pour mettre le site à jour) ;
 // - afficher(n | id), suivante(), precedente() : le site change d'image (clic), le temps repart à 0 ;
 // - pause(), lecture() ; lecture="manuelle" : aucun passage automatique, le site décide de tout.
 
-// Adresse du script : les illustrations sont cherchées à côté de lui par défaut.
-const SCRIPT_URL = (document.currentScript as HTMLScriptElement | null)?.src || location.href;
+/** Contenu des événements « changement » et « progression ». */
+export type IllustrationDetail = { index: number; id: string; nom: string; progression: number };
 
-type Detail = { index: number; id: string; nom: string; progression: number };
+const LIBRARY_POLL = 50; // ms
 
-/** Une image en adresse « data: » : le moteur la lit sans souci de domaine (CORS). */
-async function asDataUrl(url: URL) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`image introuvable : ${url}`);
-  const blob = await response.blob();
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
+/** La bibliothèque a fini de lire les illustrations (stockage en mémoire). */
+async function libraryLoaded({ library }: Engine) {
+  while (!library.loaded) await new Promise((resolve) => setTimeout(resolve, LIBRARY_POLL));
 }
 
 export class ColabsIllustration extends EngineElement {
@@ -47,13 +41,18 @@ export class ColabsIllustration extends EngineElement {
   protected readonly tag = 'colabs-illustration';
   private list: Illustration[] = [];
   private current = 0;
+  private started = false;
+  // Réglages imposés par la balise au dernier apply() (pour rendre les leurs aux illustrations).
+  private imposed: string[] = [];
+  // Temps : lu dans les attributs à chaque apply(), avancé à chaque image par tick().
+  private playback: Playback = readPlayback(() => null);
   private elapsed = 0;
   private playing = true;
   private lastTick = 0;
   private lastSent = -1;
   private loop = 0;
-  private started = false;
-  private imposed: string[] = [];
+
+  // ---------- Pour le site ----------
 
   /** Illustrations affichées, dans l'ordre : identifiant et nom. */
   get illustrations() {
@@ -72,7 +71,7 @@ export class ColabsIllustration extends EngineElement {
 
   /** Avancement de l'illustration affichée, de 0 à 1 (lecture automatique). */
   get progression() {
-    return Math.min(1, this.elapsed / readPlayback(this.read).duree);
+    return Math.min(1, this.elapsed / this.playback.duree);
   }
 
   /** Affiche une illustration (numéro à partir de 0, ou identifiant) ; le temps repart à 0. */
@@ -105,19 +104,12 @@ export class ColabsIllustration extends EngineElement {
     this.playing = true;
   }
 
-  private read = (name: string) => this.getAttribute(name);
+  // ---------- Cycle de vie (EngineElement) ----------
 
   protected async start() {
-    // 1. Le fichier des illustrations et leurs images, déposés dans le stockage en mémoire.
-    const source = new URL(
-      this.getAttribute('source') ?? 'illustrations/illustrations.json',
-      this.hasAttribute('source') ? location.href : SCRIPT_URL,
-    );
-    const manifest = (await (await fetch(source)).json()) as { illustrations: Illustration[] };
-    const list = pickIllustrations(manifest.illustrations ?? [], this.getAttribute('images'));
-    if (!list.length) throw new Error('aucune illustration à afficher (attribut images, illustrations.json)');
-    const sources = await Promise.all(list.map((i) => asDataUrl(new URL(i.fichier, source))));
-    seedStore(libraryDocuments(list, sources, readSizes(list, this.getAttribute('tailles'))));
+    // 1. Les illustrations et leurs images, déposées dans le stockage en mémoire.
+    const { list, sources } = await loadIllustrations(this.read('source'), this.read('images'));
+    seedStore(libraryDocuments(list, sources, readSizes(list, this.read('tailles'))));
 
     // 2. Le moteur, en mode Illustration ; la bibliothèque lit les illustrations.
     const loaded = await engine();
@@ -125,11 +117,10 @@ export class ColabsIllustration extends EngineElement {
     this.engine = loaded;
     this.list = list;
     loaded.actions.setApp('image');
-    while (!loaded.library.loaded) await new Promise((r) => setTimeout(r, 50));
+    await libraryLoaded(loaded);
 
     // 3. Première illustration, réglages de la balise, puis le temps démarre.
-    this.current = startIndex(list, this.getAttribute('depart'));
-    this.showImage(this.current);
+    this.showImage(startIndex(list, this.read('depart')));
     this.started = true;
     this.show(loaded);
     this.lastTick = performance.now();
@@ -141,34 +132,38 @@ export class ColabsIllustration extends EngineElement {
     this.started = false;
   }
 
-  /** Réglages de la balise : fond, couleurs, survol, axes, réglages avancés, transition. */
+  /** Attributs de la balise : lecture, fond, couleurs, survol, axes, taille, cadrage. */
   protected apply() {
     if (!this.engine) return;
-    const { core } = this.engine;
+    const { core, library } = this.engine;
+    const S = core.S;
+    this.playback = readPlayback(this.read);
     setTransparent(isTransparent(this.read));
     setAxes(readAxes(this.read), !this.started);
-    const S = core.S;
-    const set = (key: string, value: unknown) =>
-      (S[key] = key === 'dots' ? new Set(value as string[]) : value);
-    // réglage retiré de la balise : l'illustration retrouve tout de suite le sien
+
+    // Réglages imposés ; un réglage retiré de la balise rend tout de suite le sien à l'illustration.
     const overrides = readOverrides(this.read);
-    const own = this.ownSettings();
-    for (const key of this.imposed) if (!(key in overrides) && key in own) set(key, own[key]);
+    const own = settingsOf(this.list, this.list[this.current]) ?? {};
+    for (const key of this.imposed) if (!(key in overrides) && key in own) setSetting(S, key, own[key]);
+    for (const [key, value] of Object.entries(overrides)) setSetting(S, key, value);
     this.imposed = Object.keys(overrides);
-    for (const [key, value] of Object.entries(overrides)) set(key, value);
-    // la balise décide du passage d'une image à l'autre : jamais la boucle du moteur
+
+    // La balise décide du passage d'une image à l'autre : jamais la boucle du moteur.
     S.imgLoop = false;
-    const { transition } = readPlayback(this.read);
-    if (transition !== undefined) S.imgTrans = transition;
-    // taille de l'illustration affichée (réglée dans le configurateur) : redessinée à cette taille
+    if (this.playback.transition !== undefined) S.imgTrans = this.playback.transition;
+
+    // Taille de l'illustration affichée : redessinée à cette taille, qu'elle garde pendant les transitions.
     const size = this.tailles[this.list[this.current]?.id ?? ''];
-    if (size !== undefined && size !== this.engine.library.sizeOf()) this.engine.library.setSize(size);
-    // même cadrage pour toutes les illustrations : de face, à la même distance (pas de saut de taille)
+    if (size !== undefined && size !== library.sizeOf()) library.setSize(size);
+
+    // Même cadrage pour toutes les illustrations : de face, à la même distance (pas de saut de taille).
     Object.assign(core.orbit, { theta: 0, phi: Math.PI / 2, radius: readDistance(this.read) });
     core.refreshColors();
-    if (this.getAttribute('reglages')) core.imgDirty = true; // réglages de la trame : image recalculée
+    if (this.read('reglages')) core.imgDirty = true; // réglages de la trame : image recalculée
     this.updatePause();
   }
+
+  // ---------- Images et temps ----------
 
   // L'illustration reprend ses propres réglages (bibliothèque), puis ceux imposés par la balise ;
   // le moteur fait la transition.
@@ -177,17 +172,11 @@ export class ColabsIllustration extends EngineElement {
     this.current = index;
     this.engine.library.pick(index);
     this.apply();
-    const detail = this.detail();
-    this.dispatchEvent(new CustomEvent<Detail>('changement', { detail }));
+    this.dispatchEvent(new CustomEvent<IllustrationDetail>('changement', { detail: this.detail() }));
     this.emitProgress(true);
   }
 
-  // Réglages propres à l'illustration affichée (illustrations.json), sinon ceux de la première.
-  private ownSettings(): Record<string, unknown> {
-    return this.list[this.current]?.reglages ?? this.list.find((i) => i.reglages)?.reglages ?? {};
-  }
-
-  private detail(): Detail {
+  private detail(): IllustrationDetail {
     const { id = '', nom = '' } = this.list[this.current] ?? {};
     return { index: this.current, id, nom, progression: this.progression };
   }
@@ -196,7 +185,7 @@ export class ColabsIllustration extends EngineElement {
     const detail = this.detail();
     if (!force && detail.progression === this.lastSent) return;
     this.lastSent = detail.progression;
-    this.dispatchEvent(new CustomEvent<Detail>('progression', { detail }));
+    this.dispatchEvent(new CustomEvent<IllustrationDetail>('progression', { detail }));
   }
 
   // Le temps n'avance qu'en lecture automatique, sans pause, à l'écran. À la fin : la suivante
@@ -204,7 +193,7 @@ export class ColabsIllustration extends EngineElement {
   private tick = (now: number) => {
     const dt = Math.min(0.25, (now - this.lastTick) / 1000);
     this.lastTick = now;
-    const { duree, auto, boucle } = readPlayback(this.read);
+    const { duree, auto, boucle } = this.playback;
     if (auto && this.playing && !this.paused) {
       this.elapsed = Math.min(duree, this.elapsed + dt);
       this.emitProgress();

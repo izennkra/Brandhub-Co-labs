@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:embed": "vite build --config vite.embed.config.ts && cp -R embed/. dist-embed/",
-    "build:embed:illustration": "vite build --config vite.embed.config.ts --mode illustration && cp -R embed-illustration/. dist-embed-illustration/",
+    "build:embed": "npm run build:embed:motif && npm run build:embed:illustration",
+    "build:embed:motif": "vite build --config vite.embed.config.ts --mode motif",
+    "build:embed:illustration": "vite build --config vite.embed.config.ts --mode illustration",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
