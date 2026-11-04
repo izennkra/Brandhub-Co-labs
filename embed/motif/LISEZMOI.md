@@ -1,15 +1,15 @@
 # Motif Co-labs · intégration sur un site
 
 Une balise HTML, `<colabs-motif>`, affiche le motif Co-labs animé et interactif (effet au survol de la souris).
-L’orientation se règle par les attributs (pas de navigation à la souris sur le motif) ; ses changements s’animent
-en douceur.
+Le script n’affiche **que le motif** : l’orientation se règle par les attributs (pas de navigation à la souris sur
+le motif), et ses changements s’animent en douceur.
 Aucune librairie à installer, aucun framework requis : un fichier JavaScript et une balise.
 
 ## Contenu du dossier
 
 | Fichier | Rôle |
 |---|---|
-| `colabs-motif.js` | Le script à mettre sur le site (≈ 895 Ko, ≈ 320 Ko compressé par le serveur). Contient tout : moteur, three.js, police. |
+| `colabs-motif.js` | Le script à mettre sur le site (≈ 900 Ko, ≈ 320 Ko compressé par le serveur). Contient tout : moteur, three.js, police. |
 | `configurateur.html` | Outil pour régler le motif et **copier le code** prêt à coller. Ce n’est pas une page du site. |
 | `exemples/1-minimal.html` | L’intégration la plus simple. |
 | `exemples/2-fond-transparent.html` | Motif posé sur une section colorée (fond transparent, taille libre). |
@@ -47,9 +47,12 @@ Dans le configurateur :
    dans le code et redonne toujours exactement la même forme.
 2. **Orientation** : axes X, Y, Z de la forme et point de vue de la caméra, avec les curseurs (la forme tourne en
    douceur jusqu’à la nouvelle position).
-3. **Fond et format** : fond transparent, couleur de la page pour l’aperçu, format.
-4. **Masquer les réglages** (en haut à droite) : voir le motif seul, comme sur le site.
-5. **Copier le code** : seuls les réglages modifiés sont écrits ; le reste garde les valeurs par défaut.
+3. **Élargissement** : parties larges du ruban (renflements, gonflement, finesse des cols, épaisseur), ou ruban
+   régulier.
+4. **Fond et format** : fond transparent, couleur de la page pour l’aperçu, format.
+5. **Survol** : activé ou non, zone touchée, taille, force, vitesses d’ouverture et de reconstruction.
+6. **Masquer les réglages** (en haut à droite) : voir le motif seul, comme sur le site.
+7. **Copier le code** : seuls les réglages modifiés sont écrits ; le reste garde les valeurs par défaut.
 
 ## Taille et format
 
@@ -113,8 +116,9 @@ lisibles sur ce fond (ex. `couleurs="lin ciel"` sur un fond foncé).
 Les valeurs hors bornes sont ramenées dans les bornes ; une valeur illisible est ignorée.
 **Tous les attributs peuvent changer après le chargement** (ex. en JavaScript) : le motif se met à jour.
 Orientation (`axe-*`, `rotation`, `inclinaison`, `distance`), couleurs, `fond`, `rotation-auto`, `vitesse-rotation`,
-`survol` et `survol-*` changent **en direct**, sans redessiner la forme ; l’orientation tourne en douceur (≈ 1 s). Les autres réglages (`forme`, `graine`, élargissement,
-`particules`, `reglages`…) redessinent la forme depuis le début.
+`survol` et `survol-*` changent **en direct**, sans redessiner la forme ; l’orientation tourne en douceur
+(≈ 1 s). Les autres réglages (`forme`, `graine`, élargissement, `particules`, `reglages`…) redessinent la forme
+depuis le début.
 
 ## JavaScript (facultatif)
 
