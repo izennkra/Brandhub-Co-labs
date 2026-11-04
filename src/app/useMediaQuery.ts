@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-// Seuil unique du projet : sous 1280 px, la colonne de gauche se replie (SPEC-app-shell.md).
+// Seuil unique du projet : sous 1280 px, la colonne de gauche se replie (voir README).
 // Les media queries CSS ne lisent pas les variables : la règle vit ici, côté code.
 export const NARROW_SCREEN = '(max-width: 1279.98px)';
 

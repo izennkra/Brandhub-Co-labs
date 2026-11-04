@@ -1,5 +1,5 @@
 // Extrait le moteur de patterns de reference/prototype.html, octet pour octet,
-// et génère src/lib/pattern-engine/prototype-engine.js (voir SPEC-pattern-engine.md).
+// et génère src/lib/pattern-engine/prototype-engine.js (voir README, « Moteur de patterns »).
 // Le bloc n'est jamais modifié : seules l'en-tête (noms reçus) et la fin (API renvoyée) sont générées.
 // Usage : npm run engine:extract
 import { createHash } from 'node:crypto';

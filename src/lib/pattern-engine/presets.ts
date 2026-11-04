@@ -2,7 +2,7 @@
 // l'identique pour la partie moteur. Fichier léger : le panneau l'importe sans charger le moteur.
 import type { AppMode } from './createEngine';
 import type { PrototypeEngine } from './prototype-engine.js';
-import { createShapeSeed, type ShapeSeed } from './shapeSeed';
+import { createShapeSeed, isSeed, type ShapeSeed } from './shapeSeed';
 
 // Chaque préréglage partagé est un document de la collection « presets » du stockage.
 // « mine » : préréglage d'un visiteur, gardé dans son navigateur seulement.
@@ -120,7 +120,7 @@ export function createPresets(
     S.pinches = 0;
     syncAll();
     // préréglage avec graine : la même forme ; sans graine (anciens préréglages) : une forme au hasard
-    shapeSeed.use(typeof o._seed === 'number' ? o._seed : undefined);
+    shapeSeed.use(isSeed(o._seed) ? o._seed : undefined);
     core.regenerate();
     core.resetView();
     const view = o._view as { theta: number; phi: number; radius: number } | undefined;

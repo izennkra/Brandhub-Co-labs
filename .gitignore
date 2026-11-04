@@ -31,3 +31,11 @@ playwright/.cache
 
 # Vercel
 .vercel
+
+dist-embed
+
+# Fichiers de travail locaux (assistant IA, aperçus) : jamais dans le dépôt
+CLAUDE.md
+CONTEXTE-IA.md
+.claude/
+.DS_Store

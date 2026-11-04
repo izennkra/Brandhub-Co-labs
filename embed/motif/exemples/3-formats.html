@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exemple 3 · formats</title>
+    <!--
+      Formats : l'attribut « format » fixe la proportion du bloc (16/9, 1/1, 4/5…) ; il peut changer
+      après le chargement (ici avec des boutons, qui ne font pas partie du script).
+    -->
+    <script src="../colabs-motif.js" defer></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: system-ui, sans-serif;
+        background: #f8f5f1;
+      }
+      .boutons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      colabs-motif {
+        max-width: 900px;
+        margin: 0 auto;
+        border-radius: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Formats</h1>
+    <p>
+      Le format se change avec l’attribut <code>format</code> (16/9, 1/1, 4/5…), même après le chargement.
+      Pour une taille libre, donner une hauteur en CSS et ne pas mettre de format.
+    </p>
+    <div class="boutons">
+      <button data-format="16/9">16/9</button>
+      <button data-format="21/9">21/9</button>
+      <button data-format="1/1">1/1</button>
+      <button data-format="4/5">4/5</button>
+    </div>
+    <!-- Un seul motif animé par page : on change son format, on n'en ajoute pas d'autres. -->
+    <colabs-motif id="motif" forme="A" format="16/9"></colabs-motif>
+    <script>
+      document
+        .querySelectorAll('[data-format]')
+        .forEach((b) =>
+          b.addEventListener('click', () =>
+            document.getElementById('motif').setAttribute('format', b.dataset.format),
+          ),
+        );
+    </script>
+  </body>
+</html>

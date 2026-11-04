@@ -57,6 +57,13 @@ describe('graine de la forme (forme reproductible)', () => {
     expect(shapeSeed.current()).toBe(random);
   });
 
+  it('tirage écrit : ses valeurs dans l’ordre, puis le générateur du moteur', () => {
+    const { core, shapeSeed } = setup();
+    shapeSeed.use([0.1, 0.2]);
+    expect([core.rng(), core.rng(), core.rng()]).toEqual([0.1, 0.2, 0]); // 0 : mulberry32(0) simulé
+    expect(shapeSeed.current()).toEqual([0.1, 0.2]);
+  });
+
   it('forme dessinée à la souris : graine inconnue jusqu’à la prochaine nouvelle forme', () => {
     const { core, shapeSeed } = setup();
     shapeSeed.use(42);
@@ -77,6 +84,17 @@ describe('graine de la forme (forme reproductible)', () => {
     presets.apply('forme-a');
     expect(seenAtRegenerate.at(-1)).toBe(777);
     expect(shapeSeed.current()).toBe(777);
+  });
+
+  it('un préréglage peut garder un tirage écrit (forme imitée)', async () => {
+    const { presets, shapeSeed, seenAtRegenerate } = setup();
+    await presets.init();
+    shapeSeed.use([0.25, 0.75]);
+    await presets.save('Imitée');
+    expect(saved()['imitee'].s._seed).toEqual([0.25, 0.75]);
+    shapeSeed.use(3);
+    presets.apply('imitee');
+    expect(seenAtRegenerate.at(-1)).toBe(0.25);
   });
 
   it('ancien préréglage sans graine : une forme au hasard, comme avant', async () => {

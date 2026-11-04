@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 
-// Preuve du rendu identique (SPEC-pattern-engine.md, critère 4) : le prototype et l'appli tournent
+// Preuve du rendu identique (README, « Moteur de patterns ») : le prototype et l'appli tournent
 // côte à côte avec le même hasard, une horloge figée et la même taille de scène, puis on compare
 // les pixels. Le prototype n'est pas modifié : seuls Three.js (servi depuis node_modules, version
 // identique) et la page de test l'entourent.

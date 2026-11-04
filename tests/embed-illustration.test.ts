@@ -1,0 +1,112 @@
+import { describe, expect, it } from 'vitest';
+import {
+  DEFAULT_TONE,
+  libraryDocuments,
+  pickIllustrations,
+  readDistance,
+  readOverrides,
+  readPlayback,
+  readSizes,
+  startIndex,
+  type Illustration,
+} from '../src/embed/illustration/settings';
+
+// Script d'intégration des illustrations (<colabs-illustration>) : réglages, liste, stockage en mémoire.
+const read = (attrs: Record<string, string>) => (name: string) => attrs[name] ?? null;
+
+const LIST: Illustration[] = [
+  { id: 'prisme', nom: 'Prisme', fichier: 'prisme.jpg', tons: { imgContr: 12 }, reglages: { bg: 'taupe' } },
+  { id: 'adn', nom: 'ADN', fichier: 'adn.jpg', reglages: { bg: 'lin' } },
+  { id: 'microscope', nom: 'Microscope', fichier: 'microscope.jpg' },
+];
+
+describe('illustrations : liste, départ, lecture', () => {
+  it('garde les illustrations demandées, dans l’ordre demandé (inconnues ignorées)', () => {
+    expect(pickIllustrations(LIST, 'adn, prisme inconnue').map((i) => i.id)).toEqual(['adn', 'prisme']);
+    expect(pickIllustrations(LIST, null)).toHaveLength(3);
+  });
+
+  it('départ : identifiant ou numéro, sinon la première', () => {
+    expect(startIndex(LIST, 'adn')).toBe(1);
+    expect(startIndex(LIST, '2')).toBe(2);
+    expect(startIndex(LIST, '9')).toBe(0);
+    expect(startIndex(LIST, null)).toBe(0);
+  });
+
+  it('lecture : durée bornée, automatique par défaut, manuelle sur demande, boucle', () => {
+    expect(readPlayback(read({}))).toEqual({ duree: 6, transition: undefined, auto: true, boucle: true });
+    expect(readPlayback(read({ duree: '0', lecture: 'manuelle', boucle: 'non', transition: '1,5' }))).toEqual(
+      {
+        duree: 1,
+        transition: 1.5,
+        auto: false,
+        boucle: false,
+      },
+    );
+  });
+
+  it('réglages imposés : seulement ceux donnés (fond, couleurs, survol, JSON)', () => {
+    expect(readOverrides(read({}))).toEqual({});
+    expect(
+      readOverrides(read({ fond: 'brun', couleurs: 'lin', survol: 'non', reglages: '{"imgCols":150}' })),
+    ).toEqual({ bg: 'brun', dots: ['lin'], hoverOn: false, imgCols: 150 });
+    // fond transparent : géré à part (core/engine.ts), pas une couleur du moteur
+    expect(readOverrides(read({ fond: 'transparent' }))).toEqual({});
+  });
+});
+
+describe('illustrations : même taille pour toutes', () => {
+  it('le cadrage enregistré dans l’outil (_view) n’est pas repris', () => {
+    const list: Illustration[] = [
+      { id: 'a', nom: 'A', fichier: 'a.jpg', reglages: { bg: 'lin', _view: { radius: 132 } } },
+    ];
+    const s = (libraryDocuments(list, ['data:a']).imgsettings.a as { s: Record<string, unknown> }).s;
+    expect(s._view).toBeUndefined();
+    expect(s.bg).toBe('lin');
+  });
+
+  it('distance commune : 74 par défaut (cadrage du moteur), bornée de 5 à 180', () => {
+    expect(readDistance(read({}))).toBe(74);
+    expect(readDistance(read({ distance: '90' }))).toBe(90);
+    expect(readDistance(read({ distance: '999' }))).toBe(180);
+  });
+});
+
+describe('illustrations : documents de la bibliothèque', () => {
+  it('documents au format de la bibliothèque de l’outil (nom, tons, ordre, image, réglages)', () => {
+    const docs = libraryDocuments(LIST, ['data:a', 'data:b', 'data:c']);
+    expect(docs.images.prisme).toEqual({
+      name: 'Prisme',
+      tone: { ...DEFAULT_TONE, imgContr: 12 },
+      inLoop: true,
+      t: 1,
+    });
+    expect(docs.imagesrc.adn).toEqual({ src: 'data:b' });
+    expect(docs.imgsettings.adn).toEqual({ s: { bg: 'lin', app: 'image' } });
+    // image ajoutée sans réglages : ceux de la première illustration, tons par défaut
+    expect(docs.imgsettings.microscope).toEqual({ s: { bg: 'taupe', app: 'image' } });
+    expect((docs.images.microscope as { tone: unknown }).tone).toEqual(DEFAULT_TONE);
+  });
+});
+
+describe('illustrations : taille de chacune', () => {
+  it('celles du fichier, remplacées par l’attribut tailles, bornées de 0.3 à 1.5', () => {
+    const list: Illustration[] = [
+      { id: 'a', nom: 'A', fichier: 'a.jpg', taille: 0.8 },
+      { id: 'b', nom: 'B', fichier: 'b.jpg' },
+      { id: 'c', nom: 'C', fichier: 'c.jpg', taille: 9 },
+    ];
+    expect(readSizes(list, null)).toEqual({ a: 0.8, b: 1, c: 1.5 });
+    expect(readSizes(list, 'b:1.2, a:0.1 inconnue:2')).toEqual({ a: 0.3, b: 1.2, c: 1.5 });
+  });
+
+  it('la taille passe dans la bibliothèque (champ size de l’outil), seulement si elle change', () => {
+    const list: Illustration[] = [
+      { id: 'a', nom: 'A', fichier: 'a.jpg' },
+      { id: 'b', nom: 'B', fichier: 'b.jpg' },
+    ];
+    const docs = libraryDocuments(list, ['data:a', 'data:b'], { a: 1, b: 0.7 });
+    expect((docs.images.a as { size?: number }).size).toBeUndefined();
+    expect((docs.images.b as { size?: number }).size).toBe(0.7);
+  });
+});

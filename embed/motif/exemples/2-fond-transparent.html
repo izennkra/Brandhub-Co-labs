@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exemple 2 · fond transparent sur une section colorée</title>
+    <!--
+      Fond transparent et taille libre : le motif se pose sur le fond de la section (ici un dégradé),
+      dans une mise en page en colonnes. Sa hauteur est donnée en CSS, sans attribut « format ».
+    -->
+    <script src="../colabs-motif.js" defer></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+      }
+      /* La section du site garde son propre fond : le motif se pose dessus. */
+      .hero {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        gap: 24px;
+        min-height: 100vh;
+        padding: 0 48px;
+        color: #f1e2da;
+        background: linear-gradient(135deg, #431604, #7a2e0e);
+      }
+      .hero colabs-motif {
+        height: 80vh; /* taille libre : hauteur donnée en CSS */
+      }
+      @media (max-width: 800px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+        .hero colabs-motif {
+          height: 60vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="hero">
+      <h1>Fond transparent : le dégradé de la section se voit derrière le motif.</h1>
+      <colabs-motif forme="B" fond="transparent" couleurs="lin ciel orange"></colabs-motif>
+    </section>
+  </body>
+</html>

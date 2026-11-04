@@ -3,7 +3,7 @@ https://iconists.co/license
  */
 // Registre local des icônes VisualSystem (set Central), copiées une par une depuis
 // https://visual.systems/api/modules/icon/central/<nom>.jsx — variantes radius-2, trait 1,5 et 2.
-// N'ajouter que les icônes utilisées par le produit (voir CLAUDE.md, section Icônes).
+// N'ajouter que les icônes utilisées par le produit (voir README, « Icônes »).
 import type { ReactNode } from 'react';
 
 export type Artwork = (id: string) => ReactNode;

@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Motif Co-labs · configurateur</title>
+    <!--
+      CONFIGURATEUR DU MOTIF CO-LABS
+      Sert à régler le motif et à copier le code d'intégration. Ce n'est pas une page du site :
+      sur le site, seule la balise <colabs-motif> est utilisée (voir LISEZMOI.md et exemples/).
+    -->
+    <script src="colabs-motif.js" defer></script>
+    <style>
+      :root {
+        --fond: #f8f5f1;
+        --texte: #431604;
+        --doux: #7a5a4a;
+        --ligne: #e3d8cf;
+        --accent: #ec5f14;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font:
+          15px/1.45 system-ui,
+          -apple-system,
+          sans-serif;
+        color: var(--texte);
+        background: var(--fond);
+      }
+      main {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        min-height: 100vh;
+      }
+      main.sans-reglages {
+        grid-template-columns: 1fr;
+      }
+      main.sans-reglages aside {
+        display: none;
+      }
+
+      /* Aperçu : le motif, au format choisi, sur le fond de page choisi */
+      .apercu {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        min-height: 100vh;
+      }
+      .apercu.damier {
+        background: repeating-conic-gradient(#e6ddd5 0% 25%, #fff 0% 50%) 0 0 / 24px 24px;
+      }
+      #motif {
+        width: 100%;
+        max-height: calc(100vh - 48px);
+        border-radius: 16px;
+      }
+      #motif.libre {
+        height: calc(100vh - 48px);
+      }
+      #bascule {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        z-index: 2;
+      }
+
+      /* Panneau des réglages */
+      aside {
+        padding: 20px;
+        border-left: 1px solid var(--ligne);
+        background: #fff;
+        overflow-y: auto;
+        max-height: 100vh;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      h2 {
+        margin: 20px 0 8px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--doux);
+      }
+      p.aide {
+        margin: 0 0 12px;
+        color: var(--doux);
+        font-size: 13px;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 32px;
+      }
+      label span.v {
+        min-width: 3.5em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--doux);
+      }
+      input[type='range'] {
+        flex: 1;
+        accent-color: var(--accent);
+      }
+      input[type='checkbox'] {
+        accent-color: var(--accent);
+        width: 18px;
+        height: 18px;
+      }
+      .ligne {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      button {
+        min-height: 36px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: 8px;
+        font: inherit;
+        color: var(--texte);
+        background: #efe7e0;
+        cursor: pointer;
+      }
+      button[aria-pressed='true'],
+      button.principal {
+        color: #fff;
+        background: var(--texte);
+      }
+      .groupe {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+      }
+      .groupe:disabled {
+        opacity: 0.45;
+      }
+      .couleurs label {
+        justify-content: flex-start;
+      }
+      .pastille {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1px solid var(--ligne);
+      }
+      select,
+      input[type='color'] {
+        min-height: 32px;
+        font: inherit;
+      }
+      pre {
+        margin: 0 0 8px;
+        padding: 12px;
+        border-radius: 8px;
+        background: #2a120a;
+        color: #f1e2da;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      @media (max-width: 800px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+        .apercu {
+          min-height: 70vh;
+        }
+        aside {
+          max-height: none;
+          border-left: 0;
+          border-top: 1px solid var(--ligne);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="page">
+      <!-- ============ APERÇU ============ -->
+      <div class="apercu" id="apercu">
+        <button type="button" id="bascule" aria-controls="reglages" aria-expanded="true">
+          Masquer les réglages
+        </button>
+        <colabs-motif id="motif" class="libre"></colabs-motif>
+      </div>
+
+      <!-- ============ RÉGLAGES ============ -->
+      <aside id="reglages" aria-label="Réglages du motif">
+        <h1>Motif Co-labs</h1>
+        <p class="aide">
+          Règle le motif, puis copie le code en bas. Les changements d’orientation s’animent en douceur.
+        </p>
+
+        <h2>Forme</h2>
+        <div class="ligne">
+          <button type="button" data-forme="A" aria-pressed="true">Forme A</button>
+          <button type="button" data-forme="B" aria-pressed="false">Forme B</button>
+          <button type="button" id="nouvelle">Nouvelle forme</button>
+        </div>
+
+        <h2>Orientation de la forme (axes)</h2>
+        <p class="aide">Tourne la forme sur elle-même, en direct, sans la redessiner.</p>
+        <label
+          >Axe X (bascule)
+          <input type="range" data-attr="axe-x" min="-180" max="180" step="1" value="0" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Axe Y (tourne)
+          <input type="range" data-attr="axe-y" min="-180" max="180" step="1" value="0" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Axe Z (pivote)
+          <input type="range" data-attr="axe-z" min="-180" max="180" step="1" value="0" /><span
+            class="v"
+          ></span
+        ></label>
+
+        <h2>Point de vue (caméra)</h2>
+        <label
+          >Rotation <input type="range" data-attr="rotation" min="-180" max="360" step="1" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Inclinaison <input type="range" data-attr="inclinaison" min="-89" max="89" step="1" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Distance <input type="range" data-attr="distance" min="5" max="180" step="1" /><span
+            class="v"
+          ></span
+        ></label>
+        <label>Rotation automatique <input type="checkbox" data-attr="rotation-auto" checked /></label>
+        <label
+          >Vitesse et sens
+          <input type="range" data-attr="vitesse-rotation" min="-4" max="4" step="0.05" value="0.6" /><span
+            class="v"
+          ></span
+        ></label>
+
+        <h2>Élargissement</h2>
+        <label>Élargir la forme <input type="checkbox" data-attr="elargir" checked /></label>
+        <label
+          >Renflements <input type="range" data-attr="renflements" min="1" max="12" step="1" value="3" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Gonflement
+          <input type="range" data-attr="gonflement" min="0.4" max="2" step="0.01" value="1.69" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Finesse des cols
+          <input type="range" data-attr="finesse-cols" min="0.02" max="0.6" step="0.01" value="0.23" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Épaisseur
+          <input type="range" data-attr="epaisseur" min="0.3" max="6" step="0.05" value="1.6" /><span
+            class="v"
+          ></span
+        ></label>
+
+        <h2>Fond et format</h2>
+        <label
+          >Fond du motif
+          <select data-attr="fond"></select
+        ></label>
+        <label>Couleur de la page (aperçu) <input type="color" id="page-couleur" value="#f8f5f1" /></label>
+        <label
+          >Format
+          <select data-attr="format">
+            <option value="">Libre (taille du bloc)</option>
+            <option value="16/9">16/9 (paysage)</option>
+            <option value="21/9">21/9 (bandeau)</option>
+            <option value="4/3">4/3</option>
+            <option value="1/1">1/1 (carré)</option>
+            <option value="4/5">4/5 (portrait)</option>
+            <option value="9/16">9/16 (vertical)</option>
+          </select>
+        </label>
+
+        <h2>Couleurs des points</h2>
+        <div class="couleurs" id="couleurs"></div>
+
+        <h2>Survol</h2>
+        <p class="aide">La forme se déconstruit au passage de la souris, puis se reconstruit.</p>
+        <label>Effet au survol <input type="checkbox" data-attr="survol" checked /></label>
+        <fieldset id="survol-reglages" class="groupe">
+          <label
+            >Zone touchée
+            <select data-attr="survol-zone">
+              <option value="curseur">Autour du curseur</option>
+              <option value="forme">Toute la forme</option>
+            </select></label
+          >
+          <label
+            >Taille de la zone (px)
+            <input type="range" data-attr="survol-taille" min="40" max="500" step="5" value="150" /><span
+              class="v"
+            ></span
+          ></label>
+          <label
+            >Force
+            <input type="range" data-attr="survol-force" min="0.1" max="3" step="0.05" value="1" /><span
+              class="v"
+            ></span
+          ></label>
+          <label
+            >Ouverture (s)
+            <input
+              type="range"
+              data-attr="survol-ouverture"
+              min="0.05"
+              max="2"
+              step="0.05"
+              value="0.35" /><span class="v"></span
+          ></label>
+          <label
+            >Reconstruction (s)
+            <input
+              type="range"
+              data-attr="survol-reconstruction"
+              min="0.1"
+              max="4"
+              step="0.05"
+              value="1.2" /><span class="v"></span
+          ></label>
+        </fieldset>
+
+        <h2>Particules</h2>
+        <label
+          >Particules
+          <input type="range" data-attr="particules" min="2000" max="120000" step="1000" value="97000" /><span
+            class="v"
+          ></span
+        ></label>
+
+        <h2>Code à copier</h2>
+        <pre id="code"></pre>
+        <div class="ligne"><button type="button" class="principal" id="copier">Copier le code</button></div>
+        <p class="aide">
+          À coller dans la page du site, à l’endroit du motif. Le fichier colabs-motif.js doit être à côté de
+          la page (sinon, mettre son adresse dans src).
+        </p>
+      </aside>
+    </main>
+
+    <script>
+      // ---------- Données ----------
+      const PALETTE = {
+        brun: ['Brun', '#431604'],
+        orange: ['Orange', '#EC5F14'],
+        taupe: ['Taupe', '#C2B1A2'],
+        grege: ['Grège', '#C0B0A1'],
+        lin: ['Lin', '#F1E2DA'],
+        sauge: ['Sauge', '#91BB7B'],
+        ciel: ['Ciel', '#90D7EB'],
+      };
+      const motif = document.getElementById('motif');
+      const apercu = document.getElementById('apercu');
+      // Attributs modifiés : seuls ceux-là vont dans le code (le reste garde les valeurs par défaut).
+      const attrs = { forme: 'A' };
+      const touched = new Set(['forme']);
+
+      // ---------- Listes : fond et couleurs des points ----------
+      const fond = document.querySelector('[data-attr="fond"]');
+      fond.add(new Option('Transparent', 'transparent'));
+      const couleurs = document.getElementById('couleurs');
+      for (const [id, [nom, hex]] of Object.entries(PALETTE)) {
+        fond.add(new Option(nom, id, false, id === 'lin'));
+        couleurs.insertAdjacentHTML(
+          'beforeend',
+          `<label><input type="checkbox" value="${id}" ${['brun', 'ciel', 'lin'].includes(id) ? 'checked' : ''} /> <span class="pastille" style="background:${hex}"></span> ${nom}</label>`,
+        );
+      }
+
+      // ---------- Écriture d'un réglage sur le motif ----------
+      function set(name, value) {
+        if (value === '') {
+          delete attrs[name];
+          touched.delete(name);
+          motif.removeAttribute(name);
+        } else {
+          attrs[name] = value;
+          touched.add(name);
+          motif.setAttribute(name, value);
+        }
+        render();
+      }
+      const show = (input) => {
+        const out = input.parentElement.querySelector('.v');
+        if (out) out.textContent = input.value;
+      };
+
+      document.querySelectorAll('input[type="range"][data-attr]').forEach((input) => {
+        show(input);
+        input.addEventListener('input', () => {
+          show(input);
+          set(input.dataset.attr, input.value);
+        });
+      });
+      document
+        .querySelectorAll('input[type="checkbox"][data-attr]')
+        .forEach((input) =>
+          input.addEventListener('change', () => set(input.dataset.attr, input.checked ? 'oui' : 'non')),
+        );
+      // Survol désactivé : ses réglages sont grisés (ils restent dans le code s'ils ont été modifiés).
+      const survolCase = document.querySelector('[data-attr="survol"]');
+      const survolReglages = document.getElementById('survol-reglages');
+      survolCase.addEventListener('change', () => (survolReglages.disabled = !survolCase.checked));
+      const zone = document.querySelector('[data-attr="survol-zone"]');
+      const tailleZone = document.querySelector('[data-attr="survol-taille"]').parentElement;
+      zone.addEventListener('change', () => {
+        set('survol-zone', zone.value);
+        tailleZone.hidden = zone.value === 'forme'; // la taille ne sert qu'autour du curseur
+      });
+      fond.addEventListener('change', () => {
+        set('fond', fond.value);
+        apercu.classList.toggle('damier', fond.value === 'transparent');
+      });
+      couleurs.addEventListener('change', () =>
+        set('couleurs', [...couleurs.querySelectorAll('input:checked')].map((c) => c.value).join(' ')),
+      );
+      document.querySelector('[data-attr="format"]').addEventListener('change', (event) => {
+        set('format', event.target.value);
+        motif.classList.toggle('libre', !event.target.value);
+        // aperçu : le format entier tient dans l'écran (largeur limitée selon la proportion)
+        const [w, h] = event.target.value.split('/').map(Number);
+        motif.style.width = w && h ? `min(100%, calc((100vh - 48px) * ${w / h}))` : '';
+      });
+      document.getElementById('page-couleur').addEventListener('input', (event) => {
+        apercu.style.backgroundColor = event.target.value;
+      });
+
+      // ---------- Forme : A, B, ou nouvelle forme au hasard ----------
+      document.querySelectorAll('[data-forme]').forEach((button) =>
+        button.addEventListener('click', () => {
+          document
+            .querySelectorAll('[data-forme]')
+            .forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+          // chaque forme a son orientation par défaut : on repart d'elle
+          for (const n of ['graine', 'rotation', 'inclinaison', 'distance']) set(n, '');
+          set('forme', button.dataset.forme);
+          setTimeout(syncOrientation, 400);
+        }),
+      );
+      document.getElementById('nouvelle').addEventListener('click', () => {
+        motif.nouvelleForme();
+        set('graine', motif.getAttribute('graine'));
+      });
+
+      // ---------- Orientation ----------
+      // Les curseurs affichent celle du motif, sans l'ajouter au code tant qu'on n'y touche pas.
+      function syncOrientation() {
+        const o = motif.orientation();
+        if (!o) return;
+        for (const [name, value] of Object.entries(o)) {
+          if (touched.has(name)) continue;
+          const input = document.querySelector(`[data-attr="${name}"]`);
+          input.value = value;
+          show(input);
+        }
+      }
+      motif.addEventListener('pret', () => setTimeout(syncOrientation, 100));
+
+      // ---------- Masquer / afficher les réglages (aperçu du motif seul) ----------
+      const bascule = document.getElementById('bascule');
+      bascule.addEventListener('click', () => {
+        const masque = document.getElementById('page').classList.toggle('sans-reglages');
+        bascule.textContent = masque ? 'Afficher les réglages' : 'Masquer les réglages';
+        bascule.setAttribute('aria-expanded', String(!masque));
+      });
+
+      // ---------- Code à copier ----------
+      function render() {
+        const parts = [...touched].filter((n) => attrs[n] !== undefined).map((n) => `${n}="${attrs[n]}"`);
+        const taille = attrs.format ? '' : ' style="height: 600px"';
+        document.getElementById('code').textContent =
+          `<script src="colabs-motif.js" defer><\/script>\n<colabs-motif ${parts.join(' ')}${taille}></colabs-motif>`;
+      }
+      document.getElementById('copier').addEventListener('click', async () => {
+        const button = document.getElementById('copier');
+        try {
+          await navigator.clipboard.writeText(document.getElementById('code').textContent);
+          button.textContent = 'Copié !';
+        } catch {
+          button.textContent = 'Sélectionne le code et copie-le';
+        }
+        setTimeout(() => (button.textContent = 'Copier le code'), 1800);
+      });
+      render();
+    </script>
+  </body>
+</html>
