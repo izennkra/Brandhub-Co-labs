@@ -95,6 +95,8 @@ en était.
 
 - `id` : identifiant utilisé par `images`, `depart` et `afficher()`.
 - `fichier` : l’image, chemin relatif à `illustrations.json`.
+- `taille` (facultatif) : taille de l’objet dans son image, de 0.3 à 1.5 (1 = taille d’origine). Elle reste la même
+  pendant les transitions. L’attribut `tailles` de la balise la remplace (réglée dans le configurateur).
 - `tons` et `reglages` : réglages de l’illustration, repris de l’outil Co-labs (trame, couleurs, survol…).
   Le cadrage enregistré dans l’outil n’est pas repris : toutes les illustrations ont le même cadrage (attribut
   `distance`), pour qu’il n’y ait aucun saut de taille d’une illustration à l’autre.
@@ -120,6 +122,7 @@ Le fichier peut aussi être ailleurs : `<colabs-illustration source="/assets/mes
 | `duree` | 1 à 120 (s) | `6` | Temps de chaque illustration (lecture automatique). |
 | `transition` | 0.2 à 10 (s) | moteur (2.4) | Durée de la transition entre deux illustrations. |
 | `distance` | 5 à 180 | `74` | Taille des illustrations (distance de la caméra), la même pour toutes. |
+| `tailles` | ex. `"prisme:0.9 adn:1.1"` | celles du fichier (sinon 1) | Taille de chaque illustration, de 0.3 à 1.5 (1 = d’origine). |
 | `lecture` | `auto`, `manuelle` | `auto` | Passage automatique ou piloté par le site. |
 | `boucle` | `oui`, `non` | `oui` | Après la dernière : la première, ou on s’arrête. |
 | `source` | adresse | `illustrations/illustrations.json` à côté du script | Fichier des illustrations. |

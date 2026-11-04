@@ -6,6 +6,7 @@ import {
   readDistance,
   readOverrides,
   readPlayback,
+  readSizes,
   startIndex,
   type Illustration,
 } from '../src/embed/illustrationSettings';
@@ -102,5 +103,27 @@ describe('illustrations : bibliothèque et stockage en mémoire', () => {
     await store.del('images', 'a');
     expect(await store.get('images', 'a')).toBeNull();
     expect(localStorage.length).toBe(0); // rien d'écrit chez le visiteur
+  });
+});
+
+describe('illustrations : taille de chacune', () => {
+  it('celles du fichier, remplacées par l’attribut tailles, bornées de 0.3 à 1.5', () => {
+    const list: Illustration[] = [
+      { id: 'a', nom: 'A', fichier: 'a.jpg', taille: 0.8 },
+      { id: 'b', nom: 'B', fichier: 'b.jpg' },
+      { id: 'c', nom: 'C', fichier: 'c.jpg', taille: 9 },
+    ];
+    expect(readSizes(list, null)).toEqual({ a: 0.8, b: 1, c: 1.5 });
+    expect(readSizes(list, 'b:1.2, a:0.1 inconnue:2')).toEqual({ a: 0.3, b: 1.2, c: 1.5 });
+  });
+
+  it('la taille passe dans la bibliothèque (champ size de l’outil), seulement si elle change', () => {
+    const list: Illustration[] = [
+      { id: 'a', nom: 'A', fichier: 'a.jpg' },
+      { id: 'b', nom: 'B', fichier: 'b.jpg' },
+    ];
+    const docs = libraryDocuments(list, ['data:a', 'data:b'], { a: 1, b: 0.7 });
+    expect((docs.images.a as { size?: number }).size).toBeUndefined();
+    expect((docs.images.b as { size?: number }).size).toBe(0.7);
   });
 });

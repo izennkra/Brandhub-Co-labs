@@ -5,6 +5,7 @@ import {
   readDistance,
   readOverrides,
   readPlayback,
+  readSizes,
   startIndex,
   type Illustration,
 } from './illustrationSettings';
@@ -64,6 +65,11 @@ export class ColabsIllustration extends EngineElement {
     return this.current;
   }
 
+  /** Taille de chaque illustration (1 = taille d'origine) : { id: taille }. */
+  get tailles() {
+    return readSizes(this.list, this.getAttribute('tailles'));
+  }
+
   /** Avancement de l'illustration affichée, de 0 à 1 (lecture automatique). */
   get progression() {
     return Math.min(1, this.elapsed / readPlayback(this.read).duree);
@@ -111,7 +117,7 @@ export class ColabsIllustration extends EngineElement {
     const list = pickIllustrations(manifest.illustrations ?? [], this.getAttribute('images'));
     if (!list.length) throw new Error('aucune illustration à afficher (attribut images, illustrations.json)');
     const sources = await Promise.all(list.map((i) => asDataUrl(new URL(i.fichier, source))));
-    seedStore(libraryDocuments(list, sources));
+    seedStore(libraryDocuments(list, sources, readSizes(list, this.getAttribute('tailles'))));
 
     // 2. Le moteur, en mode Illustration ; la bibliothèque lit les illustrations.
     const loaded = await engine();
@@ -154,6 +160,9 @@ export class ColabsIllustration extends EngineElement {
     S.imgLoop = false;
     const { transition } = readPlayback(this.read);
     if (transition !== undefined) S.imgTrans = transition;
+    // taille de l'illustration affichée (réglée dans le configurateur) : redessinée à cette taille
+    const size = this.tailles[this.list[this.current]?.id ?? ''];
+    if (size !== undefined && size !== this.engine.library.sizeOf()) this.engine.library.setSize(size);
     // même cadrage pour toutes les illustrations : de face, à la même distance (pas de saut de taille)
     Object.assign(core.orbit, { theta: 0, phi: Math.PI / 2, radius: readDistance(this.read) });
     core.refreshColors();

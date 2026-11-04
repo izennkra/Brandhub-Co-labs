@@ -127,6 +127,7 @@
         background: #efe7e0;
         cursor: pointer;
       }
+      button[aria-pressed='true'],
       button.principal {
         color: #fff;
         background: var(--texte);
@@ -200,6 +201,18 @@
           Dans l’ordre du fichier illustrations.json. Pris en compte sur le site au chargement.
         </p>
         <div class="liste" id="liste"></div>
+
+        <h2>Régler une illustration</h2>
+        <p class="aide">
+          Choisis une illustration pour l’afficher (la lecture se met en pause), puis règle sa taille. Chaque
+          illustration garde sa taille, même pendant les transitions.
+        </p>
+        <div class="ligne" id="choix"></div>
+        <label
+          >Taille de cette illustration
+          <input type="range" id="taille" min="0.3" max="1.5" step="0.01" value="1" /><span class="v"></span
+        ></label>
+        <div class="ligne"><button type="button" id="relancer">Relancer la lecture</button></div>
 
         <h2>Lecture</h2>
         <label>Lecture automatique <input type="checkbox" data-attr="lecture" checked /></label>
@@ -403,6 +416,44 @@
       document.getElementById('page-couleur').addEventListener('input', (event) => {
         apercu.style.backgroundColor = event.target.value;
       });
+
+      // ---------- Régler une illustration : l'afficher, puis sa taille ----------
+      const taille = document.getElementById('taille');
+      const choix = document.getElementById('choix');
+      let affichee = '';
+      illustration.addEventListener('pret', () => {
+        for (const { id, nom } of illustration.illustrations)
+          choix.insertAdjacentHTML(
+            'beforeend',
+            `<button type="button" data-id="${id}" aria-pressed="false">${nom}</button>`,
+          );
+      });
+      choix.addEventListener('click', (event) => {
+        const id = event.target.closest('[data-id]')?.dataset.id;
+        if (!id) return;
+        illustration.pause();
+        illustration.afficher(id);
+      });
+      // l'illustration affichée change (choix, ou lecture) : bouton actif et curseur de taille à jour
+      illustration.addEventListener('changement', (event) => {
+        affichee = event.detail.id;
+        choix
+          .querySelectorAll('[data-id]')
+          .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === affichee)));
+        taille.value = illustration.tailles[affichee] ?? 1;
+        show(taille);
+      });
+      taille.addEventListener('input', () => {
+        show(taille);
+        const tailles = { ...illustration.tailles, [affichee]: Number(taille.value) };
+        // dans le code : seulement les tailles différentes de 1 (taille d'origine)
+        const texte = Object.entries(tailles)
+          .filter(([, v]) => v !== 1)
+          .map(([id, v]) => `${id}:${v}`)
+          .join(' ');
+        set('tailles', texte);
+      });
+      document.getElementById('relancer').addEventListener('click', () => illustration.lecture());
 
       // ---------- Illustrations affichées (liste lue dans illustrations.json) ----------
       illustration.addEventListener('pret', () => {

@@ -11,6 +11,7 @@ export const ILLUSTRATION_ATTRIBUTES = [
   'duree',
   'transition',
   'distance',
+  'tailles',
   'lecture',
   'boucle',
   'fond',
@@ -38,7 +39,30 @@ export type Illustration = {
   tons?: Record<string, unknown>;
   /** Réglages de l'illustration (trame, couleurs, survol…), comme dans l'outil ; sinon ceux de la première. */
   reglages?: Record<string, unknown>;
+  /** Taille de l'objet dans son image, de 0,3 à 1,5 (1 = taille d'origine). */
+  taille?: number;
 };
+
+// Taille de chaque illustration : bornes de l'outil (sizing.ts).
+export const SIZE_MIN = 0.3;
+export const SIZE_MAX = 1.5;
+const clampSize = (v: unknown) =>
+  typeof v === 'number' && Number.isFinite(v) ? Math.min(SIZE_MAX, Math.max(SIZE_MIN, v)) : 1;
+
+/**
+ * Tailles par illustration : celles du fichier, remplacées par l'attribut « tailles »
+ * (ex. « prisme:0.9 adn:1.1 »). Absente : 1 (taille d'origine).
+ */
+export function readSizes(list: Illustration[], raw: string | null): Record<string, number> {
+  const sizes: Record<string, number> = {};
+  for (const { id, taille } of list) sizes[id] = clampSize(taille ?? 1);
+  for (const pair of words(raw)) {
+    const [id, value] = pair.split(':');
+    const n = Number(value?.replace(',', '.'));
+    if (id in sizes && Number.isFinite(n)) sizes[id] = clampSize(n);
+  }
+  return sizes;
+}
 
 // Tons par défaut d'une image ajoutée sans réglages (valeurs de départ de l'outil).
 export const DEFAULT_TONE = {
@@ -99,14 +123,26 @@ export const readOverrides = (read: Read): Record<string, unknown> => ({
  * Documents du stockage en mémoire (memoryStore.ts), au format de la bibliothèque de l'outil :
  * « images » (nom, tons, ordre), « imagesrc » (l'image), « imgsettings » (ses réglages).
  */
-export function libraryDocuments(list: Illustration[], sources: string[]) {
+export function libraryDocuments(
+  list: Illustration[],
+  sources: string[],
+  sizes: Record<string, number> = {},
+) {
   const fallback = list.find((i) => i.reglages)?.reglages;
   const images: Record<string, unknown> = {};
   const imagesrc: Record<string, unknown> = {};
   const imgsettings: Record<string, unknown> = {};
   list.forEach((illustration, i) => {
     const { id, nom, tons, reglages = fallback } = illustration;
-    images[id] = { name: nom, tone: { ...DEFAULT_TONE, ...tons }, inLoop: true, t: i + 1 };
+    const size = sizes[id] ?? 1;
+    images[id] = {
+      name: nom,
+      tone: { ...DEFAULT_TONE, ...tons },
+      inLoop: true,
+      t: i + 1,
+      // taille dans son carré : appliquée par la bibliothèque au chargement (même champ que l'outil)
+      ...(size !== 1 ? { size } : {}),
+    };
     imagesrc[id] = { src: sources[i] };
     // même cadrage pour toutes : le point de vue enregistré dans l'outil (_view) n'est pas repris,
     // sinon la taille sauterait d'une illustration à l'autre au moment de la transition
