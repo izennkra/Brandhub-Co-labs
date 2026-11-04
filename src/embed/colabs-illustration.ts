@@ -2,6 +2,7 @@ import {
   ILLUSTRATION_ATTRIBUTES,
   libraryDocuments,
   pickIllustrations,
+  readDistance,
   readOverrides,
   readPlayback,
   startIndex,
@@ -153,6 +154,8 @@ export class ColabsIllustration extends EngineElement {
     S.imgLoop = false;
     const { transition } = readPlayback(this.read);
     if (transition !== undefined) S.imgTrans = transition;
+    // même cadrage pour toutes les illustrations : de face, à la même distance (pas de saut de taille)
+    Object.assign(core.orbit, { theta: 0, phi: Math.PI / 2, radius: readDistance(this.read) });
     core.refreshColors();
     if (this.getAttribute('reglages')) core.imgDirty = true; // réglages de la trame : image recalculée
     this.updatePause();

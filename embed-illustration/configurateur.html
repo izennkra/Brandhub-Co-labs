@@ -42,7 +42,7 @@
         display: none;
       }
 
-      /* Aperçu : l'illustration, la barre de temps et les boutons */
+      /* Aperçu : l'illustration seule, comme sur le site */
       .apercu {
         position: relative;
         display: flex;
@@ -57,23 +57,8 @@
         background: repeating-conic-gradient(#e6ddd5 0% 25%, #fff 0% 50%) 0 0 / 24px 24px;
       }
       #illustration {
-        width: min(100%, calc((100vh - 140px) * 0.8));
+        width: min(100%, calc((100vh - 48px) * 0.8));
         border-radius: 12px;
-      }
-      .temps {
-        width: min(100%, calc((100vh - 140px) * 0.8));
-        height: 3px;
-        background: var(--ligne);
-      }
-      .temps div {
-        height: 100%;
-        background: var(--accent);
-        transform-origin: left;
-        transform: scaleX(0);
-      }
-      #nom {
-        min-height: 1.4em;
-        color: var(--doux);
       }
       #bascule {
         position: absolute;
@@ -203,12 +188,6 @@
           Masquer les réglages
         </button>
         <colabs-illustration id="illustration" format="4/5"></colabs-illustration>
-        <div class="temps" aria-hidden="true"><div id="barre"></div></div>
-        <div id="nom"></div>
-        <div class="ligne">
-          <button type="button" id="precedente">← Précédente</button>
-          <button type="button" id="suivante">Suivante →</button>
-        </div>
       </div>
 
       <!-- ============ RÉGLAGES ============ -->
@@ -264,6 +243,12 @@
             <option value="">Celui de chaque illustration</option>
           </select></label
         >
+        <label
+          >Taille (distance)
+          <input type="range" data-attr="distance" min="30" max="180" step="1" value="74" /><span
+            class="v"
+          ></span
+        ></label>
         <label>Couleur de la page (aperçu) <input type="color" id="page-couleur" value="#f8f5f1" /></label>
         <label
           >Format
@@ -412,9 +397,8 @@
       document.querySelector('[data-attr="format"]').addEventListener('change', (event) => {
         set('format', event.target.value);
         const [w, h] = event.target.value.split('/').map(Number);
-        const largeur = `min(100%, calc((100vh - 140px) * ${w / h}))`;
+        const largeur = `min(100%, calc((100vh - 48px) * ${w / h}))`;
         illustration.style.width = largeur;
-        document.querySelector('.temps').style.width = largeur;
       });
       document.getElementById('page-couleur').addEventListener('input', (event) => {
         apercu.style.backgroundColor = event.target.value;
@@ -434,16 +418,6 @@
           set('images', checked.length === all.length ? '' : checked.join(' '), false);
         });
       });
-
-      // ---------- Aperçu : barre de temps, nom, précédente / suivante ----------
-      illustration.addEventListener('progression', (event) => {
-        document.getElementById('barre').style.transform = `scaleX(${event.detail.progression})`;
-      });
-      illustration.addEventListener('changement', (event) => {
-        document.getElementById('nom').textContent = event.detail.nom;
-      });
-      document.getElementById('precedente').addEventListener('click', () => illustration.precedente());
-      document.getElementById('suivante').addEventListener('click', () => illustration.suivante());
 
       // ---------- Masquer / afficher les réglages ----------
       const bascule = document.getElementById('bascule');

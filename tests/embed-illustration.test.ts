@@ -3,6 +3,7 @@ import {
   DEFAULT_TONE,
   libraryDocuments,
   pickIllustrations,
+  readDistance,
   readOverrides,
   readPlayback,
   startIndex,
@@ -51,6 +52,23 @@ describe('illustrations : liste, départ, lecture', () => {
     ).toEqual({ bg: 'brun', dots: ['lin'], hoverOn: false, imgCols: 150 });
     // fond transparent : géré à part (shared.ts), pas une couleur du moteur
     expect(readOverrides(read({ fond: 'transparent' }))).toEqual({});
+  });
+});
+
+describe('illustrations : même taille pour toutes', () => {
+  it('le cadrage enregistré dans l’outil (_view) n’est pas repris', () => {
+    const list: Illustration[] = [
+      { id: 'a', nom: 'A', fichier: 'a.jpg', reglages: { bg: 'lin', _view: { radius: 132 } } },
+    ];
+    const s = (libraryDocuments(list, ['data:a']).imgsettings.a as { s: Record<string, unknown> }).s;
+    expect(s._view).toBeUndefined();
+    expect(s.bg).toBe('lin');
+  });
+
+  it('distance commune : 74 par défaut (cadrage du moteur), bornée de 5 à 180', () => {
+    expect(readDistance(read({}))).toBe(74);
+    expect(readDistance(read({ distance: '90' }))).toBe(90);
+    expect(readDistance(read({ distance: '999' }))).toBe(180);
   });
 });
 

@@ -10,6 +10,7 @@ export const ILLUSTRATION_ATTRIBUTES = [
   'depart',
   'duree',
   'transition',
+  'distance',
   'lecture',
   'boucle',
   'fond',
@@ -73,6 +74,10 @@ export function startIndex(list: Illustration[], raw: string | null) {
   return Number.isInteger(n) && n >= 0 && n < list.length ? n : 0;
 }
 
+/** Distance de la caméra, commune à toutes les illustrations (cadrage du moteur : 74). */
+export const DEFAULT_DISTANCE = 74;
+export const readDistance = (read: Read) => num(read('distance'), 5, 180) ?? DEFAULT_DISTANCE;
+
 /** Lecture : durée de chaque image (s), transition (s), automatique ou manuelle, en boucle ou non. */
 export function readPlayback(read: Read) {
   return {
@@ -103,7 +108,13 @@ export function libraryDocuments(list: Illustration[], sources: string[]) {
     const { id, nom, tons, reglages = fallback } = illustration;
     images[id] = { name: nom, tone: { ...DEFAULT_TONE, ...tons }, inLoop: true, t: i + 1 };
     imagesrc[id] = { src: sources[i] };
-    if (reglages) imgsettings[id] = { s: { ...reglages, app: 'image' } };
+    // même cadrage pour toutes : le point de vue enregistré dans l'outil (_view) n'est pas repris,
+    // sinon la taille sauterait d'une illustration à l'autre au moment de la transition
+    if (reglages) {
+      const own: Record<string, unknown> = { ...reglages, app: 'image' };
+      delete own._view;
+      imgsettings[id] = { s: own };
+    }
   });
   return { images, imagesrc, imgsettings };
 }

@@ -43,7 +43,8 @@ Puis ouvrir l’adresse affichée suivie de `/configurateur.html` ou `/exemples/
 
 ## Brancher le site : barre de temps et clics
 
-Tout passe par **2 événements** et **quelques méthodes** :
+Le script n’affiche **ni barre de temps ni boutons** : seulement l’illustration. Le site construit sa propre interface
+(barre, titres, boutons…) et s’y branche avec **2 événements** et **quelques méthodes** :
 
 ```js
 const illustration = document.querySelector('colabs-illustration');
@@ -95,6 +96,8 @@ en était.
 - `id` : identifiant utilisé par `images`, `depart` et `afficher()`.
 - `fichier` : l’image, chemin relatif à `illustrations.json`.
 - `tons` et `reglages` : réglages de l’illustration, repris de l’outil Co-labs (trame, couleurs, survol…).
+  Le cadrage enregistré dans l’outil n’est pas repris : toutes les illustrations ont le même cadrage (attribut
+  `distance`), pour qu’il n’y ait aucun saut de taille d’une illustration à l’autre.
 
 **Ajouter ou remplacer une illustration** : déposer l’image (JPG, PNG ou WEBP, objet sur fond blanc ou transparent,
 ≈ 800 px) dans `illustrations/`, puis ajouter une ligne :
@@ -116,6 +119,7 @@ Le fichier peut aussi être ailleurs : `<colabs-illustration source="/assets/mes
 | `depart` | identifiant ou numéro | la première | Illustration du début. |
 | `duree` | 1 à 120 (s) | `6` | Temps de chaque illustration (lecture automatique). |
 | `transition` | 0.2 à 10 (s) | moteur (2.4) | Durée de la transition entre deux illustrations. |
+| `distance` | 5 à 180 | `74` | Taille des illustrations (distance de la caméra), la même pour toutes. |
 | `lecture` | `auto`, `manuelle` | `auto` | Passage automatique ou piloté par le site. |
 | `boucle` | `oui`, `non` | `oui` | Après la dernière : la première, ou on s’arrête. |
 | `source` | adresse | `illustrations/illustrations.json` à côté du script | Fichier des illustrations. |
@@ -131,7 +135,7 @@ Le fichier peut aussi être ailleurs : `<colabs-illustration source="/assets/mes
 | `survol-reconstruction` | 0.1 à 4 (s) | — | Durée de reconstruction. |
 | `reglages` | JSON | — | Tout autre réglage avancé du moteur, imposé à toutes les illustrations. |
 
-Fond, couleurs, survol, axes, durée, transition et lecture changent **en direct**. `images`, `source` et `depart`
+Fond, couleurs, survol, axes, distance, durée, transition et lecture changent **en direct**. `images`, `source` et `depart`
 sont lus au chargement.
 
 ## Taille, fond transparent, performances
