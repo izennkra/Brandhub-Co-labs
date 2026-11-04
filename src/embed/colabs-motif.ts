@@ -1,25 +1,38 @@
 import type { Engine } from '../lib/pattern-engine/createEngine';
-import { ATTRIBUTES, readSettings, type View } from './settings';
+import { ATTRIBUTES, isTransparent, readFormat, readSettings, type View } from './settings';
 
 // <colabs-motif> : le motif Co-labs sur le site d'un client, avec le moteur tel quel (aucune
-// modification), sans l'outil d'édition. Réglages par attributs en français (settings.ts).
-// - Le moteur (≈ 270 Ko) ne se charge que quand le motif arrive à l'écran.
+// modification), sans l'outil d'édition. Réglages par attributs en français (settings.ts) ;
+// mode d'emploi pour le développeur : embed/LISEZMOI.md.
+// - Le moteur (≈ 320 Ko compressé) ne se charge que quand le motif arrive à l'écran.
 // - Hors de l'écran, onglet caché ou animations réduites demandées : le motif est en pause.
+// - Taille : celle du bloc (CSS libre) ; sans hauteur, l'attribut « format » (16/9 par défaut).
 // - Un seul motif animé par page : le moteur n'en gère qu'un.
+// Le dessin du moteur remplit le bloc sans jamais en changer la taille (grilles, colonnes flexibles).
 const STYLE = `
-colabs-motif { display: block; position: relative; overflow: hidden; }
-colabs-motif:not([style*="height"]) { aspect-ratio: 16 / 9; }
-colabs-motif #scene { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+colabs-motif { display: block; position: relative; overflow: hidden; min-width: 0; }
+colabs-motif #scene { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 colabs-motif #scene.dragging { cursor: grabbing; }
 `;
 
 let enginePromise: Promise<Engine> | null = null;
+let transparent = false;
+
 function engine() {
   // Les modèles 3D (Illustration) ne servent pas au motif : on ne les charge pas.
   (window as Window & { __engineTestHooks?: { noModels?: boolean } }).__engineTestHooks ??= {
     noModels: true,
   };
-  enginePromise ??= import('../lib/pattern-engine/createEngine').then(({ getEngine }) => getEngine());
+  enginePromise ??= import('../lib/pattern-engine/createEngine').then(({ getEngine }) =>
+    getEngine().then((ready) => {
+      // Fond transparent : le moteur repeint son fond à chaque image (setClearColor, opacité 1) ;
+      // on rend ce fond invisible au passage, comme les exports PNG de l'outil. Moteur inchangé.
+      const { renderer } = ready.core;
+      const setClearColor = renderer.setClearColor.bind(renderer);
+      renderer.setClearColor = (color, alpha) => setClearColor(color, transparent ? 0 : alpha);
+      return ready;
+    }),
+  );
   return enginePromise;
 }
 
@@ -39,6 +52,7 @@ export class ColabsMotif extends HTMLElement {
       style.textContent = STYLE;
       document.head.append(style);
     }
+    this.applyFormat();
     const seen = new IntersectionObserver(([entry]) => {
       this.visible = entry.isIntersecting;
       if (this.visible && !this.engine)
@@ -61,7 +75,8 @@ export class ColabsMotif extends HTMLElement {
     this.engine = null;
   }
 
-  attributeChangedCallback() {
+  attributeChangedCallback(name: string) {
+    if (name === 'format') this.applyFormat();
     if (!this.engine) return;
     clearTimeout(this.applyTimer);
     this.applyTimer = setTimeout(() => this.apply(), 120);
@@ -97,8 +112,18 @@ export class ColabsMotif extends HTMLElement {
 
   private apply() {
     if (!this.engine) return;
-    this.engine.presets.applySnapshot(readSettings((name) => this.getAttribute(name)));
+    const read = (name: (typeof ATTRIBUTES)[number]) => this.getAttribute(name);
+    transparent = isTransparent(read);
+    this.engine.presets.applySnapshot(readSettings(read));
     this.updatePause();
+  }
+
+  // Format demandé ; sinon la hauteur donnée par le site (CSS) ; sinon 16/9. Le dessin étant posé
+  // en absolu, un bloc sans hauteur CSS mesure 0 : c'est ainsi qu'on sait qu'il en faut une.
+  private applyFormat() {
+    const format = readFormat(this.getAttribute('format'));
+    this.style.aspectRatio = format ?? '';
+    if (!format && this.offsetHeight === 0) this.style.aspectRatio = '16 / 9';
   }
 
   private updatePause = () => {

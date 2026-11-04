@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FORMES, NOT_WIDENED, readSettings } from '../src/embed/settings';
+import { FORMES, isTransparent, NOT_WIDENED, readFormat, readSettings } from '../src/embed/settings';
 
 // Attributs de <colabs-motif> (script d'intégration sur un site) → réglages du moteur.
 const settings = (attrs: Record<string, string> = {}) => readSettings((name) => attrs[name] ?? null);
@@ -56,5 +56,25 @@ describe('script d’intégration : réglages du motif', () => {
     expect(settings({ reglages: '{"swirl":0.4,"twinkle":0}' })).toMatchObject({ swirl: 0.4, twinkle: 0 });
     // réglages illisibles : ignorés, sans erreur
     expect(settings({ reglages: '{pas du json' }).bg).toBe('lin');
+  });
+});
+
+describe('script d’intégration : fond transparent et format', () => {
+  const read = (attrs: Record<string, string>) => (name: string) => attrs[name] ?? null;
+
+  it('fond transparent : reconnu, sans changer la couleur du moteur', () => {
+    expect(isTransparent(read({ fond: 'Transparent' }))).toBe(true);
+    expect(isTransparent(read({ fond: 'lin' }))).toBe(false);
+    expect(settings({ fond: 'transparent' }).bg).toBe('lin');
+  });
+
+  it('format : 16/9, 1:1, 4x5 → aspect-ratio CSS ; le reste est ignoré', () => {
+    expect(readFormat('16/9')).toBe('16 / 9');
+    expect(readFormat(' 1:1 ')).toBe('1 / 1');
+    expect(readFormat('4x5')).toBe('4 / 5');
+    expect(readFormat('2,35/1')).toBe('2.35 / 1');
+    expect(readFormat('carré')).toBeNull();
+    expect(readFormat('0/9')).toBeNull();
+    expect(readFormat(null)).toBeNull();
   });
 });

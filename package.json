@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:embed": "vite build --config vite.embed.config.ts",
+    "build:embed": "vite build --config vite.embed.config.ts && cp -R embed/. dist-embed/",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -3,8 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Motif Co-labs · démo d’intégration</title>
-    <!-- Page de démo : ouvrir ce fichier dans un navigateur, régler le motif, copier le code. -->
+    <title>Motif Co-labs · configurateur</title>
+    <!--
+      CONFIGURATEUR DU MOTIF CO-LABS
+      Sert à régler le motif et à copier le code d'intégration. Ce n'est pas une page du site :
+      sur le site, seule la balise <colabs-motif> est utilisée (voir LISEZMOI.md et exemples/).
+    -->
     <script src="colabs-motif.js" defer></script>
     <style>
       :root {
@@ -28,15 +32,44 @@
       }
       main {
         display: grid;
-        grid-template-columns: 1fr 340px;
+        grid-template-columns: 1fr 360px;
         min-height: 100vh;
       }
-      .scene {
-        padding: 24px;
+      main.sans-reglages {
+        grid-template-columns: 1fr;
       }
-      colabs-motif {
+      main.sans-reglages aside {
+        display: none;
+      }
+
+      /* Aperçu : le motif, au format choisi, sur le fond de page choisi */
+      .apercu {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        min-height: 100vh;
+      }
+      .apercu.damier {
+        background: repeating-conic-gradient(#e6ddd5 0% 25%, #fff 0% 50%) 0 0 / 24px 24px;
+      }
+      #motif {
+        width: 100%;
+        max-height: calc(100vh - 48px);
         border-radius: 16px;
       }
+      #motif.libre {
+        height: calc(100vh - 48px);
+      }
+      #bascule {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        z-index: 2;
+      }
+
+      /* Panneau des réglages */
       aside {
         padding: 20px;
         border-left: 1px solid var(--ligne);
@@ -111,7 +144,8 @@
         border-radius: 50%;
         border: 1px solid var(--ligne);
       }
-      select {
+      select,
+      input[type='color'] {
         min-height: 32px;
         font: inherit;
       }
@@ -129,6 +163,9 @@
         main {
           grid-template-columns: 1fr;
         }
+        .apercu {
+          min-height: 70vh;
+        }
         aside {
           max-height: none;
           border-left: 0;
@@ -138,11 +175,17 @@
     </style>
   </head>
   <body>
-    <main>
-      <div class="scene">
-        <colabs-motif id="motif" style="height: calc(100vh - 48px)"></colabs-motif>
+    <main id="page">
+      <!-- ============ APERÇU ============ -->
+      <div class="apercu" id="apercu">
+        <button type="button" id="bascule" aria-controls="reglages" aria-expanded="true">
+          Masquer les réglages
+        </button>
+        <colabs-motif id="motif" class="libre"></colabs-motif>
       </div>
-      <aside>
+
+      <!-- ============ RÉGLAGES ============ -->
+      <aside id="reglages" aria-label="Réglages du motif">
         <h1>Motif Co-labs</h1>
         <p class="aide">
           Règle le motif, puis copie le code en bas. Tu peux aussi tourner la forme à la souris.
@@ -157,18 +200,17 @@
 
         <h2>Orientation</h2>
         <label
-          >Rotation <input type="range" data-attr="rotation" min="-180" max="180" step="1" value="0" /><span
+          >Rotation <input type="range" data-attr="rotation" min="-180" max="360" step="1" /><span
             class="v"
           ></span
         ></label>
         <label
-          >Inclinaison
-          <input type="range" data-attr="inclinaison" min="-89" max="89" step="1" value="10" /><span
+          >Inclinaison <input type="range" data-attr="inclinaison" min="-89" max="89" step="1" /><span
             class="v"
           ></span
         ></label>
         <label
-          >Distance <input type="range" data-attr="distance" min="5" max="180" step="1" value="40" /><span
+          >Distance <input type="range" data-attr="distance" min="5" max="180" step="1" /><span
             class="v"
           ></span
         ></label>
@@ -207,11 +249,26 @@
           ></span
         ></label>
 
-        <h2>Couleurs</h2>
+        <h2>Fond et format</h2>
         <label
-          >Fond
+          >Fond du motif
           <select data-attr="fond"></select
         ></label>
+        <label>Couleur de la page (aperçu) <input type="color" id="page-couleur" value="#f8f5f1" /></label>
+        <label
+          >Format
+          <select data-attr="format">
+            <option value="">Libre (taille du bloc)</option>
+            <option value="16/9">16/9 (paysage)</option>
+            <option value="21/9">21/9 (bandeau)</option>
+            <option value="4/3">4/3</option>
+            <option value="1/1">1/1 (carré)</option>
+            <option value="4/5">4/5 (portrait)</option>
+            <option value="9/16">9/16 (vertical)</option>
+          </select>
+        </label>
+
+        <h2>Couleurs des points</h2>
         <div class="couleurs" id="couleurs"></div>
 
         <h2>Effets</h2>
@@ -228,51 +285,53 @@
         <div class="ligne"><button type="button" class="principal" id="copier">Copier le code</button></div>
         <p class="aide">
           À coller dans la page du site, à l’endroit du motif. Le fichier colabs-motif.js doit être à côté de
-          la page (ou indiquer son adresse dans src).
+          la page (sinon, mettre son adresse dans src).
         </p>
       </aside>
     </main>
 
     <script>
+      // ---------- Données ----------
       const PALETTE = {
-        brun: '#431604',
-        orange: '#EC5F14',
-        taupe: '#C2B1A2',
-        grege: '#C0B0A1',
-        lin: '#F1E2DA',
-        sauge: '#91BB7B',
-        ciel: '#90D7EB',
-      };
-      const NOMS = {
-        brun: 'Brun',
-        orange: 'Orange',
-        taupe: 'Taupe',
-        grege: 'Grège',
-        lin: 'Lin',
-        sauge: 'Sauge',
-        ciel: 'Ciel',
+        brun: ['Brun', '#431604'],
+        orange: ['Orange', '#EC5F14'],
+        taupe: ['Taupe', '#C2B1A2'],
+        grege: ['Grège', '#C0B0A1'],
+        lin: ['Lin', '#F1E2DA'],
+        sauge: ['Sauge', '#91BB7B'],
+        ciel: ['Ciel', '#90D7EB'],
       };
       const motif = document.getElementById('motif');
-      const touched = new Set(['forme']);
+      const apercu = document.getElementById('apercu');
+      // Attributs modifiés : seuls ceux-là vont dans le code (le reste garde les valeurs par défaut).
       const attrs = { forme: 'A' };
+      const touched = new Set(['forme']);
 
-      // Couleurs : fond (liste) et points (cases), d'après la palette du moteur.
+      // ---------- Listes : fond et couleurs des points ----------
       const fond = document.querySelector('[data-attr="fond"]');
+      fond.add(new Option('Transparent', 'transparent'));
       const couleurs = document.getElementById('couleurs');
-      for (const [id, hex] of Object.entries(PALETTE)) {
-        fond.add(new Option(NOMS[id], id, false, id === 'lin'));
+      for (const [id, [nom, hex]] of Object.entries(PALETTE)) {
+        fond.add(new Option(nom, id, false, id === 'lin'));
         couleurs.insertAdjacentHTML(
           'beforeend',
-          `<label><input type="checkbox" value="${id}" ${['brun', 'ciel', 'lin'].includes(id) ? 'checked' : ''} /> <span class="pastille" style="background:${hex}"></span> ${NOMS[id]}</label>`,
+          `<label><input type="checkbox" value="${id}" ${['brun', 'ciel', 'lin'].includes(id) ? 'checked' : ''} /> <span class="pastille" style="background:${hex}"></span> ${nom}</label>`,
         );
       }
 
-      const set = (name, value) => {
-        attrs[name] = value;
-        touched.add(name);
-        motif.setAttribute(name, value);
+      // ---------- Écriture d'un réglage sur le motif ----------
+      function set(name, value) {
+        if (value === '') {
+          delete attrs[name];
+          touched.delete(name);
+          motif.removeAttribute(name);
+        } else {
+          attrs[name] = value;
+          touched.add(name);
+          motif.setAttribute(name, value);
+        }
         render();
-      };
+      }
       const show = (input) => {
         const out = input.parentElement.querySelector('.v');
         if (out) out.textContent = input.value;
@@ -290,42 +349,54 @@
         .forEach((input) =>
           input.addEventListener('change', () => set(input.dataset.attr, input.checked ? 'oui' : 'non')),
         );
-      fond.addEventListener('change', () => set('fond', fond.value));
+      fond.addEventListener('change', () => {
+        set('fond', fond.value);
+        apercu.classList.toggle('damier', fond.value === 'transparent');
+      });
       couleurs.addEventListener('change', () =>
         set('couleurs', [...couleurs.querySelectorAll('input:checked')].map((c) => c.value).join(' ')),
       );
+      document.querySelector('[data-attr="format"]').addEventListener('change', (event) => {
+        set('format', event.target.value);
+        motif.classList.toggle('libre', !event.target.value);
+        // aperçu : le format entier tient dans l'écran (largeur limitée selon la proportion)
+        const [w, h] = event.target.value.split('/').map(Number);
+        motif.style.width = w && h ? `min(100%, calc((100vh - 48px) * ${w / h}))` : '';
+      });
+      document.getElementById('page-couleur').addEventListener('input', (event) => {
+        apercu.style.backgroundColor = event.target.value;
+      });
 
+      // ---------- Forme : A, B, ou nouvelle forme au hasard ----------
       document.querySelectorAll('[data-forme]').forEach((button) =>
         button.addEventListener('click', () => {
           document
             .querySelectorAll('[data-forme]')
             .forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
           // chaque forme a son orientation par défaut : on repart d'elle
-          for (const n of ['graine', 'rotation', 'inclinaison', 'distance']) {
-            delete attrs[n];
-            touched.delete(n);
-            motif.removeAttribute(n);
-          }
+          for (const n of ['graine', 'rotation', 'inclinaison', 'distance']) set(n, '');
           set('forme', button.dataset.forme);
           setTimeout(syncOrientation, 400);
         }),
       );
-      // Curseurs d'orientation : affichent celle du motif (sans l'ajouter au code tant qu'on n'y touche pas).
+      document.getElementById('nouvelle').addEventListener('click', () => {
+        motif.nouvelleForme();
+        set('graine', motif.getAttribute('graine'));
+      });
+
+      // ---------- Orientation ----------
+      // Les curseurs affichent celle du motif, sans l'ajouter au code tant qu'on n'y touche pas.
       function syncOrientation() {
         const o = motif.orientation();
         if (!o) return;
         for (const [name, value] of Object.entries(o)) {
-          const input = document.querySelector(`[data-attr="${name}"]`);
           if (touched.has(name)) continue;
+          const input = document.querySelector(`[data-attr="${name}"]`);
           input.value = value;
           show(input);
         }
       }
       motif.addEventListener('pret', () => setTimeout(syncOrientation, 100));
-      document.getElementById('nouvelle').addEventListener('click', () => {
-        motif.nouvelleForme();
-        set('graine', motif.getAttribute('graine'));
-      });
       document.getElementById('garder').addEventListener('click', () => {
         const o = motif.orientation();
         if (!o) return;
@@ -333,21 +404,34 @@
           const input = document.querySelector(`[data-attr="${name}"]`);
           input.value = value;
           show(input);
-          attrs[name] = String(value);
-          touched.add(name);
+          set(name, String(value));
         }
-        render();
       });
 
+      // ---------- Masquer / afficher les réglages (aperçu du motif seul) ----------
+      const bascule = document.getElementById('bascule');
+      bascule.addEventListener('click', () => {
+        const masque = document.getElementById('page').classList.toggle('sans-reglages');
+        bascule.textContent = masque ? 'Afficher les réglages' : 'Masquer les réglages';
+        bascule.setAttribute('aria-expanded', String(!masque));
+      });
+
+      // ---------- Code à copier ----------
       function render() {
         const parts = [...touched].filter((n) => attrs[n] !== undefined).map((n) => `${n}="${attrs[n]}"`);
+        const taille = attrs.format ? '' : ' style="height: 600px"';
         document.getElementById('code').textContent =
-          `<script src="colabs-motif.js" defer><\/script>\n<colabs-motif ${parts.join(' ')} style="height: 600px"></colabs-motif>`;
+          `<script src="colabs-motif.js" defer><\/script>\n<colabs-motif ${parts.join(' ')}${taille}></colabs-motif>`;
       }
       document.getElementById('copier').addEventListener('click', async () => {
-        await navigator.clipboard.writeText(document.getElementById('code').textContent);
-        document.getElementById('copier').textContent = 'Copié !';
-        setTimeout(() => (document.getElementById('copier').textContent = 'Copier le code'), 1500);
+        const button = document.getElementById('copier');
+        try {
+          await navigator.clipboard.writeText(document.getElementById('code').textContent);
+          button.textContent = 'Copié !';
+        } catch {
+          button.textContent = 'Sélectionne le code et copie-le';
+        }
+        setTimeout(() => (button.textContent = 'Copier le code'), 1800);
       });
       render();
     </script>

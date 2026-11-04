@@ -60,6 +60,7 @@ export const ATTRIBUTES = [
   'finesse-cols',
   'epaisseur',
   'fond',
+  'format',
   'couleurs',
   'survol',
   'particules',
@@ -115,6 +116,7 @@ export function readSettings(read: Read): Record<string, unknown> {
   if (epaisseur !== undefined) o.tubeR = epaisseur;
   if (yesNo(read('elargir')) === false) Object.assign(o, NOT_WIDENED);
 
+  // fond « transparent » : géré par la balise (colabs-motif.ts) ; le moteur garde sa couleur de base
   const fond = read('fond')?.trim().toLowerCase();
   if (fond && (PALETTE_IDS as readonly string[]).includes(fond)) o.bg = fond;
   const couleurs = (read('couleurs') ?? '')
@@ -143,3 +145,14 @@ export function readSettings(read: Read): Record<string, unknown> {
 
 // Ruban sans élargissement : renflements au minimum (valeurs basses des curseurs du moteur).
 export const NOT_WIDENED = { junction: 0.4, thin: 0.6 };
+
+/** Fond transparent : la page se voit derrière le motif (fond="transparent"). */
+export const isTransparent = (read: Read) => read('fond')?.trim().toLowerCase() === 'transparent';
+
+/** Format du bloc : « 16/9 », « 1:1 », « 4x5 »… → valeur CSS aspect-ratio (« 16 / 9 »), sinon null. */
+export function readFormat(raw: string | null) {
+  const m = raw?.trim().match(/^(\d+(?:[.,]\d+)?)\s*[/:x×]\s*(\d+(?:[.,]\d+)?)$/i);
+  if (!m) return null;
+  const [w, h] = [m[1], m[2]].map((v) => Number(v.replace(',', '.')));
+  return w > 0 && h > 0 ? `${w} / ${h}` : null;
+}
