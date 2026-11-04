@@ -1,4 +1,4 @@
-// Couche d'adaptation du moteur de patterns (voir SPEC-pattern-engine.md).
+// Couche d'adaptation du moteur de patterns (voir README, « Moteur de patterns »).
 // Le moteur lui-même (prototype-engine.js) est une copie exacte du prototype : rien ici ne le modifie.
 // Cette couche lui fournit ce que le reste du prototype lui donnait, puis expose une API à l'appli.
 import geistLatinUrl from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
