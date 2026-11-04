@@ -2,6 +2,7 @@
 // l'identique pour la partie moteur. Fichier léger : le panneau l'importe sans charger le moteur.
 import type { AppMode } from './createEngine';
 import type { PrototypeEngine } from './prototype-engine.js';
+import { createShapeSeed, type ShapeSeed } from './shapeSeed';
 
 // Chaque préréglage partagé est un document de la collection « presets » du stockage.
 // « mine » : préréglage d'un visiteur, gardé dans son navigateur seulement.
@@ -75,7 +76,8 @@ export function createPresets(
   {
     store: Store = core.Store,
     isEditor = () => false,
-  }: { store?: PresetStore; isEditor?: () => boolean } = {},
+    shapeSeed = createShapeSeed(core),
+  }: { store?: PresetStore; isEditor?: () => boolean; shapeSeed?: ShapeSeed } = {},
 ) {
   let presets: Preset[] = [];
   let mine: Preset[] = [];
@@ -98,6 +100,9 @@ export function createPresets(
       o[k] = v instanceof Set ? [...v] : v;
     }
     o._view = { theta: core.orbit.theta, phi: core.orbit.phi, radius: core.orbit.radius };
+    // graine de la forme affichée : recharger le préréglage redonne exactement la même forme
+    const seed = shapeSeed.current();
+    if (seed !== null) o._seed = seed;
     return o;
   };
 
@@ -106,7 +111,7 @@ export function createPresets(
     const S = core.S;
     if (o.app && o.app !== S.app) actions.setApp(o.app as AppMode);
     for (const k in o) {
-      if (k === '_view' || SKIP_KEYS.has(k) || !(k in S)) continue;
+      if (k === '_view' || k === '_seed' || SKIP_KEYS.has(k) || !(k in S)) continue;
       S[k] = k === 'dots' ? new Set(o[k] as string[]) : o[k];
     }
     S.variant = 2;
@@ -114,7 +119,8 @@ export function createPresets(
     S.fog = 0;
     S.pinches = 0;
     syncAll();
-    core.rng = core.mulberry32((Math.random() * 1e9) | 0);
+    // préréglage avec graine : la même forme ; sans graine (anciens préréglages) : une forme au hasard
+    shapeSeed.use(typeof o._seed === 'number' ? o._seed : undefined);
     core.regenerate();
     core.resetView();
     const view = o._view as { theta: number; phi: number; radius: number } | undefined;
