@@ -10,7 +10,9 @@ Contenu du dossier
 ------------------------------
 - Ouvrir un Terminal dans ce dossier et lancer :  npx serve .
   (ou : python3 -m http.server 8080), puis ouvrir l'adresse indiquée suivie de /demo.html.
-- Forme A / Forme B : les deux formes proposées.
+- Forme A / Forme B : les deux formes des maquettes, imitées (même famille de nœud, même
+  déformation et même angle de vue, retrouvés par calcul). Les parties larges glissent le
+  long du ruban pendant l'animation, comme dans l'outil.
   « Nouvelle forme » en tire une autre au hasard ; sa « graine » est ajoutée au code :
   la même graine redonne toujours exactement la même forme.
 - Tourner la forme à la souris, puis « Garder l'orientation actuelle ».
@@ -29,7 +31,7 @@ Sans hauteur, le motif prend un format 16/9 de la largeur disponible.
 
 Attributs
 ---------
-  forme              A ou B
+  forme              A ou B (avec son orientation par défaut)
   graine             numéro de forme exacte (remplace celle de A / B)
   forme-du-fil       noeud, ample ou simple (famille de forme)
   rotation           degrés, autour de la forme (-360 à 360)

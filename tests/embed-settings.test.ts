@@ -5,17 +5,19 @@ import { FORMES, NOT_WIDENED, readSettings } from '../src/embed/settings';
 const settings = (attrs: Record<string, string> = {}) => readSettings((name) => attrs[name] ?? null);
 
 describe('script d’intégration : réglages du motif', () => {
-  it('par défaut : forme A, sa graine et son orientation, fond lin, points brun ciel lin', () => {
+  it('par défaut : forme A, son tirage et son orientation, fond lin, points brun ciel lin', () => {
     const o = settings();
-    expect(o._seed).toBe(FORMES.A.graine);
-    expect(o.shapeMode).toBe(0);
+    expect(o._seed).toEqual(FORMES.A.tirage);
+    expect(o.shapeMode).toBe(1);
+    expect(o.fov).toBe(36);
     expect(o._view).toEqual(FORMES.A.view);
     expect(o.bg).toBe('lin');
     expect(o.dots).toEqual(['brun', 'ciel', 'lin']);
   });
 
   it('choisit la forme B, ou une graine précise (forme exacte)', () => {
-    expect(settings({ forme: 'b' })._seed).toBe(FORMES.B.graine);
+    expect(settings({ forme: 'b' })._seed).toEqual(FORMES.B.tirage);
+    expect(settings({ forme: 'b' })._view).toEqual(FORMES.B.view);
     expect(settings({ forme: 'B' }).shapeMode).toBe(1);
     expect(settings({ forme: 'B', graine: '714171450' })._seed).toBe(714171450);
     expect(settings({ 'forme-du-fil': 'simple' }).shapeMode).toBe(2);

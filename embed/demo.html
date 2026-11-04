@@ -300,12 +300,28 @@
           document
             .querySelectorAll('[data-forme]')
             .forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-          delete attrs.graine;
-          touched.delete('graine');
-          motif.removeAttribute('graine');
+          // chaque forme a son orientation par défaut : on repart d'elle
+          for (const n of ['graine', 'rotation', 'inclinaison', 'distance']) {
+            delete attrs[n];
+            touched.delete(n);
+            motif.removeAttribute(n);
+          }
           set('forme', button.dataset.forme);
+          setTimeout(syncOrientation, 400);
         }),
       );
+      // Curseurs d'orientation : affichent celle du motif (sans l'ajouter au code tant qu'on n'y touche pas).
+      function syncOrientation() {
+        const o = motif.orientation();
+        if (!o) return;
+        for (const [name, value] of Object.entries(o)) {
+          const input = document.querySelector(`[data-attr="${name}"]`);
+          if (touched.has(name)) continue;
+          input.value = value;
+          show(input);
+        }
+      }
+      motif.addEventListener('pret', () => setTimeout(syncOrientation, 100));
       document.getElementById('nouvelle').addEventListener('click', () => {
         motif.nouvelleForme();
         set('graine', motif.getAttribute('graine'));

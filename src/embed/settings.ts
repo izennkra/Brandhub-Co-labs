@@ -4,7 +4,7 @@
 export const PALETTE_IDS = ['brun', 'orange', 'taupe', 'grege', 'lin', 'sauge', 'ciel'] as const;
 
 export type View = { theta: number; phi: number; radius: number };
-export type Forme = { graine: number; filMode: number; view: View; reglages: Record<string, unknown> };
+export type Forme = { tirage: number[]; filMode: number; view: View; reglages: Record<string, unknown> };
 
 // Base commune : membrane, fond clair, points brun, ciel et lin (comme les maquettes).
 const BASE: Record<string, unknown> = {
@@ -17,12 +17,32 @@ const BASE: Record<string, unknown> = {
   hoverOn: true,
 };
 
-// Les deux formes proposées : graine (forme exacte), famille du fil (Nœud, Ample) et orientation.
-// Points de départ : la page de démo permet d'en tirer d'autres et de copier leur graine.
-const VUE = { theta: 0, phi: (80 * Math.PI) / 180, radius: 40 }; // de face, un peu au-dessus, cadrée
+// Les deux formes des maquettes, imitées : un trèfle étiré (famille « Ample » du moteur), avec la
+// déformation, l'angle et la vue retrouvés par calcul en comparant sa silhouette à chaque maquette.
+// « tirage » : les valeurs que le moteur lit pour dessiner la forme (shapeSeed.ts) ; les 30 premières
+// ne servent qu'aux autres structures, d'où 0,5. Angle de vue resserré (fov 36) comme les maquettes.
+const tirage = (knot: number[]) => [...Array<number>(30).fill(0.5), ...knot];
 export const FORMES: Record<'A' | 'B', Forme> = {
-  A: { graine: 101, filMode: 0, view: VUE, reglages: {} },
-  B: { graine: 202, filMode: 1, view: VUE, reglages: {} },
+  // 3e image : grande boucle en bas à gauche, partie large en haut, trait qui remonte à droite
+  A: {
+    tirage: tirage([
+      0.166667, 0.490701, 0.016095, 1, 0, 0.317663, 0.930744, 0.692447, 0.256845, 0.322328, 0.759442,
+      0.668753, 0.41059, 0.248473, 0.21277, 0.377693, 0.27705, 0.243139, 0.770779,
+    ]),
+    filMode: 1,
+    view: { theta: 4.170808, phi: 0.611979, radius: 118 },
+    reglages: { fov: 36 },
+  },
+  // 2e image : anneaux allongés qui se croisent, partie large en diagonale au centre
+  B: {
+    tirage: tirage([
+      0.166667, 0.429207, 0.295357, 0.807986, 0.5, 0.5, 0.5, 0, 0, 0, 0.5, 0.5, 0.5, 0, 0, 0, 0.72405,
+      0.394068, 0.378157,
+    ]),
+    filMode: 1,
+    view: { theta: 1.369241, phi: 0.941062, radius: 100 },
+    reglages: { fov: 36 },
+  },
 };
 
 export const ATTRIBUTES = [
@@ -66,7 +86,7 @@ export function readSettings(read: Read): Record<string, unknown> {
   const view = { ...forme.view };
 
   const graine = num(read('graine'), 0, 999_999_999);
-  o._seed = graine === undefined ? forme.graine : Math.round(graine);
+  o._seed = graine === undefined ? forme.tirage : Math.round(graine);
   const fil = read('forme-du-fil')?.trim().toLowerCase().replace('œ', 'oe') as keyof typeof FIL | undefined;
   if (fil && fil in FIL) o.shapeMode = FIL[fil];
 
