@@ -12,6 +12,22 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["vite", "preview", "--config", "vite.embed.config.ts", "--port", "5180", "--strictPort"],
       "port": 5180
+    },
+    {
+      "name": "embed-illustration",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--config",
+        "vite.embed.config.ts",
+        "--mode",
+        "illustration",
+        "--port",
+        "5182",
+        "--strictPort"
+      ],
+      "port": 5182
     }
   ]
 }

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exemple 1 · illustrations en lecture automatique</title>
+    <!-- 1. Charger le script (une seule fois par page). Les illustrations sont lues dans
+            illustrations/illustrations.json, à côté du script. -->
+    <script src="../colabs-illustration.js" defer></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: #f8f5f1;
+      }
+      section {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 48px 24px;
+      }
+      colabs-illustration {
+        border-radius: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <section>
+      <h1>Lecture automatique</h1>
+      <!-- 2. Placer la balise : les 3 illustrations, 6 s chacune, en boucle, format portrait. -->
+      <colabs-illustration images="prisme adn oscilloscope" duree="6" format="4/5"></colabs-illustration>
+    </section>
+  </body>
+</html>

@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Illustrations Co-labs · configurateur</title>
+    <!--
+      CONFIGURATEUR DES ILLUSTRATIONS CO-LABS
+      Sert à régler les illustrations et à copier le code d'intégration. Ce n'est pas une page du site :
+      sur le site, seule la balise <colabs-illustration> est utilisée (voir LISEZMOI.md et exemples/).
+    -->
+    <script src="colabs-illustration.js" defer></script>
+    <style>
+      :root {
+        --fond: #f8f5f1;
+        --texte: #431604;
+        --doux: #7a5a4a;
+        --ligne: #e3d8cf;
+        --accent: #ec5f14;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font:
+          15px/1.45 system-ui,
+          -apple-system,
+          sans-serif;
+        color: var(--texte);
+        background: var(--fond);
+      }
+      main {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        min-height: 100vh;
+      }
+      main.sans-reglages {
+        grid-template-columns: 1fr;
+      }
+      main.sans-reglages aside {
+        display: none;
+      }
+
+      /* Aperçu : l'illustration, la barre de temps et les boutons */
+      .apercu {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 24px;
+        min-height: 100vh;
+      }
+      .apercu.damier {
+        background: repeating-conic-gradient(#e6ddd5 0% 25%, #fff 0% 50%) 0 0 / 24px 24px;
+      }
+      #illustration {
+        width: min(100%, calc((100vh - 140px) * 0.8));
+        border-radius: 12px;
+      }
+      .temps {
+        width: min(100%, calc((100vh - 140px) * 0.8));
+        height: 3px;
+        background: var(--ligne);
+      }
+      .temps div {
+        height: 100%;
+        background: var(--accent);
+        transform-origin: left;
+        transform: scaleX(0);
+      }
+      #nom {
+        min-height: 1.4em;
+        color: var(--doux);
+      }
+      #bascule {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+      }
+
+      /* Panneau des réglages */
+      aside {
+        padding: 20px;
+        border-left: 1px solid var(--ligne);
+        background: #fff;
+        overflow-y: auto;
+        max-height: 100vh;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      h2 {
+        margin: 20px 0 8px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--doux);
+      }
+      p.aide {
+        margin: 0 0 12px;
+        color: var(--doux);
+        font-size: 13px;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 32px;
+      }
+      label span.v {
+        min-width: 3.5em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--doux);
+      }
+      input[type='range'] {
+        flex: 1;
+        accent-color: var(--accent);
+      }
+      input[type='checkbox'] {
+        accent-color: var(--accent);
+        width: 18px;
+        height: 18px;
+      }
+      .ligne {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      button {
+        min-height: 36px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: 8px;
+        font: inherit;
+        color: var(--texte);
+        background: #efe7e0;
+        cursor: pointer;
+      }
+      button.principal {
+        color: #fff;
+        background: var(--texte);
+      }
+      .liste label,
+      .couleurs label {
+        justify-content: flex-start;
+      }
+      .pastille {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1px solid var(--ligne);
+      }
+      .groupe {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+      }
+      .groupe:disabled {
+        opacity: 0.45;
+      }
+      select,
+      input[type='color'] {
+        min-height: 32px;
+        font: inherit;
+      }
+      pre {
+        margin: 0 0 8px;
+        padding: 12px;
+        border-radius: 8px;
+        background: #2a120a;
+        color: #f1e2da;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      @media (max-width: 800px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+        .apercu {
+          min-height: 70vh;
+        }
+        aside {
+          max-height: none;
+          border-left: 0;
+          border-top: 1px solid var(--ligne);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="page">
+      <!-- ============ APERÇU ============ -->
+      <div class="apercu" id="apercu">
+        <button type="button" id="bascule" aria-controls="reglages" aria-expanded="true">
+          Masquer les réglages
+        </button>
+        <colabs-illustration id="illustration" format="4/5"></colabs-illustration>
+        <div class="temps" aria-hidden="true"><div id="barre"></div></div>
+        <div id="nom"></div>
+        <div class="ligne">
+          <button type="button" id="precedente">← Précédente</button>
+          <button type="button" id="suivante">Suivante →</button>
+        </div>
+      </div>
+
+      <!-- ============ RÉGLAGES ============ -->
+      <aside id="reglages" aria-label="Réglages des illustrations">
+        <h1>Illustrations Co-labs</h1>
+        <p class="aide">Règle les illustrations, puis copie le code en bas.</p>
+
+        <h2>Illustrations affichées</h2>
+        <p class="aide">
+          Dans l’ordre du fichier illustrations.json. Pris en compte sur le site au chargement.
+        </p>
+        <div class="liste" id="liste"></div>
+
+        <h2>Lecture</h2>
+        <label>Lecture automatique <input type="checkbox" data-attr="lecture" checked /></label>
+        <label
+          >Durée de chaque image (s)
+          <input type="range" data-attr="duree" min="1" max="20" step="0.5" value="6" /><span class="v"></span
+        ></label>
+        <label
+          >Transition (s)
+          <input type="range" data-attr="transition" min="0.2" max="6" step="0.1" value="2.4" /><span
+            class="v"
+          ></span
+        ></label>
+        <label>En boucle <input type="checkbox" data-attr="boucle" checked /></label>
+
+        <h2>Orientation (axes)</h2>
+        <p class="aide">Incline l’illustration, en douceur.</p>
+        <label
+          >Axe X (bascule)
+          <input type="range" data-attr="axe-x" min="-180" max="180" step="1" value="0" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Axe Y (tourne)
+          <input type="range" data-attr="axe-y" min="-180" max="180" step="1" value="0" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Axe Z (pivote)
+          <input type="range" data-attr="axe-z" min="-180" max="180" step="1" value="0" /><span
+            class="v"
+          ></span
+        ></label>
+
+        <h2>Fond et format</h2>
+        <label
+          >Fond
+          <select data-attr="fond">
+            <option value="">Celui de chaque illustration</option>
+          </select></label
+        >
+        <label>Couleur de la page (aperçu) <input type="color" id="page-couleur" value="#f8f5f1" /></label>
+        <label
+          >Format
+          <select data-attr="format">
+            <option value="4/5" selected>4/5 (portrait)</option>
+            <option value="1/1">1/1 (carré)</option>
+            <option value="16/9">16/9 (paysage)</option>
+            <option value="3/4">3/4</option>
+          </select>
+        </label>
+
+        <h2>Couleurs des points</h2>
+        <p class="aide">Aucune cochée : celles de chaque illustration.</p>
+        <div class="couleurs" id="couleurs"></div>
+
+        <h2>Survol</h2>
+        <label>Effet au survol <input type="checkbox" data-attr="survol" checked /></label>
+        <fieldset id="survol-reglages" class="groupe">
+          <label
+            >Zone touchée
+            <select data-attr="survol-zone">
+              <option value="curseur">Autour du curseur</option>
+              <option value="forme">Toute l’illustration</option>
+            </select></label
+          >
+          <label
+            >Taille de la zone (px)
+            <input type="range" data-attr="survol-taille" min="40" max="500" step="5" value="150" /><span
+              class="v"
+            ></span
+          ></label>
+          <label
+            >Force
+            <input type="range" data-attr="survol-force" min="0.1" max="3" step="0.05" value="1" /><span
+              class="v"
+            ></span
+          ></label>
+          <label
+            >Ouverture (s)
+            <input
+              type="range"
+              data-attr="survol-ouverture"
+              min="0.05"
+              max="2"
+              step="0.05"
+              value="0.35" /><span class="v"></span
+          ></label>
+          <label
+            >Reconstruction (s)
+            <input
+              type="range"
+              data-attr="survol-reconstruction"
+              min="0.1"
+              max="4"
+              step="0.05"
+              value="1.2" /><span class="v"></span
+          ></label>
+        </fieldset>
+
+        <h2>Code à copier</h2>
+        <pre id="code"></pre>
+        <div class="ligne"><button type="button" class="principal" id="copier">Copier le code</button></div>
+        <p class="aide">
+          Le script charge les illustrations depuis le dossier illustrations/, à côté de
+          colabs-illustration.js.
+        </p>
+      </aside>
+    </main>
+
+    <script>
+      // ---------- Données ----------
+      const PALETTE = {
+        brun: ['Brun', '#431604'],
+        orange: ['Orange', '#EC5F14'],
+        taupe: ['Taupe', '#C2B1A2'],
+        grege: ['Grège', '#C0B0A1'],
+        lin: ['Lin', '#F1E2DA'],
+        sauge: ['Sauge', '#91BB7B'],
+        ciel: ['Ciel', '#90D7EB'],
+      };
+      const illustration = document.getElementById('illustration');
+      const apercu = document.getElementById('apercu');
+      // Attributs modifiés : seuls ceux-là vont dans le code (le reste garde les valeurs par défaut).
+      const attrs = { format: '4/5' };
+      const touched = new Set(['format']);
+
+      // ---------- Écriture d'un réglage sur la balise ----------
+      function set(name, value, live = true) {
+        if (value === '') {
+          delete attrs[name];
+          touched.delete(name);
+          if (live) illustration.removeAttribute(name);
+        } else {
+          attrs[name] = value;
+          touched.add(name);
+          if (live) illustration.setAttribute(name, value);
+        }
+        render();
+      }
+      const show = (input) => {
+        const out = input.parentElement.querySelector('.v');
+        if (out) out.textContent = input.value;
+      };
+
+      document.querySelectorAll('input[type="range"][data-attr]').forEach((input) => {
+        show(input);
+        input.addEventListener('input', () => {
+          show(input);
+          set(input.dataset.attr, input.value);
+        });
+      });
+      document.querySelector('[data-attr="lecture"]').addEventListener('change', (event) => {
+        set('lecture', event.target.checked ? '' : 'manuelle');
+      });
+      document.querySelector('[data-attr="boucle"]').addEventListener('change', (event) => {
+        set('boucle', event.target.checked ? '' : 'non');
+      });
+      document.querySelector('[data-attr="survol"]').addEventListener('change', (event) => {
+        set('survol', event.target.checked ? '' : 'non');
+        document.getElementById('survol-reglages').disabled = !event.target.checked;
+      });
+      document.querySelector('[data-attr="survol-zone"]').addEventListener('change', (event) => {
+        set('survol-zone', event.target.value);
+        document.querySelector('[data-attr="survol-taille"]').parentElement.hidden =
+          event.target.value === 'forme';
+      });
+
+      // ---------- Fond, format, couleurs ----------
+      const fond = document.querySelector('[data-attr="fond"]');
+      fond.add(new Option('Transparent', 'transparent'));
+      const couleurs = document.getElementById('couleurs');
+      for (const [id, [nom, hex]] of Object.entries(PALETTE)) {
+        fond.add(new Option(nom, id));
+        couleurs.insertAdjacentHTML(
+          'beforeend',
+          `<label><input type="checkbox" value="${id}" /> <span class="pastille" style="background:${hex}"></span> ${nom}</label>`,
+        );
+      }
+      fond.addEventListener('change', () => {
+        set('fond', fond.value);
+        apercu.classList.toggle('damier', fond.value === 'transparent');
+      });
+      couleurs.addEventListener('change', () =>
+        set('couleurs', [...couleurs.querySelectorAll('input:checked')].map((c) => c.value).join(' ')),
+      );
+      document.querySelector('[data-attr="format"]').addEventListener('change', (event) => {
+        set('format', event.target.value);
+        const [w, h] = event.target.value.split('/').map(Number);
+        const largeur = `min(100%, calc((100vh - 140px) * ${w / h}))`;
+        illustration.style.width = largeur;
+        document.querySelector('.temps').style.width = largeur;
+      });
+      document.getElementById('page-couleur').addEventListener('input', (event) => {
+        apercu.style.backgroundColor = event.target.value;
+      });
+
+      // ---------- Illustrations affichées (liste lue dans illustrations.json) ----------
+      illustration.addEventListener('pret', () => {
+        const liste = document.getElementById('liste');
+        for (const { id, nom } of illustration.illustrations)
+          liste.insertAdjacentHTML(
+            'beforeend',
+            `<label><input type="checkbox" value="${id}" checked /> ${nom}</label>`,
+          );
+        liste.addEventListener('change', () => {
+          const all = liste.querySelectorAll('input');
+          const checked = [...liste.querySelectorAll('input:checked')].map((c) => c.value);
+          set('images', checked.length === all.length ? '' : checked.join(' '), false);
+        });
+      });
+
+      // ---------- Aperçu : barre de temps, nom, précédente / suivante ----------
+      illustration.addEventListener('progression', (event) => {
+        document.getElementById('barre').style.transform = `scaleX(${event.detail.progression})`;
+      });
+      illustration.addEventListener('changement', (event) => {
+        document.getElementById('nom').textContent = event.detail.nom;
+      });
+      document.getElementById('precedente').addEventListener('click', () => illustration.precedente());
+      document.getElementById('suivante').addEventListener('click', () => illustration.suivante());
+
+      // ---------- Masquer / afficher les réglages ----------
+      const bascule = document.getElementById('bascule');
+      bascule.addEventListener('click', () => {
+        const masque = document.getElementById('page').classList.toggle('sans-reglages');
+        bascule.textContent = masque ? 'Afficher les réglages' : 'Masquer les réglages';
+        bascule.setAttribute('aria-expanded', String(!masque));
+      });
+
+      // ---------- Code à copier ----------
+      function render() {
+        const parts = [...touched].filter((n) => attrs[n] !== undefined).map((n) => `${n}="${attrs[n]}"`);
+        document.getElementById('code').textContent =
+          `<script src="colabs-illustration.js" defer><\/script>\n<colabs-illustration ${parts.join(' ')}></colabs-illustration>`;
+      }
+      document.getElementById('copier').addEventListener('click', async () => {
+        const button = document.getElementById('copier');
+        try {
+          await navigator.clipboard.writeText(document.getElementById('code').textContent);
+          button.textContent = 'Copié !';
+        } catch {
+          button.textContent = 'Sélectionne le code et copie-le';
+        }
+        setTimeout(() => (button.textContent = 'Copier le code'), 1800);
+      });
+      render();
+    </script>
+  </body>
+</html>

@@ -75,17 +75,17 @@ export const ATTRIBUTES = [
   'reglages',
 ] as const;
 export type Attribute = (typeof ATTRIBUTES)[number];
-type Read = (name: Attribute) => string | null;
+export type Read = (name: string) => string | null;
 
 const FIL = { noeud: 0, ample: 1, simple: 2 } as const;
 const DEG = Math.PI / 180;
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
-const num = (raw: string | null, min: number, max: number) => {
+export const num = (raw: string | null, min: number, max: number) => {
   if (raw === null || raw.trim() === '') return undefined;
   const v = Number(raw.replace(',', '.'));
   return Number.isFinite(v) ? clamp(v, min, max) : undefined;
 };
-const yesNo = (raw: string | null) =>
+export const yesNo = (raw: string | null) =>
   raw === null ? undefined : !/^(non|no|false|0|off)$/i.test(raw.trim());
 
 /** Réglages pour le moteur (mêmes clés qu'un préréglage : réglages, _seed et _view). */
@@ -124,42 +124,14 @@ export function readSettings(read: Read): Record<string, unknown> {
   if (epaisseur !== undefined) o.tubeR = epaisseur;
   if (yesNo(read('elargir')) === false) Object.assign(o, NOT_WIDENED);
 
-  // fond « transparent » : géré par la balise (colabs-motif.ts) ; le moteur garde sa couleur de base
-  const fond = read('fond')?.trim().toLowerCase();
-  if (fond && (PALETTE_IDS as readonly string[]).includes(fond)) o.bg = fond;
-  const couleurs = (read('couleurs') ?? '')
-    .toLowerCase()
-    .split(/[\s,]+/)
-    .filter((c) => (PALETTE_IDS as readonly string[]).includes(c));
-  if (couleurs.length) o.dots = couleurs;
-
-  // Survol : déconstruction de la forme au passage de la souris (réglages du moteur, section Survol).
-  const survol = yesNo(read('survol'));
-  if (survol !== undefined) o.hoverOn = survol;
-  const zone = read('survol-zone')?.trim().toLowerCase();
-  if (zone === 'curseur') o.hoverMode = 0;
-  else if (zone === 'forme') o.hoverMode = 1;
-  const taille = num(read('survol-taille'), 40, 500);
-  if (taille !== undefined) o.hoverRadius = Math.round(taille);
-  const force = num(read('survol-force'), 0.1, 3);
-  if (force !== undefined) o.hoverForce = force;
-  const ouverture = num(read('survol-ouverture'), 0.05, 2);
-  if (ouverture !== undefined) o.hoverIn = ouverture;
-  const reconstruction = num(read('survol-reconstruction'), 0.1, 4);
-  if (reconstruction !== undefined) o.hoverOut = reconstruction;
+  // fond « transparent » : géré par la balise (shared.ts) ; le moteur garde sa couleur de base
+  Object.assign(o, readColors(read));
+  Object.assign(o, readHover(read));
   const particules = num(read('particules'), 2000, 120000);
   if (particules !== undefined) o.qCount = Math.round(particules);
 
   // Tous les autres réglages avancés, tels que dans un préréglage : reglages='{"swirl":0.4}'.
-  const raw = read('reglages');
-  if (raw) {
-    try {
-      const extra = JSON.parse(raw);
-      if (extra && typeof extra === 'object' && !Array.isArray(extra)) Object.assign(o, extra);
-    } catch {
-      // réglages illisibles : ignorés, le motif s'affiche avec le reste
-    }
-  }
+  Object.assign(o, readAdvanced(read('reglages')));
   return o;
 }
 
@@ -203,3 +175,46 @@ export const LIVE_KEYS = [
   'hoverIn',
   'hoverOut',
 ] as const;
+
+/** Survol : déconstruction au passage de la souris (réglages du moteur, section Survol). */
+export function readHover(read: Read) {
+  const o: Record<string, unknown> = {};
+  const survol = yesNo(read('survol'));
+  if (survol !== undefined) o.hoverOn = survol;
+  const zone = read('survol-zone')?.trim().toLowerCase();
+  if (zone === 'curseur') o.hoverMode = 0;
+  else if (zone === 'forme') o.hoverMode = 1;
+  const taille = num(read('survol-taille'), 40, 500);
+  if (taille !== undefined) o.hoverRadius = Math.round(taille);
+  const force = num(read('survol-force'), 0.1, 3);
+  if (force !== undefined) o.hoverForce = force;
+  const ouverture = num(read('survol-ouverture'), 0.05, 2);
+  if (ouverture !== undefined) o.hoverIn = ouverture;
+  const reconstruction = num(read('survol-reconstruction'), 0.1, 4);
+  if (reconstruction !== undefined) o.hoverOut = reconstruction;
+  return o;
+}
+
+/** Couleurs choisies sur la balise : fond (couleur de la palette) et points ; rien si non précisé. */
+export function readColors(read: Read) {
+  const o: Record<string, unknown> = {};
+  const fond = read('fond')?.trim().toLowerCase();
+  if (fond && (PALETTE_IDS as readonly string[]).includes(fond)) o.bg = fond;
+  const couleurs = (read('couleurs') ?? '')
+    .toLowerCase()
+    .split(/[\s,]+/)
+    .filter((c) => (PALETTE_IDS as readonly string[]).includes(c));
+  if (couleurs.length) o.dots = couleurs;
+  return o;
+}
+
+/** Réglages avancés en JSON (attribut « reglages ») ; illisibles : ignorés. */
+export function readAdvanced(raw: string | null): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    const extra = JSON.parse(raw);
+    return extra && typeof extra === 'object' && !Array.isArray(extra) ? extra : {};
+  } catch {
+    return {};
+  }
+}

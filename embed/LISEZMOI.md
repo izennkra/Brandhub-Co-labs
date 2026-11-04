@@ -136,8 +136,10 @@ motif.nouvelleForme(); // tire une nouvelle forme (écrit l’attribut graine)
 
 ## Limites
 
-- **Un seul motif animé par page** : le moteur n’en gère qu’un à la fois. Pour plusieurs motifs, utiliser une
-  `<iframe>` par motif (chacune avec sa propre page).
+- **Un seul moteur par page** : une page affiche soit un motif (`<colabs-motif>`), soit une illustration
+  (`<colabs-illustration>`), une seule fois. Pour plusieurs, utiliser une `<iframe>` par moteur.
+- Rien n’est enregistré chez le visiteur. Au démarrage, le moteur vérifie une seule fois s’il existe un service
+  `/api/store` : sur le site, cette adresse répond « 404 », c’est normal et sans effet.
 - Le motif dessine sa forme progressivement au démarrage (quelques secondes), comme dans l’outil.
 - Les parties larges glissent le long du ruban pendant l’animation : leur place change d’un instant à l’autre.
 - Pas de navigation sur le motif (glisser, molette, pincement, double-clic) : la page défile normalement par-dessus,

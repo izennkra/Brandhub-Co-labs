@@ -33,3 +33,4 @@ playwright/.cache
 .vercel
 
 dist-embed
+dist-embed-illustration

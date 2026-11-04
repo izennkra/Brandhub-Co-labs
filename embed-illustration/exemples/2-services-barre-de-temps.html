@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exemple 2 · services, barre de temps et clic</title>
+    <!--
+      BRANCHEMENT AVEC LE SITE (exemple sans design final)
+      Une liste de services à gauche, l'illustration à droite :
+      - l'illustration change seule à la fin de la barre de temps (lecture automatique) ;
+      - un clic sur un service affiche son illustration tout de suite, et le temps repart à 0 ;
+      - le service actif s'ouvre (texte visible) et sa barre se remplit.
+      Tout passe par 3 choses : l'événement « progression », l'événement « changement »
+      et la méthode afficher().
+    -->
+    <script src="../colabs-illustration.js" defer></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        color: #431604;
+        background: #f8f5f1;
+      }
+      .services {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+        align-items: center;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 64px 24px;
+      }
+      ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      li {
+        border-top: 1px solid #e3d8cf;
+      }
+      li button {
+        width: 100%;
+        padding: 16px 0 8px;
+        border: 0;
+        background: none;
+        font: inherit;
+        font-weight: 600;
+        text-align: left;
+        color: inherit;
+        cursor: pointer;
+      }
+      li p {
+        display: none;
+        margin: 0 0 12px;
+        color: #7a5a4a;
+      }
+      li.actif p {
+        display: block;
+      }
+      /* La barre de temps : sa largeur suit l'avancement (0 → 100 %). */
+      .barre {
+        height: 2px;
+        background: #ec5f14;
+        transform-origin: left;
+        transform: scaleX(0);
+      }
+      colabs-illustration {
+        border-radius: 12px;
+      }
+      @media (max-width: 800px) {
+        .services {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="services">
+      <ol id="liste">
+        <li data-illustration="prisme">
+          <button type="button">Invent the right version of your idea</button>
+          <p>Ideation or audit workshop for your project.</p>
+          <div class="barre"></div>
+        </li>
+        <li data-illustration="adn">
+          <button type="button">Assemble a team that ships real software</button>
+          <p>Gather a team of experienced minds around your project.</p>
+          <div class="barre"></div>
+        </li>
+        <li data-illustration="oscilloscope">
+          <button type="button">Expand your product, month after month</button>
+          <p>We keep your product hot and make it glow.</p>
+          <div class="barre"></div>
+        </li>
+      </ol>
+
+      <colabs-illustration id="illustration" images="prisme adn oscilloscope" duree="6" format="4/5">
+      </colabs-illustration>
+    </section>
+
+    <script>
+      const illustration = document.getElementById('illustration');
+      const services = [...document.querySelectorAll('#liste li')];
+
+      // 1. Clic sur un service : son illustration s'affiche, le temps repart à 0.
+      services.forEach((li) =>
+        li
+          .querySelector('button')
+          .addEventListener('click', () => illustration.afficher(li.dataset.illustration)),
+      );
+
+      // 2. Une nouvelle illustration s'affiche (seule ou après un clic) : le service actif change.
+      illustration.addEventListener('changement', (event) => {
+        services.forEach((li) => {
+          const actif = li.dataset.illustration === event.detail.id;
+          li.classList.toggle('actif', actif);
+          if (!actif) li.querySelector('.barre').style.transform = 'scaleX(0)';
+        });
+      });
+
+      // 3. À chaque image : la barre du service actif se remplit (progression de 0 à 1).
+      illustration.addEventListener('progression', (event) => {
+        const li = services.find((s) => s.dataset.illustration === event.detail.id);
+        if (li) li.querySelector('.barre').style.transform = `scaleX(${event.detail.progression})`;
+      });
+    </script>
+  </body>
+</html>

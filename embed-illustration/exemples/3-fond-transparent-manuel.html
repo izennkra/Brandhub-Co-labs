@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exemple 3 · fond transparent, lecture manuelle</title>
+    <!-- Lecture manuelle : aucun passage automatique, le site décide (ici, deux boutons). -->
+    <script src="../colabs-illustration.js" defer></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 32px;
+        font-family: system-ui, sans-serif;
+        color: #f1e2da;
+        background: linear-gradient(135deg, #431604, #7a2e0e);
+        min-height: 100vh;
+        box-sizing: border-box;
+      }
+      colabs-illustration {
+        max-width: 520px;
+        height: 70vh; /* taille libre : hauteur donnée en CSS */
+        margin: 24px auto;
+      }
+      .boutons {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+      }
+      button {
+        padding: 10px 18px;
+        border: 1px solid #f1e2da;
+        border-radius: 8px;
+        background: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Fond transparent, le site pilote</h1>
+    <colabs-illustration
+      id="illustration"
+      lecture="manuelle"
+      fond="transparent"
+      couleurs="lin"
+    ></colabs-illustration>
+    <div class="boutons">
+      <button type="button" onclick="illustration.precedente()">← Précédente</button>
+      <button type="button" onclick="illustration.suivante()">Suivante →</button>
+    </div>
+  </body>
+</html>
