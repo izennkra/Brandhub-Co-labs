@@ -18,7 +18,14 @@ declare module 'three' {
     x: number;
     y: number;
     z: number;
+    constructor(x?: number, y?: number, z?: number);
     set(x: number, y: number, z: number): this;
+  }
+  export class Quaternion {
+    w: number;
+    setFromEuler(euler: Euler): this;
+    invert(): this;
+    multiply(quaternion: Quaternion): this;
   }
   export class Object3D {
     position: Vector3;
@@ -56,6 +63,8 @@ declare module 'three' {
     set(x: number, y: number, z: number): this;
     sub(vector: Vector3): this;
     applyMatrix4(matrix: Matrix4): this;
+    applyQuaternion(quaternion: Quaternion): this;
+    add(vector: Vector3): this;
     distanceTo(vector: Vector3): number;
   }
   export class Texture {}
@@ -67,7 +76,9 @@ declare module 'three' {
   export class Scene extends Object3D {}
   export class Camera {
     position: Vector3;
+    quaternion: Quaternion;
     lookAt(x: number, y: number, z: number): void;
+    lookAt(target: Vector3): void;
     matrixWorldInverse: Matrix4;
     projectionMatrix: Matrix4;
     updateMatrixWorld(): void;

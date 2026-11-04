@@ -52,6 +52,9 @@ export const ATTRIBUTES = [
   'rotation',
   'inclinaison',
   'distance',
+  'axe-x',
+  'axe-y',
+  'axe-z',
   'rotation-auto',
   'vitesse-rotation',
   'elargir',
@@ -156,3 +159,19 @@ export function readFormat(raw: string | null) {
   const [w, h] = [m[1], m[2]].map((v) => Number(v.replace(',', '.')));
   return w > 0 && h > 0 ? `${w} / ${h}` : null;
 }
+
+/**
+ * Rotation de la forme selon les axes de l'écran, en degrés → radians [x, y, z] :
+ * X bascule la forme vers l'avant ou l'arrière, Y la tourne à gauche ou à droite, Z la fait pivoter
+ * dans le plan de l'écran. S'ajoute au point de vue (rotation, inclinaison, distance).
+ */
+export function readAxes(read: Read): [number, number, number] {
+  return (['axe-x', 'axe-y', 'axe-z'] as const).map((name) => (num(read(name), -360, 360) ?? 0) * DEG) as [
+    number,
+    number,
+    number,
+  ];
+}
+
+/** Réglages appliqués en direct, sans redessiner la forme (vue, couleurs, rotation, survol). */
+export const LIVE_KEYS = ['autoRotate', 'rotSpeed', 'hoverOn', 'bg', 'dots'] as const;

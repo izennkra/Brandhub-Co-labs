@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { FORMES, isTransparent, NOT_WIDENED, readFormat, readSettings } from '../src/embed/settings';
+import {
+  FORMES,
+  isTransparent,
+  LIVE_KEYS,
+  NOT_WIDENED,
+  readAxes,
+  readFormat,
+  readSettings,
+} from '../src/embed/settings';
 
 // Attributs de <colabs-motif> (script d'intégration sur un site) → réglages du moteur.
 const settings = (attrs: Record<string, string> = {}) => readSettings((name) => attrs[name] ?? null);
@@ -76,5 +84,33 @@ describe('script d’intégration : fond transparent et format', () => {
     expect(readFormat('carré')).toBeNull();
     expect(readFormat('0/9')).toBeNull();
     expect(readFormat(null)).toBeNull();
+  });
+});
+
+describe('script d’intégration : axes X, Y, Z et réglages en direct', () => {
+  const read = (attrs: Record<string, string>) => (name: string) => attrs[name] ?? null;
+
+  it('axes en degrés → radians, 0 par défaut, bornés à ±360', () => {
+    const [x, y, z] = readAxes(read({ 'axe-x': '90', 'axe-z': '-45' }));
+    expect(x).toBeCloseTo(Math.PI / 2);
+    expect(y).toBe(0);
+    expect(z).toBeCloseTo(-Math.PI / 4);
+    expect(readAxes(read({ 'axe-y': '999' }))[1]).toBeCloseTo(2 * Math.PI);
+  });
+
+  it('orientation et couleurs ne font pas partie de la forme (pas de nouveau dessin)', () => {
+    const shape = (attrs: Record<string, string>) => {
+      const rest = settings(attrs);
+      delete rest._view;
+      for (const key of LIVE_KEYS) delete rest[key];
+      return JSON.stringify(rest);
+    };
+    const base = shape({});
+    expect(shape({ rotation: '40', inclinaison: '20', distance: '90' })).toBe(base);
+    expect(shape({ couleurs: 'orange', fond: 'brun', survol: 'non', 'rotation-auto': 'non' })).toBe(base);
+    expect(shape({ 'axe-x': '30' })).toBe(base);
+    // la forme, elle, change
+    expect(shape({ forme: 'B' })).not.toBe(base);
+    expect(shape({ renflements: '6' })).not.toBe(base);
   });
 });

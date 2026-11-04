@@ -198,7 +198,28 @@
           <button type="button" id="nouvelle">Nouvelle forme</button>
         </div>
 
-        <h2>Orientation</h2>
+        <h2>Orientation de la forme (axes)</h2>
+        <p class="aide">Tourne la forme sur elle-même, en direct, sans la redessiner.</p>
+        <label
+          >Axe X (bascule)
+          <input type="range" data-attr="axe-x" min="-180" max="180" step="1" value="0" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Axe Y (tourne)
+          <input type="range" data-attr="axe-y" min="-180" max="180" step="1" value="0" /><span
+            class="v"
+          ></span
+        ></label>
+        <label
+          >Axe Z (pivote)
+          <input type="range" data-attr="axe-z" min="-180" max="180" step="1" value="0" /><span
+            class="v"
+          ></span
+        ></label>
+
+        <h2>Point de vue (caméra)</h2>
         <label
           >Rotation <input type="range" data-attr="rotation" min="-180" max="360" step="1" /><span
             class="v"

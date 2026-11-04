@@ -43,7 +43,8 @@ Dans le configurateur :
 
 1. **Forme A / Forme B** : les deux formes des maquettes. « Nouvelle forme » en tire une autre ; sa `graine` passe
    dans le code et redonne toujours exactement la même forme.
-2. **Orientation** : curseurs, ou tourner la forme à la souris puis « Garder l’orientation actuelle ».
+2. **Orientation** : axes X, Y, Z de la forme ; point de vue de la caméra (curseurs, ou tourner la forme à la souris
+   puis « Garder l’orientation actuelle »).
 3. **Fond et format** : fond transparent, couleur de la page pour l’aperçu, format.
 4. **Masquer les réglages** (en haut à droite) : voir le motif seul, comme sur le site.
 5. **Copier le code** : seuls les réglages modifiés sont écrits ; le reste garde les valeurs par défaut.
@@ -82,9 +83,12 @@ lisibles sur ce fond (ex. `couleurs="lin ciel"` sur un fond foncé).
 | `forme` | `A`, `B` | `A` | Forme des maquettes, avec son orientation. |
 | `graine` | nombre entier | — | Forme précise (copiée du configurateur). Remplace celle de `forme`. |
 | `forme-du-fil` | `noeud`, `ample`, `simple` | selon la forme | Famille de forme, avec `graine`. |
-| `rotation` | degrés, −360 à 360 | selon la forme | Tour autour de la forme. |
-| `inclinaison` | degrés, −89 à 89 | selon la forme | 0 = de face, 90 = vue du dessus. |
-| `distance` | 5 à 180 | selon la forme | Plus petit = plus proche. |
+| `axe-x` | degrés, −360 à 360 | `0` | Bascule la forme vers l’avant ou l’arrière (axe horizontal de l’écran). |
+| `axe-y` | degrés, −360 à 360 | `0` | Tourne la forme à gauche ou à droite (axe vertical de l’écran). |
+| `axe-z` | degrés, −360 à 360 | `0` | Fait pivoter la forme dans le plan de l’écran. |
+| `rotation` | degrés, −360 à 360 | selon la forme | Point de vue : la caméra tourne autour de la forme. |
+| `inclinaison` | degrés, −89 à 89 | selon la forme | Point de vue : 0 = de face, 90 = vue du dessus. |
+| `distance` | 5 à 180 | selon la forme | Point de vue : plus petit = plus proche. |
 | `rotation-auto` | `oui`, `non` | `oui` | Rotation lente et continue. |
 | `vitesse-rotation` | −4 à 4 | `0.6` | Le signe donne le sens. |
 | `elargir` | `oui`, `non` | `oui` | `non` : ruban d’épaisseur régulière. |
@@ -101,6 +105,9 @@ lisibles sur ce fond (ex. `couleurs="lin ciel"` sur un fond foncé).
 
 Les valeurs hors bornes sont ramenées dans les bornes ; une valeur illisible est ignorée.
 **Tous les attributs peuvent changer après le chargement** (ex. en JavaScript) : le motif se met à jour.
+Orientation (`axe-*`, `rotation`, `inclinaison`, `distance`), couleurs, `fond`, `rotation-auto`, `vitesse-rotation` et
+`survol` changent **en direct**, sans redessiner la forme. Les autres réglages (`forme`, `graine`, élargissement,
+`particules`, `reglages`…) redessinent la forme depuis le début.
 
 ## JavaScript (facultatif)
 

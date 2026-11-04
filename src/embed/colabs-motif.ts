@@ -1,5 +1,14 @@
+import { Euler, Quaternion } from 'three';
 import type { Engine } from '../lib/pattern-engine/createEngine';
-import { ATTRIBUTES, isTransparent, readFormat, readSettings, type View } from './settings';
+import {
+  ATTRIBUTES,
+  isTransparent,
+  LIVE_KEYS,
+  readAxes,
+  readFormat,
+  readSettings,
+  type View,
+} from './settings';
 
 // <colabs-motif> : le motif Co-labs sur le site d'un client, avec le moteur tel quel (aucune
 // modification), sans l'outil d'édition. Réglages par attributs en français (settings.ts) ;
@@ -7,6 +16,8 @@ import { ATTRIBUTES, isTransparent, readFormat, readSettings, type View } from '
 // - Le moteur (≈ 320 Ko compressé) ne se charge que quand le motif arrive à l'écran.
 // - Hors de l'écran, onglet caché ou animations réduites demandées : le motif est en pause.
 // - Taille : celle du bloc (CSS libre) ; sans hauteur, l'attribut « format » (16/9 par défaut).
+// - Orientation, couleurs, rotation et survol changent en direct ; seuls les réglages de la forme
+//   elle-même (forme, graine, élargissement, particules…) la redessinent.
 // - Un seul motif animé par page : le moteur n'en gère qu'un.
 // Le dessin du moteur remplit le bloc sans jamais en changer la taille (grilles, colonnes flexibles).
 const STYLE = `
@@ -17,6 +28,8 @@ colabs-motif #scene.dragging { cursor: grabbing; }
 
 let enginePromise: Promise<Engine> | null = null;
 let transparent = false;
+// Rotation selon les axes X, Y, Z de l'écran (inverse, appliquée à la caméra : voir plus bas).
+const axesInverse = new Quaternion();
 
 function engine() {
   // Les modèles 3D (Illustration) ne servent pas au motif : on ne les charge pas.
@@ -30,6 +43,20 @@ function engine() {
       const { renderer } = ready.core;
       const setClearColor = renderer.setClearColor.bind(renderer);
       renderer.setClearColor = (color, alpha) => setClearColor(color, transparent ? 0 : alpha);
+
+      // Axes X, Y, Z : tourner la forme revient à tourner la caméra en sens inverse autour d'elle.
+      // Le moteur replace sa caméra à chaque image (updateCamera, puis camera.lookAt) : on ajoute la
+      // rotation juste après. La forme n'est pas redessinée, et le survol (calculé avec la caméra)
+      // reste juste. Moteur inchangé.
+      const { camera, orbit } = ready.core;
+      const lookAt = camera.lookAt.bind(camera) as unknown as (target: typeof orbit.target) => void;
+      camera.lookAt = ((target: typeof orbit.target) => {
+        lookAt(target);
+        if (axesInverse.w === 1) return;
+        const distance = camera.position.distanceTo(orbit.target);
+        camera.quaternion.multiply(axesInverse);
+        camera.position.set(0, 0, distance).applyQuaternion(camera.quaternion).add(orbit.target);
+      }) as unknown as typeof camera.lookAt;
       return ready;
     }),
   );
@@ -42,6 +69,8 @@ export class ColabsMotif extends HTMLElement {
   static observedAttributes = [...ATTRIBUTES];
   private engine: Engine | null = null;
   private visible = false;
+  private shapeKey = '';
+  private viewKey = '';
   private applyTimer: ReturnType<typeof setTimeout> | undefined;
   private observers: { disconnect(): void }[] = [];
 
@@ -112,9 +141,31 @@ export class ColabsMotif extends HTMLElement {
 
   private apply() {
     if (!this.engine) return;
+    const { core, presets } = this.engine;
     const read = (name: (typeof ATTRIBUTES)[number]) => this.getAttribute(name);
     transparent = isTransparent(read);
-    this.engine.presets.applySnapshot(readSettings(read));
+    axesInverse.setFromEuler(new Euler(...readAxes(read))).invert();
+
+    // La forme n'est redessinée que si un réglage de la forme a changé ; le reste s'applique en direct.
+    const settings = readSettings(read);
+    const { _view, ...shape } = settings;
+    const live: Record<string, unknown> = {};
+    for (const key of LIVE_KEYS) {
+      live[key] = shape[key];
+      delete shape[key];
+    }
+    const shapeKey = JSON.stringify(shape);
+    const viewKey = JSON.stringify(_view);
+    if (shapeKey !== this.shapeKey) presets.applySnapshot(settings);
+    else {
+      const S = core.S;
+      for (const [key, value] of Object.entries(live))
+        if (value !== undefined) S[key] = key === 'dots' ? new Set(value as string[]) : value;
+      core.refreshColors();
+      if (viewKey !== this.viewKey) Object.assign(core.orbit, _view as View);
+    }
+    this.shapeKey = shapeKey;
+    this.viewKey = viewKey;
     this.updatePause();
   }
 
