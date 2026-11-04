@@ -12,6 +12,7 @@ import { createLibrary, type Library } from './library';
 import { createTitlePainter } from './infoTitles';
 import { createModelViews, type ModelViews } from './models';
 import { createPresets } from './presets';
+import { createShapeSeed, type ShapeSeed } from './shapeSeed';
 import {
   runPrototypeEngine,
   type EngineEnv,
@@ -142,10 +143,10 @@ function createActions(
   syncAll: () => void,
   toast: (message: string) => void,
   library: () => Library,
+  shapeSeed: ShapeSeed,
 ) {
-  const newSeed = () => {
-    core.rng = core.mulberry32((Math.random() * 1e9) | 0);
-  };
+  // Chaque nouvelle forme part d'une graine gardée par l'appli (shapeSeed.ts), pour pouvoir la reproduire.
+  const newSeed = () => shapeSeed.use();
   let regenTimer: ReturnType<typeof setTimeout> | undefined;
   const actions = {
     // Bouton « Membrane / Ligne » (prototype ligne 2954).
@@ -153,6 +154,7 @@ function createActions(
       core.S.qStruct = structure;
       Object.assign(core.S, structure === 1 ? core.MEMBRANE_BASE : LINE_PRESET);
       syncAll();
+      newSeed();
       core.regenerate();
       core.resetView();
     },
@@ -193,6 +195,7 @@ function createActions(
           Object.assign(S, stash);
         } else {
           Object.assign(S, pick(core.MEMBRANE_BASE));
+          newSeed();
           core.regenerate();
         }
       }
@@ -349,7 +352,10 @@ function createActions(
       // regenSoon (ligne 2671) : nouvelle forme 250 ms après le dernier mouvement.
       if (effect === 'regenSoon') {
         clearTimeout(regenTimer);
-        regenTimer = setTimeout(core.regenerate, 250);
+        regenTimer = setTimeout(() => {
+          newSeed();
+          core.regenerate();
+        }, 250);
       }
       // Longueur et ondulation de la ligne (ligne 3057).
       if (effect === 'buildLine' && core.isLine()) core.buildLine(true);
@@ -439,7 +445,10 @@ async function createEngine(): Promise<Engine> {
   // même ordre : refreshColors() ; regenerate() ; resetView() ; loadLibrary() ;
   // requestAnimationFrame(frame). resize() est appelé quand la scène est placée dans la page.
   // loadLibrary() passe par la bibliothèque (library.load), créée juste avant, sans attente entre les deux.
+  // La première forme part, elle aussi, d'une graine connue (shapeSeed.ts).
+  const shapeSeed = createShapeSeed(core);
   core.refreshColors();
+  shapeSeed.use();
   core.regenerate();
   core.resetView();
 
@@ -448,14 +457,14 @@ async function createEngine(): Promise<Engine> {
 
   const syncAll = () => env.syncers.forEach((sync) => sync());
   const store = getStore();
-  const actions = createActions(core, syncAll, env.toast, () => library);
+  const actions = createActions(core, syncAll, env.toast, () => library, shapeSeed);
   const presets = createPresets(
     core,
     actions,
     syncAll,
     env.toast,
     () => engineEvents.dispatchEvent(new Event('presets')),
-    { store, isEditor: isEditorUnlocked },
+    { store, isEditor: isEditorUnlocked, shapeSeed },
   );
   if (!testHooks()?.noModels) models = createModelViews(core, syncAll);
   const library = createLibrary(core, store, {
