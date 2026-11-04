@@ -135,6 +135,15 @@
         color: #fff;
         background: var(--texte);
       }
+      .groupe {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+      }
+      .groupe:disabled {
+        opacity: 0.45;
+      }
       .couleurs label {
         justify-content: flex-start;
       }
@@ -188,7 +197,7 @@
       <aside id="reglages" aria-label="Réglages du motif">
         <h1>Motif Co-labs</h1>
         <p class="aide">
-          Règle le motif, puis copie le code en bas. Tu peux aussi tourner la forme à la souris.
+          Règle le motif, puis copie le code en bas. Les changements d’orientation s’animent en douceur.
         </p>
 
         <h2>Forme</h2>
@@ -235,7 +244,6 @@
             class="v"
           ></span
         ></label>
-        <div class="ligne"><button type="button" id="garder">Garder l’orientation actuelle</button></div>
         <label>Rotation automatique <input type="checkbox" data-attr="rotation-auto" checked /></label>
         <label
           >Vitesse et sens
@@ -292,8 +300,52 @@
         <h2>Couleurs des points</h2>
         <div class="couleurs" id="couleurs"></div>
 
-        <h2>Effets</h2>
+        <h2>Survol</h2>
+        <p class="aide">La forme se déconstruit au passage de la souris, puis se reconstruit.</p>
         <label>Effet au survol <input type="checkbox" data-attr="survol" checked /></label>
+        <fieldset id="survol-reglages" class="groupe">
+          <label
+            >Zone touchée
+            <select data-attr="survol-zone">
+              <option value="curseur">Autour du curseur</option>
+              <option value="forme">Toute la forme</option>
+            </select></label
+          >
+          <label
+            >Taille de la zone (px)
+            <input type="range" data-attr="survol-taille" min="40" max="500" step="5" value="150" /><span
+              class="v"
+            ></span
+          ></label>
+          <label
+            >Force
+            <input type="range" data-attr="survol-force" min="0.1" max="3" step="0.05" value="1" /><span
+              class="v"
+            ></span
+          ></label>
+          <label
+            >Ouverture (s)
+            <input
+              type="range"
+              data-attr="survol-ouverture"
+              min="0.05"
+              max="2"
+              step="0.05"
+              value="0.35" /><span class="v"></span
+          ></label>
+          <label
+            >Reconstruction (s)
+            <input
+              type="range"
+              data-attr="survol-reconstruction"
+              min="0.1"
+              max="4"
+              step="0.05"
+              value="1.2" /><span class="v"></span
+          ></label>
+        </fieldset>
+
+        <h2>Particules</h2>
         <label
           >Particules
           <input type="range" data-attr="particules" min="2000" max="120000" step="1000" value="97000" /><span
@@ -370,6 +422,16 @@
         .forEach((input) =>
           input.addEventListener('change', () => set(input.dataset.attr, input.checked ? 'oui' : 'non')),
         );
+      // Survol désactivé : ses réglages sont grisés (ils restent dans le code s'ils ont été modifiés).
+      const survolCase = document.querySelector('[data-attr="survol"]');
+      const survolReglages = document.getElementById('survol-reglages');
+      survolCase.addEventListener('change', () => (survolReglages.disabled = !survolCase.checked));
+      const zone = document.querySelector('[data-attr="survol-zone"]');
+      const tailleZone = document.querySelector('[data-attr="survol-taille"]').parentElement;
+      zone.addEventListener('change', () => {
+        set('survol-zone', zone.value);
+        tailleZone.hidden = zone.value === 'forme'; // la taille ne sert qu'autour du curseur
+      });
       fond.addEventListener('change', () => {
         set('fond', fond.value);
         apercu.classList.toggle('damier', fond.value === 'transparent');
@@ -418,16 +480,6 @@
         }
       }
       motif.addEventListener('pret', () => setTimeout(syncOrientation, 100));
-      document.getElementById('garder').addEventListener('click', () => {
-        const o = motif.orientation();
-        if (!o) return;
-        for (const [name, value] of Object.entries(o)) {
-          const input = document.querySelector(`[data-attr="${name}"]`);
-          input.value = value;
-          show(input);
-          set(name, String(value));
-        }
-      });
 
       // ---------- Masquer / afficher les réglages (aperçu du motif seul) ----------
       const bascule = document.getElementById('bascule');

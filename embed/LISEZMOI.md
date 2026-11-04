@@ -1,6 +1,8 @@
 # Motif Co-labs · intégration sur un site
 
-Une balise HTML, `<colabs-motif>`, affiche le motif Co-labs animé et interactif (rotation à la souris, effet au survol).
+Une balise HTML, `<colabs-motif>`, affiche le motif Co-labs animé et interactif (effet au survol de la souris).
+L’orientation se règle par les attributs (pas de navigation à la souris sur le motif) ; ses changements s’animent
+en douceur.
 Aucune librairie à installer, aucun framework requis : un fichier JavaScript et une balise.
 
 ## Contenu du dossier
@@ -43,8 +45,8 @@ Dans le configurateur :
 
 1. **Forme A / Forme B** : les deux formes des maquettes. « Nouvelle forme » en tire une autre ; sa `graine` passe
    dans le code et redonne toujours exactement la même forme.
-2. **Orientation** : axes X, Y, Z de la forme ; point de vue de la caméra (curseurs, ou tourner la forme à la souris
-   puis « Garder l’orientation actuelle »).
+2. **Orientation** : axes X, Y, Z de la forme et point de vue de la caméra, avec les curseurs (la forme tourne en
+   douceur jusqu’à la nouvelle position).
 3. **Fond et format** : fond transparent, couleur de la page pour l’aperçu, format.
 4. **Masquer les réglages** (en haut à droite) : voir le motif seul, comme sur le site.
 5. **Copier le code** : seuls les réglages modifiés sont écrits ; le reste garde les valeurs par défaut.
@@ -99,14 +101,19 @@ lisibles sur ce fond (ex. `couleurs="lin ciel"` sur un fond foncé).
 | `fond` | `transparent`, `brun`, `orange`, `taupe`, `grege`, `lin`, `sauge`, `ciel` | `lin` | Fond du motif. |
 | `couleurs` | liste de la palette, ex. `"brun ciel lin"` | `brun ciel lin` | Couleurs des points. |
 | `format` | `16/9`, `1/1`, `4/5`… | `16/9` si aucune hauteur | Proportion du bloc. |
-| `survol` | `oui`, `non` | `oui` | Déconstruction au passage de la souris. |
+| `survol` | `oui`, `non` | `oui` | Déconstruction au passage de la souris (`non` : aucun effet). |
+| `survol-zone` | `curseur`, `forme` | `curseur` | Autour du curseur, ou toute la forme d’un coup. |
+| `survol-taille` | 40 à 500 (px) | `150` | Taille de la zone autour du curseur. |
+| `survol-force` | 0.1 à 3 | `1` | Force de la déconstruction. |
+| `survol-ouverture` | 0.05 à 2 (s) | `0.35` | Durée d’ouverture quand la souris arrive. |
+| `survol-reconstruction` | 0.1 à 4 (s) | `1.2` | Durée de reconstruction quand la souris part. |
 | `particules` | 2000 à 120000 | moteur (≈ 97 000) | Densité des points. |
 | `reglages` | JSON | — | Tout autre réglage avancé du moteur, ex. `reglages='{"swirl":0.4}'`. |
 
 Les valeurs hors bornes sont ramenées dans les bornes ; une valeur illisible est ignorée.
 **Tous les attributs peuvent changer après le chargement** (ex. en JavaScript) : le motif se met à jour.
-Orientation (`axe-*`, `rotation`, `inclinaison`, `distance`), couleurs, `fond`, `rotation-auto`, `vitesse-rotation` et
-`survol` changent **en direct**, sans redessiner la forme. Les autres réglages (`forme`, `graine`, élargissement,
+Orientation (`axe-*`, `rotation`, `inclinaison`, `distance`), couleurs, `fond`, `rotation-auto`, `vitesse-rotation`,
+`survol` et `survol-*` changent **en direct**, sans redessiner la forme ; l’orientation tourne en douceur (≈ 1 s). Les autres réglages (`forme`, `graine`, élargissement,
 `particules`, `reglages`…) redessinent la forme depuis le début.
 
 ## JavaScript (facultatif)
@@ -133,5 +140,7 @@ motif.nouvelleForme(); // tire une nouvelle forme (écrit l’attribut graine)
   `<iframe>` par motif (chacune avec sa propre page).
 - Le motif dessine sa forme progressivement au démarrage (quelques secondes), comme dans l’outil.
 - Les parties larges glissent le long du ruban pendant l’animation : leur place change d’un instant à l’autre.
-- Sur téléphone, le survol devient un effet au toucher.
+- Pas de navigation sur le motif (glisser, molette, pincement, double-clic) : la page défile normalement par-dessus,
+  au doigt comme à la molette.
+- Le survol suit la souris ; sur un écran tactile, il n’y a pas d’effet de survol.
 - Navigateurs : versions récentes de Chrome, Edge, Safari et Firefox (WebGL requis).

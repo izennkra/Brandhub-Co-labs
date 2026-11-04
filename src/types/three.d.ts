@@ -26,6 +26,8 @@ declare module 'three' {
     setFromEuler(euler: Euler): this;
     invert(): this;
     multiply(quaternion: Quaternion): this;
+    copy(quaternion: Quaternion): this;
+    slerp(target: Quaternion, t: number): this;
   }
   export class Object3D {
     position: Vector3;

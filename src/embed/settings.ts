@@ -66,6 +66,11 @@ export const ATTRIBUTES = [
   'format',
   'couleurs',
   'survol',
+  'survol-zone',
+  'survol-taille',
+  'survol-force',
+  'survol-ouverture',
+  'survol-reconstruction',
   'particules',
   'reglages',
 ] as const;
@@ -128,8 +133,20 @@ export function readSettings(read: Read): Record<string, unknown> {
     .filter((c) => (PALETTE_IDS as readonly string[]).includes(c));
   if (couleurs.length) o.dots = couleurs;
 
+  // Survol : déconstruction de la forme au passage de la souris (réglages du moteur, section Survol).
   const survol = yesNo(read('survol'));
   if (survol !== undefined) o.hoverOn = survol;
+  const zone = read('survol-zone')?.trim().toLowerCase();
+  if (zone === 'curseur') o.hoverMode = 0;
+  else if (zone === 'forme') o.hoverMode = 1;
+  const taille = num(read('survol-taille'), 40, 500);
+  if (taille !== undefined) o.hoverRadius = Math.round(taille);
+  const force = num(read('survol-force'), 0.1, 3);
+  if (force !== undefined) o.hoverForce = force;
+  const ouverture = num(read('survol-ouverture'), 0.05, 2);
+  if (ouverture !== undefined) o.hoverIn = ouverture;
+  const reconstruction = num(read('survol-reconstruction'), 0.1, 4);
+  if (reconstruction !== undefined) o.hoverOut = reconstruction;
   const particules = num(read('particules'), 2000, 120000);
   if (particules !== undefined) o.qCount = Math.round(particules);
 
@@ -173,5 +190,16 @@ export function readAxes(read: Read): [number, number, number] {
   ];
 }
 
-/** Réglages appliqués en direct, sans redessiner la forme (vue, couleurs, rotation, survol). */
-export const LIVE_KEYS = ['autoRotate', 'rotSpeed', 'hoverOn', 'bg', 'dots'] as const;
+/** Réglages appliqués en direct, sans redessiner la forme (couleurs, rotation, survol ; la vue à part). */
+export const LIVE_KEYS = [
+  'autoRotate',
+  'rotSpeed',
+  'bg',
+  'dots',
+  'hoverOn',
+  'hoverMode',
+  'hoverRadius',
+  'hoverForce',
+  'hoverIn',
+  'hoverOut',
+] as const;

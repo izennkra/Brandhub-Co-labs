@@ -114,3 +114,25 @@ describe('script d’intégration : axes X, Y, Z et réglages en direct', () => 
     expect(shape({ renflements: '6' })).not.toBe(base);
   });
 });
+
+describe('script d’intégration : réglages du survol', () => {
+  it('survol détaillé : zone, taille, force, ouverture, reconstruction (bornés)', () => {
+    expect(
+      settings({
+        'survol-zone': 'forme',
+        'survol-taille': '900',
+        'survol-force': '2,5',
+        'survol-ouverture': '0.5',
+        'survol-reconstruction': '3',
+      }),
+    ).toMatchObject({ hoverMode: 1, hoverRadius: 500, hoverForce: 2.5, hoverIn: 0.5, hoverOut: 3 });
+    expect(settings({ 'survol-zone': 'curseur' }).hoverMode).toBe(0);
+    expect(settings({ 'survol-zone': 'partout' }).hoverMode).toBeUndefined();
+  });
+
+  it('survol désactivable, et ses réglages ne redessinent pas la forme', () => {
+    expect(settings({ survol: 'non' }).hoverOn).toBe(false);
+    for (const key of ['hoverOn', 'hoverMode', 'hoverRadius', 'hoverForce', 'hoverIn', 'hoverOut'])
+      expect(LIVE_KEYS).toContain(key);
+  });
+});
