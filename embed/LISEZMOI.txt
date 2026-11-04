@@ -1,0 +1,59 @@
+MOTIF CO-LABS · INTÉGRATION SUR UN SITE
+=======================================
+
+Contenu du dossier
+------------------
+- colabs-motif.js : le script du motif (moteur Co-labs, ~320 Ko compressé sur le réseau).
+- demo.html : page de réglage. Elle a besoin d'un petit serveur local (voir plus bas).
+
+1. Régler le motif (demo.html)
+------------------------------
+- Ouvrir un Terminal dans ce dossier et lancer :  npx serve .
+  (ou : python3 -m http.server 8080), puis ouvrir l'adresse indiquée suivie de /demo.html.
+- Forme A / Forme B : les deux formes proposées.
+  « Nouvelle forme » en tire une autre au hasard ; sa « graine » est ajoutée au code :
+  la même graine redonne toujours exactement la même forme.
+- Tourner la forme à la souris, puis « Garder l'orientation actuelle ».
+- Élargissement, couleurs, survol, particules : à régler dans le panneau.
+- « Copier le code » : le code à donner au développeur.
+
+2. Intégrer sur le site (développeur)
+-------------------------------------
+Mettre colabs-motif.js sur le site, puis coller le code copié, par exemple :
+
+  <script src="colabs-motif.js" defer></script>
+  <colabs-motif forme="A" graine="714171450" rotation="20" inclinaison="10" distance="40"
+                style="height: 600px"></colabs-motif>
+
+Sans hauteur, le motif prend un format 16/9 de la largeur disponible.
+
+Attributs
+---------
+  forme              A ou B
+  graine             numéro de forme exacte (remplace celle de A / B)
+  forme-du-fil       noeud, ample ou simple (famille de forme)
+  rotation           degrés, autour de la forme (-360 à 360)
+  inclinaison        degrés (0 = de face, 90 = vue du dessus)
+  distance           5 à 180 (plus petit = plus proche)
+  rotation-auto      oui / non
+  vitesse-rotation   -4 à 4 (le signe donne le sens)
+  elargir            oui / non (non = ruban régulier)
+  renflements        1 à 12
+  gonflement         0.4 à 2
+  finesse-cols       0.02 à 0.6
+  epaisseur          0.3 à 6
+  fond               brun, orange, taupe, grege, lin, sauge, ciel
+  couleurs           couleurs des points, ex. "brun ciel lin"
+  survol             oui / non (effet au passage de la souris)
+  particules         2000 à 120000
+  reglages           tout autre réglage avancé du moteur, en JSON, ex. '{"swirl":0.4}'
+
+Les attributs peuvent changer après le chargement : le motif se met à jour.
+
+Fonctionnement
+--------------
+- Le script ne charge le moteur que lorsque le motif arrive à l'écran.
+- Le motif se met en pause hors de l'écran, quand l'onglet est caché, et pour les
+  personnes qui ont demandé moins d'animations sur leur appareil.
+- Un seul motif animé par page (le moteur n'en gère qu'un à la fois).
+- Sur téléphone, le survol devient un effet au toucher.

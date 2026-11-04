@@ -31,3 +31,5 @@ playwright/.cache
 
 # Vercel
 .vercel
+
+dist-embed
